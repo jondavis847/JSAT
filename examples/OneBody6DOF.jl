@@ -1,5 +1,3 @@
-using LinearAlgebra, DifferentialEquations, StaticArrays, Plots, UnPack, ComponentArrays
-
 include("..\\blue42.jl")
 
 N = WorldFrame()
@@ -26,35 +24,11 @@ sys = System(
     joints=dof6,
     connections= ᴺUᴮ
 )
-#=
-# Initial Conditions
-🖖 = ComponentArray(
-    body=ComponentArray(
-        q=[0, 0, 0, 1],
-        ω=zeros(3), # body attitude rate
-        r=zeros(3),
-        v=zeros(3), # initial translational velocity
-    ),
-    pendulum=ComponentArray(
-        θ=0,
-        σ=pi / 6,
-    ),
-    joint=(
-        rᵦⱼ=[0, 1, 0],
-        rₚⱼ=[0, 1, 0],
-        r₂=[0, 0, 0]
-    )
-)
 
-scross(x) = SA[
-    0 -x[3] x[2]
-    x[3] 0 -x[1]
-    -x[2] x[1] 0
-]
-function qtoa(q)
-    i123 = SA[1, 2, 3]
-    a = diagm(q[4]^2 - q[i123]' * q[i123]) + 2 * q[i123] * q[i123]' - 2 * scross(q[i123] * q[4])
-end
+p = (
+    sys = sys
+)
+#=
 
 # Equations of Motion
 function eom!(d, 🖖, p, t)
