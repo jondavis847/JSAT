@@ -7,11 +7,11 @@ N = WorldFrame()
 B = Body(
     name=:B,
     m=100,
-    I=I(3) * 100,
+    I=SMatrix{3,3,Float64}(I(3) * 100),
     cm=zeros(3),    
 )
 
-dof6 = DOF6(:ᴺGᴮ)
+dof6 = DOF6(name = :ᴺGᴮ)
 
 ᴺUᴮ = Connection(
     Bᵢ = N,
@@ -21,10 +21,12 @@ dof6 = DOF6(:ᴺGᴮ)
 
 sys = System(
     name=:oneBody6DOF,
-    bodies=[N, B],
+    world = N,
+    bodies=B,
     joints=dof6,
     connections= ᴺUᴮ
 )
+#=
 # Initial Conditions
 🖖 = ComponentArray(
     body=ComponentArray(
@@ -126,3 +128,4 @@ per_cb = PeriodicCallback(per_cb!, 1)
 
 prob = ODEProblem(eom!, 🖖, (0, 10), p)
 sol = solve(prob, Tsit5(), callback=CallbackSet(thrust_start, thrust_stop, per_cb), dt=1, adaptive=false)
+=#
