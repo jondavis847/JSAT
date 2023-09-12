@@ -146,7 +146,11 @@ function Base.show(io::IO, path::PathTable)
     #make each element length 5 by filling with white space
     for i in eachindex(path_table)
         space_to_add = 5 - length(path_table[i])
-        path_table[i] *= repeat(" ",space_to_add)
+        if (space_to_add == 5) && (i != 1)
+            path_table[i] = ".    "
+        else
+            path_table[i] *= repeat(" ",space_to_add)
+        end
     end
     for row in eachrow(path_table)
         println(io,join(row), "    ")
@@ -154,7 +158,7 @@ function Base.show(io::IO, path::PathTable)
 end
 
 #creates the table to be stored in sys
-function make_pathtable!(sys)    
+function bodypath!(sys)    
     table = fill("",(length(sys.bodies)+1,length(sys.bodies)+1))        
     for this_body in sys.bodies
         table[1,this_body.n+1] = string(this_body.name) #label column
