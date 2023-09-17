@@ -1,10 +1,8 @@
 
 include("utils//quaternion.jl")
+include("joints.jl")
 using LinearAlgebra, DifferentialEquations, StaticArrays, Plots, UnPack, ComponentArrays, DataFrames
 import Base: show
-
-abstract type Joint end
-
 Base.@kwdef struct WorldFrame
     name::Symbol = :N
 end
@@ -21,8 +19,8 @@ Base.@kwdef mutable struct Body
     m::Float64 # mass
     I::SMatrix{3,3,Float64} # inertia tensor
     cm::SVector{3,Float64} # center of mass    
-    n::Int64 =0 # body number for table designation (applied automatically by sys)
-    Body(name, m, I, cm,n) = new(name, m, SMatrix{3,3,Float64}(I), SVector{3,Float64}(cm),n)
+    id::Int64 = 0 # body number for table designation (applied automatically by sys)
+    Body(name, m, I, cm, id) = new(name, m, SMatrix{3,3,Float64}(I), SVector{3,Float64}(cm), id)
 end
 
 Base.@kwdef struct Connection
@@ -34,155 +32,255 @@ Base.@kwdef struct Connection
 end
 
 struct PathTable
-    table::Matrix{String}
+    string_table::Matrix{String}
+    bool_table::Matrix{Bool}
 end
 
-Base.@kwdef mutable struct System
+struct System
     name::Union{String,Symbol}
-    world::WorldFrame
-    bodies::Vector{Body}
-    joints::Vector{Joint}
-    connections::Vector{Connection}
-    bodypath::PathTable = PathTable(Matrix{String}(undef,0,0))
-    jointpath::Matrix{String} = Matrix{String}(undef,0,0)
-    System(name, world, bodies, joints, connections,bodypath,jointpath) = new(
-        name, world,
-        ifelse(isa(bodies, Vector), bodies, [bodies]),
-        ifelse(isa(joints, Vector), joints, [joints]),
-        ifelse(isa(connections, Vector), connections, [connections]),
-        bodypath,jointpath
-    )
+    N::WorldFrame
+    B::Vector{Body}
+    G::Vector{Joint}
+    U::Vector{Connection}
+    bodypath::PathTable
+    #jointpath::PathTable
+    rotations::Matrix{SMatrix{3,3,Float64,9}}
+    Γ::Vector{Union{SVector,SMatrix}}
+    Ω::Matrix{Float64}
 end
 
-"""
-    DOF6(;name,[q,ω,r,v])
+#constructor
+function System(; name, N, B, G, U)
 
-6DOF joint for rotation and translation
+    # 1) find the body path of the system
+    #ensure we start id's with the root bodies
+    root_B = find_roots(B, U)
 
-States:
-- `q::SVector{4,Float64}` quaternion rotation of Bₒ in Bᵢ
-- `ω::SVector{3,Float64}`  angular rate
+    # map the bodies and joints 
+    map_path!(root_B, U, 0, 0)
 
-Joint frame:
-- x right, y up, z out the page
-- identity quaternion means body x,y,z aligns with joint x,y,z        
-    
-"""
-Base.@kwdef mutable struct DOF6 <: Joint
-    const name::Union{String,Symbol}
-    const Γ::Function = q -> qtoa(q)# joint partial function
-    const DOF::Int64 = 6 # number of joint speeds
-    q::SVector{4,Float64} = SVector{4,Float64}(0, 0, 0, 1)
-    ω::SVector{3,Float64} = SVector{3,Float64}(0, 0, 0)
-    r::SVector{3,Float64} = SVector{3,Float64}(0, 0, 0)
-    v::SVector{3,Float64} = SVector{3,Float64}(0, 0, 0)
-    n::Int64 = 0# body number for table designation (applied automatically by sys)
-    DOF6(name, Γ, DOF, q, ω, r, v, n) = new(name, Γ, DOF, SVector{4,Float64}(q), SVector{3,Float64}(ω), SVector{3,Float64}(r), SVector{3,Float64}(v),n)
+    # get the body path
+    bodypath = body_path(B, U)
+    jointpath = joint_path(B,U)
+
+    # 2) find all the rotations of the system
+    C = fill(SMatrix{3,3,Float64}(zeros(3, 3)), (length(B), length(B)))
+    get_rotations!(C, B, U, bodypath)
+
+    # 3) calculate joint partials Vector
+    Γ = joint_partials(U)
+
+    # 4) calculate Ω
+    Ω = calculate_Ω(C, Γ, bodypath)
+
+    System(name, N, B, G, U, bodypath, C, Γ, Ω)
 end
 
-
-"""
-Revolute Joint
-
-    1DOF rotation in the x-z plane about y (to be consistent with Three.js geometry)
-
-States:
-    θ - rotation angle
-    ω - angular rate
-Joint frame:
-    - right hand rule
-    - x to the right, y up, z out of the page
-    - θ referenced from +x        
-
-"""
-Base.@kwdef mutable struct Revolute <: Joint
-    const name::Union{String,Symbol}
-    const Γ::Function = θ -> SA[sin(θ), 0, cos(θ)] # joint partial function
-    const DOF::Int64 = 1 # number of joint speeds
-    θ::Float64 = 0.0
-    ω::Float64 = 0.0
-    n::Int64 = 0    
+function get_rotations!(M, B, U, bodypath=body_path(B, U))
+    for i in eachindex(B)
+        for j in eachindex(B)
+            if bodypath.bool_table[i, j]
+                if i == j
+                    M[i, j] = SMatrix{3,3,Float64}(1, 0, 0, 0, 1, 0, 0, 0, 1)
+                else
+                    Bₒ = B[map(x -> x.id == i, B)][1]
+                    Bᵢ = B[map(x -> x.id == j, B)][1]
+                    M[i, j] = get_C(Bₒ, Bᵢ, U)
+                end
+            end
+        end
+    end
+    return nothing
 end
 
-function find_roots(sys::System)
-    # find any connections with inner body set to the world frame
-    root_connections = sys.connections[map(x->isa(x.Bᵢ,WorldFrame),sys.connections)]
+#find the C matrix from one body to another in its path
+function get_C(Bₒ, Bᵢ, Us)
+    #find the connection where input arg Bₒ is the ... Bₒ
+    U = find_U_by_Bₒ(Bₒ, Us)
+    # get C for this layer
+    C = U.Fᵢ.Φ * U.Fₒ.Φ * Φ(U.G)
+    # dig deeper if needed
+    if U.Bᵢ != Bᵢ
+        C *= get_C(U.Bᵢ, Bᵢ, Us)
+    end
+    return C
+end
+
+function find_roots(B, U)
+    # find any connections with inner body set to the world frame    
+    root_U = U[map(x -> isa(x.Bᵢ, WorldFrame), U)]
     # return the outer bodies of the root connections
-    map(x->x.Bₒ, root_connections)        
-end
-
-
-function get_path!(sys::System)
-    root_bodies = find_roots(sys)
-    body_n = 0
-    joint_n = 0
-    map_tree!(root_bodies,body_n,joint_n,sys)    
+    map(x -> x.Bₒ, root_U)
 end
 
 #updates the bodys and joints with their identifying integers
-function map_path!(bodies::Vector{Body},body_n,joint_n,sys)
+function map_path!(B, U, body_id, joint_id)
     #loop over each of these bodies
-    for this_body in bodies        
-        #increment body counter and set to this body
-        body_n += 1
-        this_body.n = body_n
-        #find all outer connections of thie body
-        outer_connections = sys.connections[map(x->x.Bᵢ===this_body,sys.connections)]
+    for body in B        
+        if !isa(body,WorldFrame) #starting with worldframe but dont want it in the body path table, but want to mark the joint
+            #increment body counter and set to this body
+            body_id += 1
+            body.id = body_id
+        end
+        #find all outer connections of the body
+        Uₒ = U[map(x -> x.Bᵢ === body, U)]
         #loop over outer connections, number joints, and map outer bodies
-        for this_outer in outer_connections
-            joint_n += 1
-            this_outer.G.n = joint_n
-            body_n,joint_n = map_path!([this_outer.Bₒ],body_n,joint_n,sys)
+        for this_U in Uₒ
+            joint_id += 1
+            this_U.G.id = joint_id
+            body_id, joint_id = map_path!([this_U.Bₒ], U, body_id, joint_id)
         end
     end
     #return counters with updated values
-    return body_n, joint_n
+    return body_id, joint_id
 end
 
-#over load show to make pathtale printing nice
+#over load show to make pathtale printing pretty
 function Base.show(io::IO, path::PathTable)
     #copy it so matrix version is still readable on sys
-    path_table = copy(path.table)
+    path_table = copy(path.string_table)
     #make each element length 5 by filling with white space
     for i in eachindex(path_table)
         space_to_add = 5 - length(path_table[i])
         if (space_to_add == 5) && (i != 1)
             path_table[i] = ".    "
         else
-            path_table[i] *= repeat(" ",space_to_add)
+            path_table[i] *= repeat(" ", space_to_add)
         end
     end
     for row in eachrow(path_table)
-        println(io,join(row), "    ")
+        println(io, join(row), "    ")
     end
 end
 
 #creates the table to be stored in sys
-function bodypath!(sys)    
-    table = fill("",(length(sys.bodies)+1,length(sys.bodies)+1))        
-    for this_body in sys.bodies
-        table[1,this_body.n+1] = string(this_body.name) #label column
-        table[this_body.n+1,1] = string(this_body.name) #label row
-        table[this_body.n+1,this_body.n+1] = "x" #mark diagonal element
-        path = get_bodypath(this_body,sys)
+function body_path(B, U)
+    table = fill("", (length(B) + 1, length(B) + 1))
+    bt = falses(length(B), length(B))
+    for body in B
+        table[1, body.id+1] = string(body.name) #label column
+        table[body.id+1, 1] = string(body.name) #label row
+        table[body.id+1, body.id+1] = "x" #mark diagonal element
+        bt[body.id, body.id] = true
+        path = get_body_path(body, U)
         for inner_body in path
-            table[this_body.n+1,inner_body.n+1] = "x" #mark inner body elements
+            table[body.id+1, inner_body.id+1] = "x" #mark inner body elements
+            bt[body.id, inner_body.id] = true #mark inner body elements
         end
     end
-    sys.bodypath = PathTable(table)
+    PathTable(table, bt)
 end
 
 #returns all bodies in another bodies path
-function get_bodypath(body,sys;path=[]) #call without path, path is applied recursively
-    inner_connections = sys.connections[map(x->x.Bₒ===body,sys.connections)]
-    if !isempty(inner_connections)
-        inner_bodies = map(x->x.Bᵢ,inner_connections)        
-        for inner_body in inner_bodies
-            if !isa(inner_body,WorldFrame) #remove this if we remove joints to worldframe
-                push!(path,inner_body)
+function get_body_path(body, Us; path=[]) #call without path, path is applied recursively
+    Uᵢ = find_U_by_Bₒ(body, Us)
+    if !isempty(Uᵢ)
+        Bᵢs = map(x -> x.Bᵢ, Uᵢ)
+        for Bᵢ in Bᵢs
+            if !isa(Bᵢ, WorldFrame) #remove this if we remove joints to worldframe
+                push!(path, Bᵢ)
             end
-            path = get_bodypath(inner_body,sys;path=path)
+            path = get_body_path(Bᵢ, Us; path=path)
         end
     end
     return path
+end
+
+function joint_path(Bs, Us)
+    table = fill("", (length(Bs) + 1, length(Bs) + 1))
+    bt = falses(length(Bs), length(Bs))
+    for U in Us
+        table[1, U.G.id+1] = string(U.G.name) #label column
+    end
+
+    for B in Bs
+        table[B.id+1, 1] = string(B.name) #label row                
+        path = get_joint_path(B, Us)
+        for Gᵢ in path
+            table[B.id+1, Gᵢ.id+1] = "x" #mark inner body elements
+            bt[B.id, Gᵢ.id] = true #mark inner body elements
+        end
+    end
+    PathTable(table, bt)
+end
+
+#returns all bodies in another bodies path
+function get_joint_path(Bₒ, Us; path=[]) #call without path, path is applied recursively
+    U = find_U_by_Bₒ(Bₒ, Us)        
+    push!(path, U.G)
+    if !isa(U.Bᵢ,WorldFrame)
+        path = get_joint_path(U.Bᵢ, Us; path=path)
+    end
+    return path
+end
+
+function joint_partials(U)
+    # I believe map path is set up to handle the ordering here, may need to test to ensure
+    map(x -> Γ(x.G), U)
+end
+
+function calculate_Ω(Cs, Γs, bodypath=trues(size(Cs))) #default to calc all
+    m = 3 * length(Γs) #guaranteed to be 3 elements per Γ
+    sc = size.(Γs, 2)
+    n = sum(sc) #num cols = sum of DOF of each joint
+
+    Ω = zeros(m, n)
+    for i in eachindex(Γs) # C is guaranteed to be length(B),length(B) and Γ is guaranteed to be length(B)        
+        rows = (3*i:3*i+2) .- 2
+        for j in eachindex(Γs)
+            #only do these calcs if theres a connect between bodies, otherwise leave as zeros
+            if bodypath.bool_table[i, j]
+                ncols = sc[j]
+                icol = sum(sc[1:j-1]) + 1
+                cols = icol:icol+ncols-1
+
+                Ω[rows, cols] = Cs[i, j] * Γs[j]
+            end
+        end
+    end
+    return Ω
+end
+function find_B_by_id(id, Bs)
+    for B in Bs
+        if Bs.id == id
+            return B
+        end
+    end
+end
+
+function find_G_by_id(id, Gs)
+    for G in Gs
+        if Gs.id == id
+            return G
+        end
+    end
+end
+
+function find_U_by_Bₒ(B, Us)
+    for U in Us
+        if U.Bₒ == B
+            return U
+        end
+    end
+end
+
+function find_U_by_Bᵢ(B, Us)
+    for U in Us
+        if U.Bₒ == B
+            return U
+        end
+    end
+end
+
+function calculate_ρ(id_B, id_G, Bs, Gs, Us)
+    B = find_B_by_id(id_B, Bs)
+    G = find_G_by_id(id_G, Gs)
+    U = find_U_by_Bₒ(B, Us)
+
+    ρ = U.Fₒ.r - B.cm
+    if U.G == G
+        return ρ
+    else
+        return calculateρ(U.Bᵢ.id, id_G, Bs, Gs, Us) + ρ
+    end
 end
