@@ -1,6 +1,3 @@
-include("utils//quaternion.jl")
-using StaticArrays
-
 abstract type Joint end
 
 """
@@ -66,5 +63,5 @@ function Revolute(name,θ=0.0,ω=0.0)
     Revolute(name,1,0,θ,ω)
 end
 
-Γ(G::Revolute) = SA[cos(G.θ), sin(G.θ), 0.0]
+Γ(G::Revolute) = SMatrix{3,1,Float64}(cos(G.θ), sin(G.θ), 0.0)
 Φ(G::Revolute) = SA[cos(G.θ) -sin(G.θ) 0.0; sin(G.θ) cos(G.θ) 0.0; 0.0 0.0 1.0]
