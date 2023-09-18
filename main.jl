@@ -94,22 +94,33 @@ function System(; name, N, B, G, U)
     System(name, N, B, G, U, B̄, Ḡ, Cs, Γs, Ω, ρs, βs)
 end
 
-function  calculate_Cs!(M, B, U, bodypath=body_path(B, U))
+function calculate_sys!(sys)
+    #TODO: make these functions singular rather than plural as a matter of preference
+    calculate_Cs!(sys)
+    calculate_Γs!(sys)
+    calculate_Ω!(sys)
+    calculate_ρs!(sys)
+    calculate_βs!(sys)
+    #calculate_V!(sys)
+end
+
+function calculate_Cs!(Cs, B, U, bodypath=body_path(B, U))
     for i in eachindex(B)
         for j in eachindex(B)
             if bodypath.bool_table[i, j]
                 if i == j
-                    M[i, j] = SMatrix{3,3,Float64}(1, 0, 0, 0, 1, 0, 0, 0, 1)
+                    Cs[i, j] = SMatrix{3,3,Float64}(1, 0, 0, 0, 1, 0, 0, 0, 1)
                 else
                     Bₒ = B[map(x -> x.id == i, B)][1]
                     Bᵢ = B[map(x -> x.id == j, B)][1]
-                    M[i, j] = calculate_C(Bₒ, Bᵢ, U)
+                    Cs[i, j] = calculate_C(Bₒ, Bᵢ, U)
                 end
             end
         end
     end
     return nothing
 end
+calculate_Cs!(sys::System) = calculate_Cs!(sys.C,sys.B,sys.U,sys.bodypath)
 
 #find the C matrix from one body to another in its path
 function calculate_C(Bₒ, Bᵢ, Us)
@@ -124,6 +135,7 @@ function calculate_C(Bₒ, Bᵢ, Us)
     return C
 end
 
+
 function calculate_Γs!(Γs,Us)
     # I believe map_path is set up to handle the ordering here, may need to test to ensure
     for i in eachindex(Us) # length(Us) == length(Γs)
@@ -131,6 +143,7 @@ function calculate_Γs!(Γs,Us)
     end
     nothing
 end
+calculate_Γs!(sys::System) = calculate_Γs!(sys.Γs,sys.Us)
 
 function calculate_Ω!(Ω, Cs, Γs, bodypath=trues(size(Cs))) #default to calc all  
     #TODO: can Ω be a matrix of matrices/vectors rather than a big matrix?  
@@ -151,6 +164,8 @@ function calculate_Ω!(Ω, Cs, Γs, bodypath=trues(size(Cs))) #default to calc a
     end
     nothing
 end
+calculate_Ω!(sys::System) = calculate_Ω!(sys.Ω, sys.C, sys.Γ, sys.bodypath)
+
 
 function calculate_ρs!(ρs,Bs,Gs,Us,Ḡ)    
     for i in eachindex(Bs) #number of rows of ρs is num bodies
@@ -163,6 +178,8 @@ function calculate_ρs!(ρs,Bs,Gs,Us,Ḡ)
     end
     nothing
 end
+calculate_ρs!(sys::System) = calculate_ρs!(sys.ρ,sys.B,sys.G,sys.U,sys.jointpath)
+
 
 function calculate_ρ(id_B, id_G, Bs, Gs, Us)
     B = find_B_by_id(id_B, Bs)
@@ -199,6 +216,8 @@ function calculate_βs!(βs, Bs, Us)
     end
     nothing
 end
+calculate_βs!(sys::System) = calculate_βs!(sys.β, sys.B, sys.U)
+
 
 function find_roots(B, U)
     # find any connections with inner body set to the world frame    
