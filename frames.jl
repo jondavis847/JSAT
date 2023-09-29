@@ -24,6 +24,18 @@ end
 ℛ(C::T) where T <: Frame = C.Φ.value
 𝒯(C::T) where T <: Frame= C.ρ
 
-→(A::Frame,B::Frame) = FrameTransform(RotationMatrix(ℛ(B)'*ℛ(A)), ℛ(B)*(𝒯(A) - 𝒯(B)))
+# calculates the transform that takes quantities expressed in frame A to frame B
+function →(A::Frame,B::Frame)     
+    E = MMatrix{3,3,Float64}(undef)
+    transpose!(E,ℛ(B))
+    mul!(E,E,ℛ(A))
+    E = SMatrix{3,3,Float64}(E)
+
+    r = MVector{3,Float64}(undef)
+    mul!(r,E,(𝒯(B) - 𝒯(A))) # result is in the B frame
+    r = SVector{3,Float64}(r)
+
+    FrameTransform(RotationMatrix(E),r)
+end
 
 *(F::FrameTransform,v::Vector) = ℛ(F)*v - 𝒯(F)

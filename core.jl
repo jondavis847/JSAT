@@ -1,16 +1,16 @@
-using LinearAlgebra, DifferentialEquations, StaticArrays, Plots, UnPack, ComponentArrays, DataFrames
+using LinearAlgebra, DifferentialEquations, StaticArrays, Plots, UnPack, ComponentArrays, DataFrames, OffsetArrays
 import Base: show
 
 include("utils//quaternion.jl")
 include("joints.jl")
-
-Base.@kwdef struct FrameRef
-    r::SVector{3,Float64} # ᵇrʲ - location of joint origin in body frame 
-    Φ::SMatrix{3,3,Float64,9} # transforms body frame vectors to joint frame, Φ' transforms joint frame vector to body frame
-    FrameRef(r, Φ) = new(SVector{3,Float64}(r), SMatrix{3,3,Float64}(Φ))
-end
+include("spatial.jl")
 
 abstract type AbstractBody end
+
+Base.@kwdef struct WorldFrame <: AbstractBody
+    name::Symbol = :N
+    id::Int64 = 0
+end
 
 Base.@kwdef mutable struct Body <: AbstractBody
     name::Union{String,Symbol}
@@ -22,17 +22,13 @@ Base.@kwdef mutable struct Body <: AbstractBody
     Body(name, m, I, cm) = new(name, m, SMatrix{3,3,Float64}(I), SVector{3,Float64}(cm))
 end
 
-Base.@kwdef struct WorldFrame <: AbstractBody
-    name::Symbol = :N
-    id::Int64 = 0
-end
-
 Base.@kwdef struct Connection
-    Bᵢ::Union{WorldFrame,Body}
-    Fᵢ::FrameRef = FrameRef(r=zeros(3), Φ=I(3))
+    Bᵢ::AbstractBody
+    Fᵢ::Cartesian #Body to Joint spatial transform
     Bₒ::Body
-    Fₒ::FrameRef = FrameRef(r=zeros(3), Φ=I(3))
+    Fₒ::Cartesian #Joint to Body spatial transform
     G::Joint
+    q_id::Int64 = 0 #index into q,q̇,q̈     
 end
 
 struct PathTable
@@ -45,16 +41,18 @@ struct System
     N::WorldFrame      
     B::Vector{AbstractBody}
     G::Vector{Joint}
-    U::Vector{Connection}
-    roots::Vector{Connection}
+    U::Vector{Connection}    
     bodypath::PathTable
     jointpath::PathTable
-    C::Matrix{SMatrix{3,3,Float64,9}}
-    Γ::Vector #TODO: figure out how to do SVectors?
-    Ω::Matrix{Float64} #TODO: figure out how to do SVectors?
-    ρ::Matrix{SVector{3,Float64}}
-    β::Vector{SVector{3,Float64}}
-    #V::Matrix{Float64}
+    p::Vector{Int64} # joint predecessor body array
+    s::Vector{Int64} # joint successor body array
+    λ::Vector{Int64} # body parent array
+    κ::Vector{Vector{Int64}} # joints between body i and base
+    μ::Vector{Vector{Int64}} # body children array
+    ν::Vector{Vector{Int64}} # all bodies from body i to tip
+    X::Matrix{SMatrix{3,3,Float64,9}}
+    q::Vector{Float64} #may need to make these SVectors
+    q̇::Vector{Float64}
 end
 
 includet("utils//pathutils.jl")
@@ -64,16 +62,32 @@ function System(; name, N, B, G, U)
     #preallocate vectors/matrices at system definition, mutate in place during sim
 
     # map the bodies and joints 
-    map_path!([N], U, 0, 0)
-    roots = U[isa.(getfield.(U,:Bᵢ),WorldFrame)] 
+    p, s, λ, κ, μ, ν = map_path!(B,U)  
+    
+    # sort arrays so we can index directly by ID    
+    permute!(B,sortperm(map(x->x.id,B)))
+    permute!(G,sortperm(map(x->x.id,G)))
+    permute!(U,sortperm(map(x->x.G.id,U)))
 
     # get the body path
     B̄ = body_path(B, U)
     Ḡ = joint_path(B,U)
 
+    
+    vs = OffsetArray(fill(SVector{6,Float64}(zeros(6)),length(B)),0:length(B)-1)
+    as = OffsetArray(fill(SVector{6,Float64}(zeros(6)),length(B)),0:length(B)-1)
+
+    # collect inertias
+    Is = fill(SMatrix{6,6,Float64}(zeros(6,6)),length(B)-1)
+    for i in Base.OneTo(length(B)-1)
+        Is[i] = B[i].
+    end
+
+    
+    
     # 2) find all the rotations of the system    
-    Cs = fill(SMatrix{3,3,Float64}(zeros(3, 3)), (length(B), length(B)))
-    calculate_Cs!(Cs, B, U, B̄)
+    Xs = OffsetArray(fill(SMatrix{6,6,Float64}(zeros(6,6)),length(B),length(B)),0:length(B)-1,0:length(B)-1)
+    #calculate_Cs!(Cs, B, U, B̄)
 
     # 3) calculate joint partials Vector    
     DOFs = map(x->x.G.DOF, U) #get dofs for each joint in the systems
@@ -96,7 +110,7 @@ function System(; name, N, B, G, U)
    βs = fill(SVector{3,Float64}(zeros(3)), length(B)) #TODO: make MMatrix?
    calculate_βs!(βs, B, U)
 
-    System(name, N, B, G, U, roots, B̄, Ḡ, Cs, Γs, Ω, ρs, βs)
+    System(name, N, B, G, U, B̄, Ḡ, p, s, λ, κ, μ, ν, Cs, Γs, Ω, ρs, βs)
 end
 
 function calculate_sys!(sys)
@@ -109,35 +123,32 @@ function calculate_sys!(sys)
     #calculate_V!(sys)
 end
 
-function calculate_Cs!(Cs, B, U, bodypath=body_path(B, U))
-    for i in eachindex(B)
-        for j in eachindex(B)
-            if bodypath.bool_table[i, j]
-                if i == j
-                    Cs[i, j] = SMatrix{3,3,Float64}(1, 0, 0, 0, 1, 0, 0, 0, 1)
-                else
-                    Bₒ = B[map(x -> x.id == i, B)][1]
-                    Bᵢ = B[map(x -> x.id == j, B)][1]
-                    Cs[i, j] = calculate_C(Bₒ, Bᵢ, U)
-                end
-            end
-        end
-    end
-    return nothing
-end
-calculate_Cs!(sys::System) = calculate_Cs!(sys.C,sys.B,sys.U,sys.bodypath)
+function inverse_dynamics!(q̈,q̇,fˣ,I,X,v,a,f,λ,Us)      
+    ##We may need to add the S∘ term if translation looks really off in base 6dof joint!
+    #See featherstone example 4.5 for more details
 
-#find the C matrix from one body to another in its path
-function calculate_C(Bₒ, Bᵢ, Us)
-    #find the connection where input arg Bₒ is the ... Bₒ
-    U = find_U_by_Bₒ(Bₒ, Us)
-    # get C for this layer
-    C = U.Fᵢ.Φ * U.Fₒ.Φ * Φ(U.G)
-    # dig deeper if needed
-    if U.Bᵢ != Bᵢ
-        C *= calculate_C(U.Bᵢ, Bᵢ, Us)
+
+    #v[0] already set to 0 as default, never touch
+    a[0] = SVector{6,Float64}(0,0,0,0,-9.81,0) #change this to an actual gravity calc please
+    for i in eachindex(Us)        
+        λi = λ[i]
+        # U is id'd by its G, and G is id'd by its outer body or successor (s)
+        U = Us[i]    
+        #Jain 1.32 allows chaining of spatial transformations
+        #may need to use mul! to make this non allocating.     
+        X[λi, i] = ℳ⁻¹(U.Fₒ)*ℳ(U.G)*ℳ(U.Fᵢ)
+        v[i] = X[λi,i]*v[λi] + S(U.G)*q̇[i]
+        a[i] = X[λi,i]*a[λi] + S(U.G)*q̈[i] + v[λi]×v[i] # + S∘(U.G)*q̇[i]
+        f[i] = I[i]*a[i] + v[i]×(I[i]*v[i]) - ⁱX₀*fˣ[i]
     end
-    return C
+   nothing
+end
+#calculate_Cs!(sys::System) = calculate_Cs!(sys.C,sys.B,sys.U,sys.bodypath)
+
+
+function calculate_v!(s::Int64,ˢXₚ,vₚ,Us)
+    U = Us[s]    
+
 end
 
 
