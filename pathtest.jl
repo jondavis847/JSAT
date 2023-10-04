@@ -46,4 +46,6 @@ G[10] = DOF6(:G10)
 B[10] = Body(:B10,10,10*I(3),zeros(3))
 U[10] = Connection(N,Cartesian(I(3),zeros(3)),B[10],Cartesian(I(3),zeros(3)),G[10])
 
+sys = System(:pathtest,N,B,G,U)
+
 nothing

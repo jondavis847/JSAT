@@ -2,8 +2,9 @@ using LinearAlgebra, DifferentialEquations, StaticArrays, Plots, UnPack, Compone
 import Base: show
 
 include("utils//quaternion.jl")
-include("joints.jl")
 include("spatial.jl")
+include("joints.jl")
+includet("utils//pathutils.jl")
 
 abstract type AbstractBody end
 
@@ -27,216 +28,267 @@ Base.@kwdef struct Connection
     Fᵢ::Cartesian #Body to Joint spatial transform
     Bₒ::Body
     Fₒ::Cartesian #Joint to Body spatial transform
-    G::Joint
-    q_id::Int64 = 0 #index into q,q̇,q̈     
+    G::Joint    
 end
-
-struct PathTable
-    string_table::Matrix{String}
-    bool_table::Matrix{Bool}
-end
-
 struct System
     name::Union{String,Symbol}  
     N::WorldFrame      
-    B::Vector{AbstractBody}
+    B::OffsetVector{AbstractBody, Vector{AbstractBody}}
     G::Vector{Joint}
-    U::Vector{Connection}    
-    bodypath::PathTable
-    jointpath::PathTable
+    U::Vector{Connection}        
     p::Vector{Int64} # joint predecessor body array
     s::Vector{Int64} # joint successor body array
     λ::Vector{Int64} # body parent array
     κ::Vector{Vector{Int64}} # joints between body i and base
-    μ::Vector{Vector{Int64}} # body children array
-    ν::Vector{Vector{Int64}} # all bodies from body i to tip
-    X::Matrix{SMatrix{3,3,Float64,9}}
-    q::Vector{Float64} #may need to make these SVectors
-    q̇::Vector{Float64}
+    μ::OffsetVector{Vector{Int64}} # body children array
+    γ::OffsetVector{Vector{Int64}} # all bodies from body i to tip (this is nu in Featherstone but nu just looks like v in Julia, so \gamma now)
+    ᵖXᵢᵐ::Vector{SMatrix{6,6,Float64,36}}
+    ᵖXᵢᶠ::Vector{SMatrix{6,6,Float64,36}}
+    ⁱXₚᵐ::Vector{SMatrix{6,6,Float64,36}}
+    ⁱXₚᶠ::Vector{SMatrix{6,6,Float64,36}}        
+    ᵒXᵢᵐ::OffsetVector{SMatrix{6, 6, Float64, 36}, Vector{SMatrix{6, 6, Float64, 36}}}
+    ᵒXᵢᶠ::OffsetVector{SMatrix{6, 6, Float64, 36}, Vector{SMatrix{6, 6, Float64, 36}}}
+    ⁱXₒᵐ::OffsetVector{SMatrix{6, 6, Float64, 36}, Vector{SMatrix{6, 6, Float64, 36}}}
+    ⁱXₒᶠ::OffsetVector{SMatrix{6, 6, Float64, 36}, Vector{SMatrix{6, 6, Float64, 36}}}    
+    qspan::Vector{SVector}
+    q̇span::Vector{SVector}
+    q::MVector
+    q̇::MVector
+    q̈::MVector
+    H::MMatrix
+    C::MVector  
+    τ::MVector 
+    fˣ::MVector
+    Ī::Vector{SMatrix{6,6,Float64}}
+    Īᶜ::Vector{SMatrix{6,6,Float64}}
+    r::MVector
+    v::OffsetVector
+    a::OffsetVector
+    f::MVector
 end
-
-includet("utils//pathutils.jl")
 
 #system constructor
-function System(; name, N, B, G, U)
-    #preallocate vectors/matrices at system definition, mutate in place during sim
+function System(name, N, B̄, Ḡ, Ū)
+    # preallocate vectors/matrices at system definition, mutate in place during sim
 
     # map the bodies and joints 
-    p, s, λ, κ, μ, ν = map_path!(B,U)  
+    p, s, λ, κ, μ, γ = map_path!(B̄,Ū)  
     
     # sort arrays so we can index directly by ID    
-    permute!(B,sortperm(map(x->x.id,B)))
-    permute!(G,sortperm(map(x->x.id,G)))
-    permute!(U,sortperm(map(x->x.G.id,U)))
+    permute!(B̄,sortperm(map(x->x.id,B̄)))
+    permute!(Ḡ,sortperm(map(x->x.id,Ḡ)))
+    permute!(Ū,sortperm(map(x->x.G.id,Ū)))
 
-    # get the body path
-    B̄ = body_path(B, U)
-    Ḡ = joint_path(B,U)
 
+    Ī,Īᶜ = initialize_inertias(B̄)            
     
-    vs = OffsetArray(fill(SVector{6,Float64}(zeros(6)),length(B)),0:length(B)-1)
-    as = OffsetArray(fill(SVector{6,Float64}(zeros(6)),length(B)),0:length(B)-1)
+    #grab q,q̇ initial conditions
+    q,q̇,q̈,qspan,q̇span =  initialize_q(Ū)
 
-    # collect inertias
-    Is = fill(SMatrix{6,6,Float64}(zeros(6,6)),length(B)-1)
-    for i in Base.OneTo(length(B)-1)
-        Is[i] = B[i].
+    nB = length(B̄)    
+    # body frame spatial vectors 
+    r = MVector{nB-1,SVector{7,Float64}}(fill(SVector{7,Float64}(zeros(7)),nB-1))
+    v = OffsetVector(fill(SVector{6,Float64}(zeros(6)),nB),0:nB-1)
+    a = OffsetVector(fill(SVector{6,Float64}(zeros(6)),nB),0:nB-1)
+    f = MVector{nB-1,SVector{6,Float64}}(fill(SVector{6,Float64}(zeros(6)),nB-1))
+    fˣ = MVector{nB-1,SVector{6,Float64}}(fill(SVector{6,Float64}(zeros(6)),nB-1))
+
+    # generalized vectors
+    nq̇ = length(q̇)
+    τ = MVector{nq̇}(zeros(nq̇))
+    C = MVector{nq̇,Float64}(zeros(nq̇))
+    H = MMatrix{nq̇,nq̇,Float64}(zeros(nq̇,nq̇))
+    
+    # spatial transformations from body i to predecessor/parent body
+    identity_X = SMatrix{6,6,Float64}(I(6))
+    ᵖXᵢᵐ = fill(identity_X,nB-1)
+    ᵖXᵢᶠ = fill(identity_X,nB-1)
+    ⁱXₚᵐ = fill(identity_X,nB-1)
+    ⁱXₚᶠ = fill(identity_X,nB-1)
+
+    # spatial transformations from body i to worldframe
+    # superscript little o here since can't start with 0 to represent 0th body   
+    # could use n but it looks wierd since superscript is capital and subscript is lower case    
+    ᵒXᵢᵐ = OffsetVector(fill(identity_X,nB),0:nB-1)
+    ᵒXᵢᶠ = OffsetVector(fill(identity_X,nB),0:nB-1)
+    ⁱXₒᵐ = OffsetVector(fill(identity_X,nB),0:nB-1)
+    ⁱXₒᶠ = OffsetVector(fill(identity_X,nB),0:nB-1)
+    
+    System(name,N,B̄,Ḡ,Ū,p,s,λ,κ,μ,γ,ᵖXᵢᵐ,ᵖXᵢᶠ,ⁱXₚᵐ,ⁱXₚᶠ,ᵒXᵢᵐ,ᵒXᵢᶠ,ⁱXₒᵐ,ⁱXₒᶠ,qspan,q̇span,q,q̇,q̈,H,C,τ,fˣ,Ī,Īᶜ,r,v,a,f)
+end
+
+function model!(sys)    
+    #sensors!(sys)
+    #flight_software!(sys)
+    #actuators!(sys)
+    environments!(sys)
+    dynamics!(sys)
+    nothing
+end
+
+function dynamics!(sys)  
+    calculate_τ!(sys)  
+    calculate_X!(sys)
+    calculate_C!(sys)
+    calculate_H!(sys)
+    calculate_q̈!(sys)
+    nothing
+end
+
+calculate_X!(sys::System) = calculate_X!(sys.ᵖXᵢᵐ,sys.ᵖXᵢᶠ,sys.ⁱXₚᵐ,sys.ⁱXₚᶠ,sys.ᵒXᵢᵐ,sys.ᵒXᵢᶠ,sys.ⁱXₒᵐ,sys.ⁱXₒᶠ,sys.λ,sys.U)
+calculate_C!(sys::System) = inverse_dynamics!(sys.C,0*sys.q̈,sys.q̇,sys.fˣ,sys.Ī,sys.ⁱXₚᵐ,sys.ⁱXₒᶠ,sys.ᵖXᵢᶠ,sys.v,sys.a,sys.f,sys.λ,sys.U,sys.q̇span)
+calculate_H!(sys::System) = forward_dynamics!(sys.H,sys.Īᶜ,sys.Ī,sys.ᵖXᵢᶠ,sys.ⁱXₚᵐ,sys.λ,sys.U,sys.q̇span)    
+
+function calculate_τ!(τ) 
+    #until we figure out how to do software
+    for i in eachindex(τ)
+        τ[i] = 0
     end
-
-    
-    
-    # 2) find all the rotations of the system    
-    Xs = OffsetArray(fill(SMatrix{6,6,Float64}(zeros(6,6)),length(B),length(B)),0:length(B)-1,0:length(B)-1)
-    #calculate_Cs!(Cs, B, U, B̄)
-
-    # 3) calculate joint partials Vector    
-    DOFs = map(x->x.G.DOF, U) #get dofs for each joint in the systems
-    Γs = map(x-> Matrix{Float64}(undef,3,x), DOFs) # each Γ is 3 x nDofs in the joint    
-    calculate_Γs!(Γs,U)
-
-    # 4) calculate Ω
-    m = 3 * length(Γs) #guaranteed to be 3 elements per Γ
-    sc = size.(Γs, 2)
-    n = sum(sc) #num cols = sum of DOF of each joint
-    Ω = zeros(m, n) #TODO: make MMatrix?    
-    
-    calculate_Ω!(Ω, Cs, Γs, B̄)
-
-    # 5) calculate ρ (ρᵢⱼ = position vector from body i to joint j)
-    ρs = fill(SVector{3,Float64}(zeros(3)), (length(B), length(B))) #TODO: make MMatrix?
-    calculate_ρs!(ρs,B,G,U,Ḡ)    
-
-    # 6) calculate β (βᵢ = position vector from body i to body 1)
-   βs = fill(SVector{3,Float64}(zeros(3)), length(B)) #TODO: make MMatrix?
-   calculate_βs!(βs, B, U)
-
-    System(name, N, B, G, U, B̄, Ḡ, p, s, λ, κ, μ, ν, Cs, Γs, Ω, ρs, βs)
+    nothing
 end
+calculate_τ!(sys::System) = calculate_τ!(sys.τ)
 
-function calculate_sys!(sys)
-    #TODO: make these functions singular rather than plural as a matter of preference
-    calculate_Cs!(sys)
-    calculate_Γs!(sys)
-    calculate_Ω!(sys)
-    calculate_ρs!(sys)
-    #calculate_βs!(sys)
-    #calculate_V!(sys)
-end
-
-function inverse_dynamics!(q̈,q̇,fˣ,I,X,v,a,f,λ,Us)      
-    ##We may need to add the S∘ term if translation looks really off in base 6dof joint!
-    #See featherstone example 4.5 for more details
-
-
-    #v[0] already set to 0 as default, never touch
-    a[0] = SVector{6,Float64}(0,0,0,0,-9.81,0) #change this to an actual gravity calc please
-    for i in eachindex(Us)        
-        λi = λ[i]
+function calculate_X!(ᵖXᵢᵐ,ᵖXᵢᶠ,ⁱXₚᵐ,ⁱXₚᶠ,ᵒXᵢᵐ,ᵒXᵢᶠ,ⁱXₒᵐ,ⁱXₒᶠ,λ,Ū)
+    for i in eachindex(Ū)        
         # U is id'd by its G, and G is id'd by its outer body or successor (s)
-        U = Us[i]    
+        U = Ū[i] #maybe try Ref?
         #Jain 1.32 allows chaining of spatial transformations
         #may need to use mul! to make this non allocating.     
-        X[λi, i] = ℳ⁻¹(U.Fₒ)*ℳ(U.G)*ℳ(U.Fᵢ)
-        v[i] = X[λi,i]*v[λi] + S(U.G)*q̇[i]
-        a[i] = X[λi,i]*a[λi] + S(U.G)*q̈[i] + v[λi]×v[i] # + S∘(U.G)*q̇[i]
-        f[i] = I[i]*a[i] + v[i]×(I[i]*v[i]) - ⁱX₀*fˣ[i]
+        #also probably just do multiplication on the frames and convert to spatial
+        # 3x3 should be less comp than 6x6,
+        Bi_to_Bo = U.Fᵢ→Cartesian(U.G)→inv(U.Fₒ)
+        Bo_to_Bi = U.Fₒ→inv(Cartesian(U.G))→inv(U.Fᵢ)
+
+        ᵖXᵢᵐ[i] = ℳ(Bi_to_Bo).value # should be able use q here instead of U
+        ᵖXᵢᶠ[i] = ℱ(Bi_to_Bo).value
+        ⁱXₚᵐ[i] = ℳ(Bo_to_Bi).value
+        ⁱXₚᶠ[i] = ℱ(Bo_to_Bi).value
+        
+        ᵒXᵢᵐ[i] = ᵒXᵢᵐ[λ[i]] * ᵖXᵢᵐ[i]
+        ᵒXᵢᶠ[i] = ᵒXᵢᶠ[λ[i]] * ᵖXᵢᶠ[i]
+        ⁱXₒᵐ[i] = ᵖXᵢᵐ[i] * ⁱXₒᵐ[λ[i]] 
+        ⁱXₒᶠ[i] = ᵖXᵢᶠ[i] * ⁱXₒᶠ[λ[i]] 
+    end
+    nothing
+end
+
+function forward_dynamics!(H,Īᶜ,Ī,ˢXᵢᶠ,ⁱXₛᵐ,λ,Ū,q̇span)    
+    #featherstone 6.2
+    for i in eachindex(Īᶜ)
+        Īᶜ[i] = Ī[i]
+    end
+    for i in reverse(eachindex(Ū))
+        if λ[i] != 0
+            Īᶜ[λ[i]] += ˢXᵢᶠ * Īᶜ *  ⁱXₛᵐ
+        end
+        F = Īᶜ[i] * 𝒮(Ū[i].G)
+        H[q̇span[i],q̇span[i]] = 𝒮(Ū[i].G)'*F
+        j = i
+        while λ[j] != 0
+            F = ˢXᵢᶠ[j] * F
+            j = λ[j]
+            H[q̇span[i],q̇span[j]] = F' * 𝒮(Ū[j].G)
+            H[q̇span[j],q̇span[i]] = H[q̇span[i],q̇span[j]]'
+        end
+    end
+    nothing
+end
+
+function inverse_dynamics!(τ,q̈,q̇,fˣ,I,ⁱXₚᵐ,ⁱXₒᶠ,ᵖXᵢᶠ,v,a,f,λ,Ū,q̇span)
+    #note that τ will actually be C with q̈ = 0 for the C bias force calculation
+    
+    #We may need to add the S∘ term if translation looks really off in base 6dof joint!
+    #See featherstone example 4.5 for more details
+
+    #v[0] already set to 0 as default, never touch
+    #a[0] = already set to 0 as default, never touch 
+    for i in eachindex(Ū)        
+        λi = λ[i] #maybe try Ref?
+        # U is id'd by its G, and G is id'd by its outer body or successor (s)
+        U = Ū[i] #maybe try Ref?        
+        S = 𝒮(U.G)
+        v[i] = ⁱXₚᵐ[i]*v[λi] + S*q̇[q̇span[i]]
+        a[i] = ⁱXₚᵐ[i]*a[λi] + S*q̈[q̇span[i]] + (v[i])×ᵐ(S*q̇[q̇span[i]]) # + S∘(U.G)*q̇[i]
+        f[i] = I[i]*a[i] + v[i]×ᶠ(I[i]*v[i]) - ⁱXₒᶠ[i]*fˣ[i]
+    end
+    for i in reverse(eachindex(Ū))                
+        τ[q̇span[i]] = 𝒮(Ū[i].G)'*f[i]
+        if λ[i] != 0
+            f[λ[i]] += ˢXᵢᶠ*f[i]
+        end
     end
    nothing
 end
-#calculate_Cs!(sys::System) = calculate_Cs!(sys.C,sys.B,sys.U,sys.bodypath)
 
+function calculate_q̈!(q̈,H,τ,C) #LinearSolve might be better!?
+    q̈ .= H\(τ-C)    
+    nothing
+end
+calculate_q̈!(sys::System) = calculate_q̈!(sys.q̈,sys.H,sys.τ,sys.C)
 
-function calculate_v!(s::Int64,ˢXₚ,vₚ,Us)
-    U = Us[s]    
+function initialize_q(Ū)
+    qspan = []
+    q̇span = []
+    q = []
+    q̇ = []
+    for U in Ū
+        this_q = get_q(U.G)
+        this_q̇ = get_q̇(U.G)
+        push!(qspan,SVector{length(this_q),Int64}((length(q)+1):(length(q)+length(this_q))))
+        push!(q̇span,SVector{length(this_q̇),Int64}((length(q̇)+1):(length(q̇)+length(this_q̇))))
+        append!(q,this_q)
+        append!(q̇,this_q̇)        
+    end
+    q = MVector{length(q),Float64}(q)
+    q̇ = MVector{length(q̇),Float64}(q̇)
+    q̈ = MVector{length(q̇),Float64}(zeros(length(q̇)))
+    return (q,q̇,q̈,qspan,q̇span)
+end
 
+function initialize_inertias(B̄)
+    Ī =  Vector{SMatrix{6,6,Float64}}(undef,length(B̄)-1)       
+    F1 = Cartesian(I(3),zeros(3)) #identity frame for origin at cm
+    for i in 1:length(B̄)-1
+        F2 = Cartesian(I(3),-B̄[i].cm) #frame translated from body frame to body cm
+        #convert cm inertia to body frame inertia
+        Ī[i] = (Inertia(B̄[i].I,B̄[i].m) ∈ F1 → F2).value
+    end
+    Īᶜ = copy(Ī)
+    return Ī,Īᶜ
+end
+
+function environments!(sys)
+    gravity!(sys)
 end
 
 
-function calculate_Γs!(Γs,Us)
-    # I believe map_path is set up to handle the ordering here, may need to test to ensure
-    for i in eachindex(Us) # length(Us) == length(Γs)
-        Γs[i] = Γ(Us[i].G)
+function gravity!(sys::System)
+    for i in eachindex(sys.fˣ)        
+        sys.fˣ[i] += sys.Ī[i]*SVector{6,Float64}(0,0,0,0,-9.81,0)
     end
     nothing
 end
-calculate_Γs!(sys::System) = calculate_Γs!(sys.Γs,sys.Us)
 
-function calculate_Ω!(Ω, Cs, Γs, bodypath=trues(size(Cs))) #default to calc all  
-    #TODO: can Ω be a matrix of matrices/vectors rather than a big matrix?  
-    sc = size.(Γs, 2)
-    for i in eachindex(Γs) # C is guaranteed to be length(B),length(B) and Γ is guaranteed to be length(B)        
-        rows = (3*i:3*i+2) .- 2
-        for j in eachindex(Γs)
-            #only do these calcs if theres a connect between bodies, otherwise leave as zeros
-            #TODO: if we make joints reconfigurable midsim, do we need to ensure this element is zeros?
-            if bodypath.bool_table[i, j]
-                ncols = sc[j]
-                icol = sum(sc[1:j-1]) + 1
-                cols = icol:icol+ncols-1
-
-                Ω[rows, cols] = Cs[i, j] * Γs[j] #TODO should this be @views?
-            end
-        end
+function reset_f!(sys)
+    for i in eachindex(sys.fˣ)
+        sys.fˣ[i] *= 0
     end
     nothing
 end
-calculate_Ω!(sys::System) = calculate_Ω!(sys.Ω, sys.C, sys.Γ, sys.bodypath)
 
-#=
-function calculate_ρs!(ρs,roots,Us,Ḡ)    
-    for U in roots
-        ρ = -U.G.
-
+function update_model!(sys,x)
+    reset_f!(sys)
+    sys.q .= x.q
+    sys.q̇ .= x.q̇
+    for i in eachindex(sys.U)        
+        update_q!(sys.U[i].G,sys.qspan[i])
     end
+end
 
-    for i in eachindex(Bs) #number of rows of ρs is num bodies
-        for j in eachindex(Gs) #number of cols of ρs is num joints
-            # if theres a body-joint connection in the jointpath, calc rho for this body-joint
-            if Ḡ.bool_table[i]
-                ρs[i,j] = calculate_ρ(i,j,Bs,Gs,Us)
-            end
-        end
-    end
+function ode_func!(d,x,p,t)
+    update_model!(p.sys,x)
+    model!(p.sys)
+    d.q = x.q̇
+    d.q̇ = p.sys.q̈
     nothing
 end
-calculate_ρs!(sys::System) = calculate_ρs!(sys.ρ,sys.B,sys.G,sys.U,sys.jointpath)
-=#
-
-function calculate_ρ(id_B, id_G, Bs, Gs, Us)
-    B = find_B_by_id(id_B, Bs)
-    G = find_G_by_id(id_G, Gs)
-    U = find_U_by_Bₒ(B, Us)
-
-    ρ = U.Fₒ.r - B.cm
-    if U.G == G
-        return ρ
-    else
-        return calculate_ρ(U.Bᵢ.id, id_G, Bs, Gs, Us) + ρ
-    end
-end
-
-#=
-function calculate_βs!(βs, Bs, Us)
-    for B in Bs        
-        if B.id != 1 # keep zeros for B₁ to B₁
-            U = find_U_by_Bₒ(B,Us)                              
-            # get vector from cm to joint in outer body frame
-            # rotate from outer body frame to joint frame
-            # rotates from joint frame to inner body frame
-            #add vector from inner body to joint in inner body frame
-            βs[B.id] = U.Fᵢ.Φ' * U.Fₒ.Φ * (U.Fₒ.r - B.cm) - U.Fᵢ.r 
-            # iterate on connections until we hit root body
-            U = find_U_by_Bₒ(U.Bᵢ,Us)            
-            while !isa(U.Bᵢ,WorldFrame)                                
-                # dont account for cm until the last step, just go from joint to body frame center                
-                βs[B.id] = U.Fᵢ.Φ' * U.Fₒ.Φ * (U.Fₒ.r-βs[B.id]) - U.Fᵢ.r
-                U = find_U_by_Bₒ(U.Bᵢ,Us)
-            end
-            # reached worldframe, just add cm
-            βs[B.id] += U.Bₒ.cm
-        end
-    end
-    nothing
-end
-calculate_βs!(sys::System) = calculate_βs!(sys.β, sys.B, sys.U)
-=#

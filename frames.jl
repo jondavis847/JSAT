@@ -3,39 +3,27 @@ include("rotations.jl")
 using StaticArrays
 import Base: rand,show,*
 
-abstract type Frame end
-# always referenced to N frame
-struct Cartesian <: Frame
-    Φ::RotationMatrix # coordinate basis dyad in N frame 
-    ρ::SVector{3,Float64}   # coordinate origin in N frame
+abstract type Frame{T} end
+
+struct Cartesian{T<:AbstractFloat} <: Frame{T}
+    Φ::RotationMatrix{T} 
+    r::SVector{3,T}   
+    Cartesian(Φ::AbstractMatrix,r::AbstractVector) = new{Float64}(RotationMatrix(Float64.(Φ)),SVector{3,Float64}(r))
+    Cartesian(Φ::AbstractMatrix{T},r::AbstractVector{T}) where {T<:AbstractFloat} = new{T}(RotationMatrix(Φ),SVector{3,T}(r))
+    Cartesian(Φ::RotationMatrix{T},r::AbstractVector{T}) where {T<:AbstractFloat}= new{T}(Φ,SVector{3,T}(r))    
 end
 
-# ensure always StaticArray
-Cartesian(Φ::RotationMatrix,r) = Cartesian(Φ,SVector{3,Float64}(r))
-Cartesian(Φ::AbstractMatrix,r) = Cartesian(RotationMatrix(Φ),SVector{3,Float64}(r))
+rand(::Type{Cartesian}) = Cartesian(rand(RotationMatrix), 20*(rand(3).-1)) #randomly draw up to 10 m for testing purposes
 
-rand(::Type{Cartesian}) = Cartesian(rand(RotationMatrix), SVector{3,Float64}(20*rand(3).-1)) #randomly draw up to 10 m for testing purposes
-
-struct FrameTransform <: Frame#not sure I need to call this a thing but here we are
-    Φ::Rotation
-    ρ::SVector{3,Float64}
-end
-
-ℛ(C::T) where T <: Frame = C.Φ.value
-𝒯(C::T) where T <: Frame= C.ρ
+ℛ(C::Cartesian) = C.Φ.value
+𝒯(C::Cartesian) = C.r
 
 # calculates the transform that takes quantities expressed in frame A to frame B
-function →(A::Frame,B::Frame)     
-    E = MMatrix{3,3,Float64}(undef)
-    transpose!(E,ℛ(B))
-    mul!(E,E,ℛ(A))
-    E = SMatrix{3,3,Float64}(E)
-
-    r = MVector{3,Float64}(undef)
-    mul!(r,E,(𝒯(B) - 𝒯(A))) # result is in the B frame
-    r = SVector{3,Float64}(r)
-
-    FrameTransform(RotationMatrix(E),r)
+function →(A::Cartesian{T},B::Cartesian{T}) where T <: AbstractFloat    
+    E = ℛ(B)'*ℛ(A)
+    Cartesian(RotationMatrix(E),E*(𝒯(B) - 𝒯(A)))
 end
 
-*(F::FrameTransform,v::Vector) = ℛ(F)*v - 𝒯(F)
+#*(F::FrameTransform,v::Vector) = ℛ(F)*v - 𝒯(F)
+
+inv(F::Cartesian) = Cartesian(inv(F.Φ.value), -F.r)
