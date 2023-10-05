@@ -1,9 +1,9 @@
 using LinearAlgebra, DifferentialEquations, StaticArrays, Plots, UnPack, ComponentArrays, DataFrames, OffsetArrays
 import Base: show
 
-include("utils//quaternion.jl")
-include("spatial.jl")
-include("joints.jl")
+includet("utils//quaternion.jl")
+includet("spatial.jl")
+includet("joints.jl")
 includet("utils//pathutils.jl")
 
 abstract type AbstractBody end
@@ -49,12 +49,11 @@ struct System
     ᵒXᵢᵐ::OffsetVector{SMatrix{6, 6, Float64, 36}, Vector{SMatrix{6, 6, Float64, 36}}}
     ᵒXᵢᶠ::OffsetVector{SMatrix{6, 6, Float64, 36}, Vector{SMatrix{6, 6, Float64, 36}}}
     ⁱXₒᵐ::OffsetVector{SMatrix{6, 6, Float64, 36}, Vector{SMatrix{6, 6, Float64, 36}}}
-    ⁱXₒᶠ::OffsetVector{SMatrix{6, 6, Float64, 36}, Vector{SMatrix{6, 6, Float64, 36}}}    
-    qspan::Vector{SVector}
-    q̇span::Vector{SVector}
+    ⁱXₒᶠ::OffsetVector{SMatrix{6, 6, Float64, 36}, Vector{SMatrix{6, 6, Float64, 36}}}        
     q::MVector
     q̇::MVector
     q̈::MVector
+    x::MVector    
     H::MMatrix
     C::MVector  
     τ::MVector 
@@ -76,14 +75,14 @@ function System(name, N, B̄, Ḡ, Ū)
     
     # sort arrays so we can index directly by ID    
     permute!(B̄,sortperm(map(x->x.id,B̄)))
-    permute!(Ḡ,sortperm(map(x->x.id,Ḡ)))
-    permute!(Ū,sortperm(map(x->x.G.id,Ū)))
+    permute!(Ḡ,sortperm(map(x->x.meta.id,Ḡ)))
+    permute!(Ū,sortperm(map(x->x.G.meta.id,Ū)))
 
 
     Ī,Īᶜ = initialize_inertias(B̄)            
     
     #grab q,q̇ initial conditions
-    q,q̇,q̈,qspan,q̇span =  initialize_q(Ū)
+    q,q̇,q̈,x =  initialize_state_vectors(Ū)    
 
     nB = length(B̄)    
     # body frame spatial vectors 
@@ -114,30 +113,31 @@ function System(name, N, B̄, Ḡ, Ū)
     ⁱXₒᵐ = OffsetVector(fill(identity_X,nB),0:nB-1)
     ⁱXₒᶠ = OffsetVector(fill(identity_X,nB),0:nB-1)
     
-    System(name,N,B̄,Ḡ,Ū,p,s,λ,κ,μ,γ,ᵖXᵢᵐ,ᵖXᵢᶠ,ⁱXₚᵐ,ⁱXₚᶠ,ᵒXᵢᵐ,ᵒXᵢᶠ,ⁱXₒᵐ,ⁱXₒᶠ,qspan,q̇span,q,q̇,q̈,H,C,τ,fˣ,Ī,Īᶜ,r,v,a,f)
+    System(name,N,B̄,Ḡ,Ū,p,s,λ,κ,μ,γ,ᵖXᵢᵐ,ᵖXᵢᶠ,ⁱXₚᵐ,ⁱXₚᶠ,ᵒXᵢᵐ,ᵒXᵢᶠ,ⁱXₒᵐ,ⁱXₒᶠ,q,q̇,q̈,x,H,C,τ,fˣ,Ī,Īᶜ,r,v,a,f)
 end
 
 function model!(sys)    
     #sensors!(sys)
-    #flight_software!(sys)
+    #software!(sys)
     #actuators!(sys)
     environments!(sys)
     dynamics!(sys)
     nothing
 end
 
+# uses Featherstone notation
 function dynamics!(sys)  
-    calculate_τ!(sys)  
-    calculate_X!(sys)
-    calculate_C!(sys)
-    calculate_H!(sys)
-    calculate_q̈!(sys)
+    calculate_τ!(sys)  # generalized actuator forces
+    calculate_X!(sys)  # rotations
+    calculate_C!(sys)  # bias forces (gravity, environments, disturbances, gyroscopic, coriolis, etc.)
+    calculate_H!(sys)  # mass matrix
+    calculate_q̈!(sys)  # generalized acceleration
     nothing
 end
 
 calculate_X!(sys::System) = calculate_X!(sys.ᵖXᵢᵐ,sys.ᵖXᵢᶠ,sys.ⁱXₚᵐ,sys.ⁱXₚᶠ,sys.ᵒXᵢᵐ,sys.ᵒXᵢᶠ,sys.ⁱXₒᵐ,sys.ⁱXₒᶠ,sys.λ,sys.U)
-calculate_C!(sys::System) = inverse_dynamics!(sys.C,0*sys.q̈,sys.q̇,sys.fˣ,sys.Ī,sys.ⁱXₚᵐ,sys.ⁱXₒᶠ,sys.ᵖXᵢᶠ,sys.v,sys.a,sys.f,sys.λ,sys.U,sys.q̇span)
-calculate_H!(sys::System) = forward_dynamics!(sys.H,sys.Īᶜ,sys.Ī,sys.ᵖXᵢᶠ,sys.ⁱXₚᵐ,sys.λ,sys.U,sys.q̇span)    
+calculate_C!(sys::System) = inverse_dynamics!(sys.C,0*sys.q̈,sys.q̇,sys.fˣ,sys.Ī,sys.ⁱXₚᵐ,sys.ⁱXₒᶠ,sys.ᵖXᵢᶠ,sys.v,sys.a,sys.f,sys.λ,sys.U)
+calculate_H!(sys::System) = forward_dynamics!(sys.H,sys.Īᶜ,sys.Ī,sys.ᵖXᵢᶠ,sys.ⁱXₚᵐ,sys.λ,sys.U,)    
 
 function calculate_τ!(τ) 
     #until we figure out how to do software
@@ -152,14 +152,11 @@ function calculate_X!(ᵖXᵢᵐ,ᵖXᵢᶠ,ⁱXₚᵐ,ⁱXₚᶠ,ᵒXᵢᵐ,ᵒ
     for i in eachindex(Ū)        
         # U is id'd by its G, and G is id'd by its outer body or successor (s)
         U = Ū[i] #maybe try Ref?
-        #Jain 1.32 allows chaining of spatial transformations
-        #may need to use mul! to make this non allocating.     
-        #also probably just do multiplication on the frames and convert to spatial
-        # 3x3 should be less comp than 6x6,
+        
         Bi_to_Bo = U.Fᵢ→Cartesian(U.G)→inv(U.Fₒ)
         Bo_to_Bi = U.Fₒ→inv(Cartesian(U.G))→inv(U.Fᵢ)
 
-        ᵖXᵢᵐ[i] = ℳ(Bi_to_Bo).value # should be able use q here instead of U
+        ᵖXᵢᵐ[i] = ℳ(Bi_to_Bo).value 
         ᵖXᵢᶠ[i] = ℱ(Bi_to_Bo).value
         ⁱXₚᵐ[i] = ℳ(Bo_to_Bi).value
         ⁱXₚᶠ[i] = ℱ(Bo_to_Bi).value
@@ -172,49 +169,54 @@ function calculate_X!(ᵖXᵢᵐ,ᵖXᵢᶠ,ⁱXₚᵐ,ⁱXₚᶠ,ᵒXᵢᵐ,ᵒ
     nothing
 end
 
-function forward_dynamics!(H,Īᶜ,Ī,ˢXᵢᶠ,ⁱXₛᵐ,λ,Ū,q̇span)    
-    #featherstone 6.2
+function forward_dynamics!(H,Īᶜ,Ī,ᵖXᵢᶠ,ⁱXₚᵐ,λ,Ū)    
+    #Featherstone 6.2
     for i in eachindex(Īᶜ)
         Īᶜ[i] = Ī[i]
     end
     for i in reverse(eachindex(Ū))
+        Gi = Ū[i].G
         if λ[i] != 0
-            Īᶜ[λ[i]] += ˢXᵢᶠ * Īᶜ *  ⁱXₛᵐ
+            Īᶜ[λ[i]] += ᵖXᵢᶠ * Īᶜ *  ⁱXₚᵐ
         end
-        F = Īᶜ[i] * 𝒮(Ū[i].G)
-        H[q̇span[i],q̇span[i]] = 𝒮(Ū[i].G)'*F
+        F = Īᶜ[i] * 𝒮(Gi)
+        H[Gi.meta.q̇index,Gi.meta.q̇index] = 𝒮(Gi)'*F
         j = i
         while λ[j] != 0
-            F = ˢXᵢᶠ[j] * F
+            F = ᵖXᵢᶠ[j] * F
             j = λ[j]
-            H[q̇span[i],q̇span[j]] = F' * 𝒮(Ū[j].G)
-            H[q̇span[j],q̇span[i]] = H[q̇span[i],q̇span[j]]'
+            Gj = Ū[j].G
+            H[Gi.meta.q̇index,Gj.meta.q̇index] = F' * 𝒮(Gj)
+            H[Gj.meta.q̇index,Gi.meta.q̇index] = H[Gi.meta.q̇index,Gj.meta.q̇index]'
         end
     end
     nothing
 end
 
-function inverse_dynamics!(τ,q̈,q̇,fˣ,I,ⁱXₚᵐ,ⁱXₒᶠ,ᵖXᵢᶠ,v,a,f,λ,Ū,q̇span)
-    #note that τ will actually be C with q̈ = 0 for the C bias force calculation
+# Featherstone chapter 5
+function inverse_dynamics!(τ,q̈,q̇,fˣ,I,ⁱXₚᵐ,ⁱXₒᶠ,ᵖXᵢᶠ,v,a,f,λ,Ū)
+    # note that τ will actually be C with q̈ = 0 for the C bias force calculation
     
-    #We may need to add the S∘ term if translation looks really off in base 6dof joint!
-    #See featherstone example 4.5 for more details
+    # we may need to add the S∘ term if translation looks really off in base 6dof joint!
+    # see Featherstone example 4.5 for more details
 
-    #v[0] already set to 0 as default, never touch
-    #a[0] = already set to 0 as default, never touch 
+    # v[0] already set to 0 as default, never touch
+    # a[0] = already set to 0 as default, never touch 
     for i in eachindex(Ū)        
-        λi = λ[i] #maybe try Ref?
-        # U is id'd by its G, and G is id'd by its outer body or successor (s)
-        U = Ū[i] #maybe try Ref?        
-        S = 𝒮(U.G)
-        v[i] = ⁱXₚᵐ[i]*v[λi] + S*q̇[q̇span[i]]
-        a[i] = ⁱXₚᵐ[i]*a[λi] + S*q̈[q̇span[i]] + (v[i])×ᵐ(S*q̇[q̇span[i]]) # + S∘(U.G)*q̇[i]
-        f[i] = I[i]*a[i] + v[i]×ᶠ(I[i]*v[i]) - ⁱXₒᶠ[i]*fˣ[i]
+        λi = λ[i] 
+        G = Ū[i].G        
+        S = 𝒮(G)
+
+        v[i] = ⁱXₚᵐ[i] * v[λi] + S * q̇[G.meta.q̇index]
+        a[i] = ⁱXₚᵐ[i] * a[λi] + S * q̈[G.meta.q̇index] + (v[i]) ×ᵐ (S * q̇[G.meta.q̇index]) # + S∘(U.G)*q̇[i]
+        f[i] = I[i] * a[i] + v[i] ×ᶠ (I[i] * v[i]) - ⁱXₒᶠ[i] * fˣ[i]
+
     end
     for i in reverse(eachindex(Ū))                
-        τ[q̇span[i]] = 𝒮(Ū[i].G)'*f[i]
+        G = Ū[i].G        
+        τ[G.meta.q̇index] = 𝒮(G)' * f[i]
         if λ[i] != 0
-            f[λ[i]] += ˢXᵢᶠ*f[i]
+            f[λ[i]] += ˢXᵢᶠ * f[i]
         end
     end
    nothing
@@ -226,23 +228,27 @@ function calculate_q̈!(q̈,H,τ,C) #LinearSolve might be better!?
 end
 calculate_q̈!(sys::System) = calculate_q̈!(sys.q̈,sys.H,sys.τ,sys.C)
 
-function initialize_q(Ū)
-    qspan = []
-    q̇span = []
+function initialize_state_vectors(Ū)    
     q = []
     q̇ = []
-    for U in Ū
+    x = []
+    for U in Ū        
         this_q = get_q(U.G)
         this_q̇ = get_q̇(U.G)
-        push!(qspan,SVector{length(this_q),Int64}((length(q)+1):(length(q)+length(this_q))))
-        push!(q̇span,SVector{length(this_q̇),Int64}((length(q̇)+1):(length(q̇)+length(this_q̇))))
+        U.G.meta.qindex = SVector{length(this_q),Int16}((length(q)+1):(length(q)+length(this_q)))
+        U.G.meta.q̇index = SVector{length(this_q̇),Int16}((length(q̇)+1):(length(q̇ )+length(this_q̇)))
+        U.G.meta.xindex = SVector{length(this_q),Int16}((length(x)+1):(length(x)+length(this_q)))        
+        append!(x,this_q)
+        U.G.meta.ẋindex = SVector{length(this_q̇),Int16}((length(x)+1):(length(x)+length(this_q̇)))        
+        append!(x,this_q̇)
         append!(q,this_q)
-        append!(q̇,this_q̇)        
+        append!(q̇,this_q̇) 
     end
     q = MVector{length(q),Float64}(q)
     q̇ = MVector{length(q̇),Float64}(q̇)
     q̈ = MVector{length(q̇),Float64}(zeros(length(q̇)))
-    return (q,q̇,q̈,qspan,q̇span)
+    x = MVector{length(x),Float64}(x)
+    return (q,q̇,q̈,x)
 end
 
 function initialize_inertias(B̄)
@@ -264,7 +270,7 @@ end
 
 function gravity!(sys::System)
     for i in eachindex(sys.fˣ)        
-        sys.fˣ[i] += sys.Ī[i]*SVector{6,Float64}(0,0,0,0,-9.81,0)
+        sys.fˣ[i] += sys.Ī[i]*SVector{6,Float64}(1,0,0,0,0,0)
     end
     nothing
 end
@@ -278,17 +284,51 @@ end
 
 function update_model!(sys,x)
     reset_f!(sys)
-    sys.q .= x.q
-    sys.q̇ .= x.q̇
-    for i in eachindex(sys.U)        
-        update_q!(sys.U[i].G,sys.qspan[i])
+    sys.x .= x #we probably dont need to do this other than FYI
+    for G in sys.G        
+        set_state!(G,x)
+        sys.q[G.meta.qindex] = x[G.meta.xindex]
+        sys.q̇[G.meta.q̇index] = x[G.meta.ẋindex]
     end
+    nothing
 end
 
-function ode_func!(d,x,p,t)
+function ode_func!(dx,x,p,t)
     update_model!(p.sys,x)
     model!(p.sys)
-    d.q = x.q̇
-    d.q̇ = p.sys.q̈
+    pack_dq_in_dx!(dx,p.sys)    
+    nothing
+end
+#=
+function get_saved_values(sys::System)
+    save_types = []
+    for G in sys.G
+
+end
+
+saved_values = SavedValues
+=#
+function simulate(sys::System,tspan,dt=nothing)
+    p = (sys = sys,)
+    prob = ODEProblem(ode_func!,sys.x,tspan,p)
+    sol = solve(prob)
+end
+#= delete if okay, we do this a different way now
+#just needed to initialize sys.x, the ode state variable [q;q̇]
+function pack_q_in_x!(x,q,q̇,Ū)
+    nq = length(q)
+    for U in Ū
+        x[U.G.meta.qindex] = get_q(U.G)
+        x[U.G.meta.q̇index.+nq] = get_q̇(U.G)
+    end
+    nothing
+end
+=#
+#needed each timestep to fill dx with ode state derivatives [dq,q̈] (dq not q̇ since q̇ can = ω and dq is quaternion deriv)
+function pack_dq_in_dx!(dx,sys)    
+    for G in sys.G
+        dx[G.meta.xindex] = get_dq(G)
+        dx[G.meta.ẋindex] = sys.q̈[G.meta.q̇index]
+    end    
     nothing
 end

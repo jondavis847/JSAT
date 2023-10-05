@@ -15,7 +15,7 @@ end
 
 function find_G_by_id(id, Gs)
     for G in Gs
-        if G.id == id
+        if G.meta.id == id
             return G
         end
     end
@@ -38,7 +38,7 @@ end
 
 function find_U_by_G(G::Int64, Us)
     for U in Us
-        if U.G.id == G
+        if U.G.meta.id == G
             return U
         end
     end
@@ -83,7 +83,7 @@ function map_path!(Bs, Us)
         # one outer body per connection, id them and their joint
         body_id += 1
         U.Bₒ.id = body_id
-        U.G.id = body_id
+        U.G.meta.id = body_id
 
         #recursively get next bodies until tip
         #done in the for loop so new bodies 
@@ -93,8 +93,8 @@ function map_path!(Bs, Us)
 
     #update helpful arrays
     for U in Us
-        p[U.G.id] = U.Bᵢ.id
-        s[U.G.id] = U.Bₒ.id
+        p[U.G.meta.id] = U.Bᵢ.id
+        s[U.G.meta.id] = U.Bₒ.id
     end
     for B in Bs
         if !isa(B,WorldFrame)
@@ -105,11 +105,11 @@ function map_path!(Bs, Us)
             push!(μ[Uᵢ.Bᵢ.id], B.id)
             #update κ for all
             while !isa(Uᵢ.Bᵢ, WorldFrame)
-                push!(κ[B.id], Uᵢ.G.id)
+                push!(κ[B.id], Uᵢ.G.meta.id)
                 Uᵢ = find_U_by_Bₒ(Uᵢ.Bᵢ, Us)
             end
             #loop ended on worldframe, add its joint to κ            
-            push!(κ[B.id], Uᵢ.G.id)
+            push!(κ[B.id], Uᵢ.G.meta.id)
         end
 
         #traverse body to tip, updating γ (\nu+tab)        
@@ -123,7 +123,7 @@ function get_B!(id, B, Us)
     for Uₒ in outer_U
         id += 1
         Uₒ.Bₒ.id = id
-        Uₒ.G.id = id
+        Uₒ.G.meta.id = id
         id = get_B!(id, Uₒ.Bₒ, Us)
     end
     return id
