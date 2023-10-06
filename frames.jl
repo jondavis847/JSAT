@@ -3,14 +3,13 @@ include("rotations.jl")
 using StaticArrays
 import Base: rand,show,*
 
-abstract type Frame{T} end
+abstract type Frame end
 
-struct Cartesian{T<:AbstractFloat} <: Frame{T}
-    Φ::RotationMatrix{T} 
-    r::SVector{3,T}   
-    Cartesian(Φ::AbstractMatrix,r::AbstractVector) = new{Float64}(RotationMatrix(Float64.(Φ)),SVector{3,Float64}(r))
-    Cartesian(Φ::AbstractMatrix{T},r::AbstractVector{T}) where {T<:AbstractFloat} = new{T}(RotationMatrix(Φ),SVector{3,T}(r))
-    Cartesian(Φ::RotationMatrix{T},r::AbstractVector{T}) where {T<:AbstractFloat}= new{T}(Φ,SVector{3,T}(r))    
+struct Cartesian <: Frame
+    Φ::RotationMatrix
+    r::SVector{3,Float64}   
+    Cartesian(Φ::RotationMatrix,r::AbstractVector) = new(Φ,SVector{3,Float64}(r))        
+    Cartesian(Φ::AbstractMatrix,r::AbstractVector) = new(RotationMatrix(Φ),SVector{3,Float64}(r))        
 end
 
 rand(::Type{Cartesian}) = Cartesian(rand(RotationMatrix), 20*(rand(3).-1)) #randomly draw up to 10 m for testing purposes
@@ -19,7 +18,7 @@ rand(::Type{Cartesian}) = Cartesian(rand(RotationMatrix), 20*(rand(3).-1)) #rand
 𝒯(C::Cartesian) = C.r
 
 # calculates the transform that takes quantities expressed in frame A to frame B
-function →(A::Cartesian{T},B::Cartesian{T}) where T <: AbstractFloat    
+function →(A::Cartesian,B::Cartesian)
     E = ℛ(B)'*ℛ(A)
     Cartesian(RotationMatrix(E),E*(𝒯(B) - 𝒯(A)))
 end

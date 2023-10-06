@@ -7,41 +7,36 @@ import LinearAlgebra: ×
 const i1to3 = SA[1,2,3]
 const i4to6 = SA[4,5,6]
 
-abstract type SpatialValue{T}  end
-abstract type SpatialVector{T} <: SpatialValue{T} end
+abstract type SpatialValue  end
+abstract type SpatialVector <: SpatialValue end
 
-struct FrameValue{T<:AbstractFloat}
-    value::SpatialValue{T}
-    F::Cartesian{T} 
+struct FrameValue
+    value::SpatialValue
+    F::Cartesian
 end
 
-struct MotionVector{T<:AbstractFloat} <: SpatialVector{T}
-    value::SVector{6,T}    
-    MotionVector(val::AbstractVector{T}) where {T<:AbstractFloat} = new{T}(SVector{6,T}(val))
-    MotionVector{T}(val::AbstractVector{T}) where {T<:AbstractFloat} = new{T}(SVector{6,T}(val))
+struct MotionVector <: SpatialVector
+    value::SVector{6,Float64}    
+    MotionVector(val::AbstractVector) = new(SVector{6,Float64}(val))    
 end
 
-struct ForceVector{T<:AbstractFloat} <: SpatialVector{T}
-    value::SVector{6,T}    
-    ForceVector(val::AbstractVector{T}) where {T<:AbstractFloat} = new{T}(SVector{6,T}(val))
-    ForceVector{T}(val::AbstractVector{T}) where {T<:AbstractFloat} = new{T}(SVector{6,T}(val))
+struct ForceVector <: SpatialVector
+    value::SVector{6,Float64}    
+    ForceVector(val::AbstractVector) = new(SVector{6,Float64}(val))    
 end
 
-struct SpatialTransform{T<:AbstractFloat}
-    value::SMatrix{6,6,T,36}
-    SpatialTransform(val::AbstractMatrix{T}) where {T<:AbstractFloat} = new{T}(SMatrix{6,6,T,36}(val))
-    SpatialTransform{T}(val::AbstractMatrix{T}) where {T<:AbstractFloat} = new{T}(SMatrix{6,6,T,36}(val))
+struct SpatialTransform
+    value::SMatrix{6,6,Float64,36}
+    SpatialTransform(val::AbstractMatrix) = new(SMatrix{6,6,Float64,36}(val))    
 end
 
-struct Inertia{T<:AbstractFloat} <: SpatialValue{T}
-    value::SMatrix{6,6,T,36}            
-    Inertia(val::AbstractMatrix{T}) where {T<:AbstractFloat} = new{T}(SMatrix{6,6,T,36}(val))
-    Inertia{T}(val::AbstractMatrix{T}) where {T<:AbstractFloat} = new{T}(SMatrix{6,6,T,36}(val))
-    Inertia(inertia::Diagonal, mass::Number) = new{Float64}(SMatrix{6,6,Float64,36}([inertia zeros(3,3) ; zeros(3,3) mass*I(3)]))
-    Inertia(inertia::AbstractMatrix{T}, mass::Number) where {T<:AbstractFloat} = new{T}(SMatrix{6,6,T,36}([inertia zeros(3,3) ; zeros(3,3) mass*I(3)]))
+struct SpatialInertia <: SpatialValue
+    value::SMatrix{6,6,Float64,36}            
+    SpatialInertia(val::AbstractMatrix) = new(SMatrix{6,6,Float64,36}(val))
+    SpatialInertia(inertia::AbstractMatrix, mass::Real) = new(SMatrix{6,6,Float64,36}([inertia zeros(3,3) ; zeros(3,3) mass*I(3)]))
 end
 
-∈(val::SpatialValue{T}, F::Frame{T}) where T <: AbstractFloat = FrameValue{T}(val,F)
+∈(val::SpatialValue, F::Frame) = FrameValue(val,F)
 
 # functions to grab either the rotation or translation part of a SpatialVector
 # ℛ = \scrR + tab, 𝒯 = \scrT + tab
@@ -97,7 +92,8 @@ end
 *(F::Cartesian,v::MotionVector) = MotionVector(ℳ(F).value * v.value)
 *(F::Cartesian,v::ForceVector)  = ForceVector(ℱ(F).value * v.value)
 *(F::SpatialTransform,v::T) where T<:SpatialValue = T(F.value * v.value)
-*(v::Inertia{T},F::SpatialTransform)  where T<:AbstractFloat = Inertia{T}(F.value * v.value)
+*(A::SpatialTransform,B::SpatialTransform) = SpatialTransform(A.value * B.value)
+*(v::SpatialInertia,F::SpatialTransform) = SpatialInertia(F.value * v.value)
 
 +(a::T,b::T) where {T<:SpatialVector} = T(a.value + b.value)
 -(a::T,b::T) where {T<:SpatialVector} = T(a.value - b.value)
@@ -105,7 +101,7 @@ end
 ×(v::SVector{3,T}) where T <: AbstractFloat = SMatrix{3,3,T}(0,v[3],-v[2],-v[3],0,v[1],v[2],-v[1],0) #Featherstone 2.23, Jain 1.9
 ×(v::Vector{T}) where T <: AbstractFloat = ×(SVector{3,T}(v))
 
-function ×(v::MotionVector{T}) where T <: AbstractFloat      
+function ×(v::MotionVector) 
     out=MMatrix{6,6,T}(undef)
     #Featherstone 2.31, Jain 1.23
     out[i1to3,i1to3] = ×(ℛ(v))
@@ -114,7 +110,7 @@ function ×(v::MotionVector{T}) where T <: AbstractFloat
     out[i4to6,i4to6] = ×(ℛ(v))
     SMatrix{6,6,T}(out)    
 end
-function ×(v::ForceVector{T}) where T <: AbstractFloat   
+function ×(v::ForceVector) 
     out=MMatrix{6,6,T}(undef)
     #Featherstone 2.32
     out[i1to3,i1to3] = ×(ℛ(v))
@@ -123,7 +119,7 @@ function ×(v::ForceVector{T}) where T <: AbstractFloat
     out[i4to6,i4to6] = ×(ℛ(v))
     SMatrix{6,6,T}(out)    
 end
-function ×(a::ForceVector{T},b::ForceVector{T}) where T <: AbstractFloat   
+function ×(a::ForceVector,b::ForceVector) 
     out = MVector{6,T}(undef)
     #Featherstone 2.34
     out[i1to3] = ℛ(a)×ℛ(b) .+ 𝒯(a)×𝒯(b)
@@ -141,7 +137,7 @@ end
 
 
 
-function ×(a::MotionVector{T},b::MotionVector{T}) where T <: AbstractFloat   
+function ×(a::MotionVector,b::MotionVector)
     out = MVector{6,T}(undef)
     #Featherstone 2.33
     out[i1to3] = ℛ(a)×ℛ(b)
@@ -158,8 +154,8 @@ function ×ᵐ(a::StaticVector{6,T},b::StaticVector{6,T}) where T <: AbstractFlo
 end
 
 
-ℛ(v::Inertia) = v.value[i1to3,i1to3]
-𝒯(v::Inertia) = v.value[i4to6,i4to6]
+ℛ(v::SpatialInertia) = v.value[i1to3,i1to3]
+𝒯(v::SpatialInertia) = v.value[i4to6,i4to6]
 
 #current allocates, maybe need to make a method for each ∈ FrameValue
 function →(FV::FrameValue,C::Cartesian)
@@ -167,9 +163,9 @@ function →(FV::FrameValue,C::Cartesian)
     FV.value → X
 end
 
-→(v::MotionVector{T},F::Cartesian{T}) where T <: AbstractFloat  = ℳ(F) * v
-→(v::ForceVector{T},F::Cartesian{T}) where T <: AbstractFloat = ℱ(F) * v
-→(J::Inertia{T},F::Cartesian{T}) where T <: AbstractFloat = ℱ(F) * J * ℳ⁻¹(F) #Featherstone 2.66
+→(v::MotionVector,F::Cartesian) = ℳ(F) * v
+→(v::ForceVector,F::Cartesian) = ℱ(F) * v
+→(J::SpatialInertia,F::Cartesian) = ℱ(F) * J * ℳ⁻¹(F) #Featherstone 2.66
 
 #= this isnt right, use featherstone 2.74, not 2.73
 function inv(J::Inertia)    
@@ -177,4 +173,8 @@ function inv(J::Inertia)
 end
 =#
 
-*(J::Inertia{T},v::MotionVector{T}) where T<: AbstractFloat = ForceVector{T}(J.value * v.value)
+*(J::SpatialInertia,v::MotionVector) = ForceVector(J.value * v.value)
+
+*(J::SpatialInertia, v::SVector{6, Float64}) = J.value * v
+*(X::SpatialTransform, v::SVector{6, Float64}) = X.value * v
+*(J::SpatialInertia, v::SMatrix{6, 1, Float64, 6}) = J.value * v

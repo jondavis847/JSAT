@@ -1,138 +1,85 @@
-function find_roots(B, U)
-    # find any connections with inner body set to the world frame    
-    root_U = U[map(x -> isa(x.Bᵢ, WorldFrame), U)]
-    # return the outer bodies of the root connections
-    map(x -> x.Bₒ, root_U)
-end
+find_root_joints(joints) = joints[map(x -> isa(x.connection.predecessor, WorldFrame), joints)]
 
-function find_B_by_id(id, Bs)
-    for B in Bs
-        if B.id == id
-            return B
-        end
-    end
-end
+find_joints_by_predecessor(body, joints) = joints[map(x -> x.connection.predecessor == body, joints)]
 
-function find_G_by_id(id, Gs)
-    for G in Gs
-        if G.meta.id == id
-            return G
+function find_joint_by_successor(body, joints)
+    for joint in joints
+        if joint.connection.successor == body
+            return joint
         end
     end
-end
-
-function find_U_by_Bₒ(B, Us)
-    for U in Us
-        if U.Bₒ == B
-            return U
-        end
-    end
-end
-function find_U_by_G(G::Joint, Us)
-    for U in Us
-        if U.G == G
-            return U
-        end
-    end
-end
-
-function find_U_by_G(G::Int64, Us)
-    for U in Us
-        if U.G.meta.id == G
-            return U
-        end
-    end
-end
-
-function find_U_by_Bᵢ(B, Us)
-    out_U = []
-    for U in Us
-        if U.Bᵢ == B
-            push!(out_U, U)
-        end
-    end
-    out_U
-end
-
-function find_U_by_N(Us)
-    out_U = []
-    for U in Us
-        if isa(U.Bᵢ, WorldFrame)
-            push!(out_U, U)
-        end
-    end
-    out_U
 end
 
 #updates the bodys and joints with their identifying integers
-function map_path!(Bs, Us)
+function map_tree!(bodies, joints)
     body_id = 0 
 
-    #length(Bs)-1 since most of these dont care about N, or fixes for 0 based indexing
-    p = zeros(Int64, length(Us)) # G predecessor
-    s = zeros(Int64, length(Us)) # G successor
-    λ = zeros(Int64, length(Bs)-1) # B parent array
-    κ = [[] for _ in 1:length(Bs)-1] # all G before B[i]
-    μ = OffsetArray([[] for _ in 1:length(Bs)],0:length(Bs)-1) # B child array
-    γ = OffsetArray([[] for _ in 1:length(Bs)],0:length(Bs)-1) # all B after B[i]
+    #length(bodies)-1 since most of these dont care about worldframe
+    p = zeros(Int16, length(joints)) # joint predecessor
+    s = zeros(Int16, length(joints)) # joint successor
+    λ = zeros(Int16, length(bodies)-1) # body parent array
+    κ = [Int16[] for _ in 1:length(bodies)-1] # all joints before body [i]
+    μ = OffsetArray([Int16[] for _ in 1:length(bodies)],0:length(bodies)-1) # body child array
+    γ = OffsetArray([Int16[] for _ in 1:length(bodies)],0:length(bodies)-1) # all bodies after body[i]
 
-    #find base connections    
-    base_U = find_U_by_N(Us)    
+    #find root joints    
+    root_joints = find_root_joints(joints)
     
-    for U in base_U
-        # one outer body per connection, id them and their joint
+    for joint in root_joints
+        # one outer body per joint, id them and their joint
         body_id += 1
-        U.Bₒ.id = body_id
-        U.G.meta.id = body_id
+        joint.meta.id = body_id
+        joint.connection.successor.id = body_id
 
         #recursively get next bodies until tip
         #done in the for loop so new bodies 
         #attached to base are done after this system is complete
-        body_id = get_B!(body_id, U.Bₒ, Us)
+        body_id = get_next_body!(body_id, joint.connection.successor, joints)
     end
 
     #update helpful arrays
-    for U in Us
-        p[U.G.meta.id] = U.Bᵢ.id
-        s[U.G.meta.id] = U.Bₒ.id
+    for joint in joints
+        p[joint.meta.id] = joint.connection.predecessor.id
+        s[joint.meta.id] = joint.connection.successor.id
     end
-    for B in Bs
-        if !isa(B,WorldFrame)
+    for body in bodies
+        if !isa(body,WorldFrame)
             #traverse body to base, updating κ and μ
-            Uᵢ = find_U_by_Bₒ(B, Us)
-            (B.id != 0) ? λ[B.id] = Uᵢ.Bᵢ.id : nothing
+            joint = find_joint_by_successor(body, joints)
+            λ[body.id] = joint.connection.predecessor.id
             #update μ 1 time        
-            push!(μ[Uᵢ.Bᵢ.id], B.id)
+            push!(μ[joint.connection.predecessor.id], body.id)
             #update κ for all
-            while !isa(Uᵢ.Bᵢ, WorldFrame)
-                push!(κ[B.id], Uᵢ.G.meta.id)
-                Uᵢ = find_U_by_Bₒ(Uᵢ.Bᵢ, Us)
+            while !isa(joint.connection.predecessor, WorldFrame)
+                push!(κ[body.id], joint.meta.id)
+                joint = find_joint_by_successor(joint.connection.predecessor, joints)
             end
             #loop ended on worldframe, add its joint to κ            
-            push!(κ[B.id], Uᵢ.G.meta.id)
+            push!(κ[body.id], joint.meta.id)
         end
 
-        #traverse body to tip, updating γ (\nu+tab)        
-        get_γ!(γ[B.id], B, Us)
+        #traverse body to tip, updating γ
+        get_γ!(γ[body.id], body, joints)
     end
 
     return p, s, λ, κ, μ, γ
 end
-function get_B!(id, B, Us)
-    outer_U = find_U_by_Bᵢ(B, Us)
-    for Uₒ in outer_U
+function get_next_body!(id, body, joints)
+    outer_joints = find_joints_by_predecessor(body, joints)
+    for joint in outer_joints
         id += 1
-        Uₒ.Bₒ.id = id
-        Uₒ.G.meta.id = id
-        id = get_B!(id, Uₒ.Bₒ, Us)
+        joint.meta.id = id
+        joint.successor.id = id        
+        id = get_next_body!(id, joint.successor, joints)
     end
     return id
 end
-function get_γ!(γ, B, Us)
-    outer_U = find_U_by_Bᵢ(B, Us)
-    for Uₒ in outer_U
-        push!(γ, Uₒ.Bₒ.id)
-        get_γ!(γ, Uₒ.Bₒ, Us)
+
+function get_γ!(γ, body, joints)
+    outer_joints = find_joints_by_predecessor(body, joints)
+    for joint in outer_joints
+        push!(γ, joint.connection.successor.id)
+        get_γ!(γ, joint.connection.successor, joints)
     end
 end
 

@@ -3,12 +3,10 @@ using StaticArrays, LinearAlgebra
 import Base: *,-,\,inv,rand,show,getindex,length
 import LinearAlgebra: inv,norm
 
-abstract type Rotation{T} end
-struct RotationMatrix{T<:AbstractFloat} 
-    value::SMatrix{3,3,T,9}    
-    RotationMatrix(M::AbstractMatrix{Bool}) = new{Float64}(SMatrix{3,3,Float64,9}(M))
-    RotationMatrix(M::AbstractMatrix{T}) where {T<:AbstractFloat} = new{T}(SMatrix{3,3,T,9}(M))    
-    RotationMatrix{T}(M::AbstractMatrix{T}) where {T<:AbstractFloat} = new{T}(SMatrix{3,3,T,9}(M))    
+abstract type Rotation end
+struct RotationMatrix
+    value::SMatrix{3,3,Float64,9}    
+    RotationMatrix(M::AbstractMatrix) = new(SMatrix{3,3,Float64,9}(M))        
 end
 
 #*(A::RotationMatrix{T},B::RotationMatrix{T}) where {T<:AbstractFloat} = RotationMatrix(A.value*B.value)
@@ -27,9 +25,9 @@ function show(io::IO,R::RotationMatrix)
     display(io,R.value)    
 end
 =#
-struct Quaternion{T<:AbstractFloat} <: Rotation{T}
-    value::SVector{4,T}    
-    Quaternion(v) = new{T}(SVector{4,T}(normalize(v)))
+struct Quaternion <: Rotation
+    value::SVector{4,Float64}    
+    Quaternion(v::AbstractVector) = new(SVector{4,Float64}(normalize(v)))
 end
 
 Base.getindex(q::Quaternion, i) = q.value[i]
