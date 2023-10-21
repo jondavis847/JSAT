@@ -43,6 +43,7 @@ function atoq(A) # if A is a SMatrix btime 43.016 ns (1 allocations: 48 bytes)
             1 + tr(A)
         )
     end
+    return normalize(q)
 end
 
 
@@ -72,7 +73,7 @@ function qtoe(q)
     t4 = 1.0 - 2.0 * (ysqr + z * z)
     z_ang = atan(t3, t4)
 
-    return @SVector [x_ang, y_ang, z_ang]
+    return SA[x_ang, y_ang, z_ang]
 
 end
 
