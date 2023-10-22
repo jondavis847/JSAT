@@ -1,4 +1,4 @@
-using LinearAlgebra, DifferentialEquations, StaticArrays, Plots, UnPack, ComponentArrays, DataFrames, OffsetArrays, PlotThemes
+using LinearAlgebra, DifferentialEquations, StaticArrays, Plots, UnPack, OffsetArrays, PlotThemes
 import Base: show
 import Plots: plot, plot!
 
@@ -177,15 +177,15 @@ function calculate_X!(ᵖXᵢᵐ, ᵖXᵢᶠ, ⁱXₚᵐ, ⁱXₚᶠ, ᵒXᵢᵐ
         p_to_i = inv(joint.connection.Fs) * joint.frame * joint.connection.Fp
         i_to_p = inv(joint.connection.Fp) * inv(joint.frame) * joint.connection.Fs
 
-        ᵖXᵢᵐ[i] = ℳ(i_to_p)
+        ᵖXᵢᵐ[i] = ℳ(i_to_p)            
         ᵖXᵢᶠ[i] = ℱ(i_to_p)
         ⁱXₚᵐ[i] = ℳ(p_to_i)
         ⁱXₚᶠ[i] = ℱ(p_to_i)
 
         ᵒXᵢᵐ[i] = ᵒXᵢᵐ[λ[i]] * ᵖXᵢᵐ[i]
         ᵒXᵢᶠ[i] = ᵒXᵢᶠ[λ[i]] * ᵖXᵢᶠ[i]
-        ⁱXₒᵐ[i] = ᵖXᵢᵐ[i] * ⁱXₒᵐ[λ[i]]
-        ⁱXₒᶠ[i] = ᵖXᵢᶠ[i] * ⁱXₒᶠ[λ[i]]
+        ⁱXₒᵐ[i] = ⁱXₚᵐ[i] * ⁱXₒᵐ[λ[i]]
+        ⁱXₒᶠ[i] = ⁱXₚᶠ[i] * ⁱXₒᶠ[λ[i]]
     end
     nothing
 end
@@ -199,12 +199,14 @@ function articulated_body_algorithm!(sys)
         vj = S * q̇[joints[i].meta.q̇index]
         #vj = get_vj(joints[i])
         v[i] = ⁱXₚᵐ[i] * v[λ[i]] + vj
-        #c[i] = v[i] ×ᵐ vj # + cj #commented until we need S∘        
-        c[i] = v[i] ×ᶠ vj # + cj #commented until we need S∘        
+        c[i] = v[i] ×ᵐ vj # + cj #commented until we need S∘                
         Iᴬ[i] = Iᵇ[i]
         #fᵇ[i] = ⁱXₒᶠ[i] * fˣ[i]
         fᵇ[i] = fˣ[i]
         f_gyro[i] = v[i] ×ᶠ (Iᵇ[i] * v[i])
+        # this is a heavy bandaid for not understanding the m(ω×v) term from example 2.6
+        #v_gyro = v[i].*SA[1,1,1,0,0,0]
+        #f_gyro[i] = v_gyro ×ᶠ (Iᵇ[i] * v_gyro)
         pᴬ[i] = f_gyro[i] - fᵇ[i]
     end
 
@@ -227,7 +229,7 @@ function articulated_body_algorithm!(sys)
     for i in 1:length(sys.bodies)-1
         S = joints[i].S
         a′ = ⁱXₚᵐ[i] * a[λ[i]] + c[i]
-        q̈[joints[i].meta.q̇index] = inv(D[i]) * (u[i] - U[i]' * a′)
+        q̈[joints[i].meta.q̇index] = D[i] \ (u[i] - U[i]' * a′)
         a[i] = a′ + S * q̈[joints[i].meta.q̇index]
     end
     nothing
@@ -450,7 +452,7 @@ function simulate(orig_sys::MultibodySystem, tspan)
     save_config, save_values, save_cb = configure_saving(sys)
     p = (sys=sys, save_config=save_config)
     prob = ODEProblem(ode_func!, sys.x, tspan, p)
-    solve(prob, Tsit5(), callback=save_cb, adaptive=false, dt=0.01)
+    solve(prob, callback=save_cb, adaptive=false, dt=0.01)
     simout = wrap_save_values(save_values, save_config)
     return simout
 end

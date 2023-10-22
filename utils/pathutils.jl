@@ -69,8 +69,8 @@ function get_next_body!(id, body, joints)
     for joint in outer_joints
         id += 1
         joint.meta.id = id
-        joint.successor.id = id        
-        id = get_next_body!(id, joint.successor, joints)
+        joint.connection.successor.id = id        
+        id = get_next_body!(id, joint.connection.successor, joints)
     end
     return id
 end

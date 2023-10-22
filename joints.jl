@@ -110,7 +110,7 @@ function get_q̇(G::DOF6)
     [G.state.ω; G.state.v]
 end
 function get_dq(G::DOF6)     
-    [quaternion_derivative(G.state.q, G.state.ω);G.state.v]
+    [quaternion_derivative(G.state.q, G.state.ω);G.frame.Φ.value' * G.state.v]
 end
 
 
@@ -128,20 +128,19 @@ end
 function set_state!(G::DOF6, q, q̇)
     # joint frame translation is in the inner joint frame, but q is expressed in outer joint frame
     # rotate all translation to inner joint frame using q
-    G.state.q = q[SVector{4,Int8}(1, 2, 3, 4)]
-    E = qtoa(G.state.q)
-    #G.state.r = E' * q[SVector{3,Int8}(5, 6, 7)]
+    G.state.q = q[SVector{4,Int8}(1, 2, 3, 4)]    
     G.state.r = q[SVector{3,Int8}(5, 6, 7)]
     G.state.ω = q̇[SVector{3,Int8}(1, 2, 3)]
     G.state.v = q̇[SVector{3,Int8}(4, 5, 6)]
-    update_joint_frame!(G,G.state.q,G.state.r)
+    update_joint_frame!(G)
     nothing
 end
 
 function update_joint_frame!(G::DOF6,q = G.state.q, r = G.state.r)
     R = qtoa(G.state.q)
     r = G.state.r
-    G.frame = Cartesian(R,R'*r)
+    #G.frame = Cartesian(R,R'*r)
+    G.frame = Cartesian(R,r)
     nothing
 end
 

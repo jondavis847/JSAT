@@ -1,6 +1,7 @@
 [deps]
 BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
 DifferentialEquations = "0c46a032-eb83-5123-abaf-570d42b7fbaa"
+HTTP = "cd3eb016-35fb-5094-929b-558a96fad6f3"
 JET = "c3a54625-cd67-489e-a8e7-0a5a0ff4e31b"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 OffsetArrays = "6fe1bfb0-de20-5000-8ca7-80f57d26f881"
