@@ -1,4 +1,4 @@
-include("..\\core.jl")
+includet("..\\src\\blue42.jl")
 
 N = WorldFrame()
 g = Revolute(:g,0.,0.)

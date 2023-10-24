@@ -1,0 +1,612 @@
+::-webkit-scrollbar {
+    width: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background:  rgba(40, 40, 40, 1);
+}
+
+::-webkit-scrollbar-thumb {
+    background: #888;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+input:focus,
+select:focus, .form-control:focus,
+textarea:focus,
+button:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+*:focus {
+    box-shadow: none !important;
+}
+.bootstrap-select .form-control:focus {
+    outline: 0px none #fff !important;
+}
+
+.bootstrap-select .form-control > div.filter-option:focus {
+    outline: 0px none #fff !important;
+}
+
+.bootstrap-select .form-control > div.filter-option > div.filter-option-inner:focus {
+    outline: 0px none #fff !important;
+}
+
+.bootstrap-select .form-control > div.filter-option > div.filter-option-inner > div.filter-option-inner-inner:focus {
+    outline: 0px none #fff !important;
+}
+
+
+.main-window {
+    position: fixed;
+    top: 0%;
+    left: 0%;
+    right: 0%;
+    bottom: 0%;
+}
+
+.top-bar-button {
+    background-color: rgba(20, 20, 20, 1);
+    border: solid thin black;
+    position: absolute;
+    top: 0%;
+    width: 10%;
+    height: 100%;
+    text-align: center;
+    font-family: 'Courier New', monospace;
+    align-items: middle;
+}
+
+.tab button {
+    cursor: pointer;
+    /*transition: 0.3s;*/
+}
+
+.tab button:hover {
+    background-color: #404040;
+}
+
+.tab-content {
+    display: none;
+}
+
+.top-bar {
+    position: absolute;
+    top: 0%;
+    left: 0%;
+    width: 100%;
+    height: 5%;
+    background: rgba(20, 20, 20, 1);
+    padding: 0%;
+    margin: 0%;
+    color: white;
+    font-family: 'Courier New', monospace;
+    align-items: middle;
+}
+
+.jsat-title {
+    color: white;
+    left: 0%;
+}
+
+.sim-tab {
+    color: aquamarine;
+    left: 10%;
+    display: block;
+}
+
+.plot-tab {
+    color: aquamarine;
+    left: 20%;
+}
+
+.animation-tab {
+    color: aquamarine;
+    left: 30%;
+}
+
+.main-div {
+    position: absolute;
+    top: 5%;
+    left: 0%;
+    width: 100%;
+    height: 95%;
+    background: rgba(40, 40, 40, 1);
+    padding: 0%;
+    margin: 0%
+}
+
+.sim-options-div {
+    position: absolute;
+    top: 0%;
+    left: 0%;
+    width: 25%;
+    height: 70%;
+    background: rgba(40, 40, 40, 1);
+    padding: 0%;
+    margin: 0%;
+    box-sizing: border-box;
+    border: solid thin black;
+}
+
+.sim-button {
+    background-color: rgba(30, 30, 30, 1);
+    box-sizing: border-box;
+    border: black thin solid;
+    color: aquamarine;
+    font-family: 'Courier New', monospace;
+    text-align: center;
+    position: absolute;
+    bottom: 0%;
+    left: 0%;
+    width: 100%;
+    height: 7%;
+}
+
+.builder-title-button {
+    background-color: rgba(35, 35, 35, 1);
+    box-sizing: border-box;
+    border: none;
+    color: #94c5dc;
+    font-family: 'Courier New', monospace;
+    text-align: center;
+    position: absolute;
+    top: 0%;
+    left: 0%;
+    width: 100%;
+    height: 10%;
+}
+
+.scenario-loader-div {
+    position: absolute;
+    top: 0%;
+    left: 25%;
+    width: 25%;
+    height: 50%;
+    background: rgba(40, 40, 40, 1);
+    box-sizing: border-box;
+    border: solid thin black;
+}
+
+.model-loader-div {
+    position: absolute;
+    top: 50%;
+    left: 25%;
+    width: 25%;
+    height: 50%;
+    background: rgba(40, 40, 40, 1);
+    box-sizing: border-box;
+    border: solid thin black;
+}
+
+.loader-save-button {
+    background-color: rgba(30, 30, 30, 1);
+    box-sizing: border-box;
+    border: black thin solid;
+    color: aquamarine;
+    font-family: 'Courier New', monospace;
+    text-align: center;
+    position: absolute;
+    bottom: 0%;
+    left: 0%;
+    width: 50%;
+    height: 10%;
+}
+
+
+.loader-load-button {
+    background-color: rgba(30, 30, 30, 1);
+    box-sizing: border-box;
+    border: black thin solid;
+    color: aquamarine;
+    font-family: 'Courier New', monospace;
+    text-align: center;
+    position: absolute;
+    bottom: 0%;
+    left: 50%;
+    width: 50%;
+    height: 10%;
+}
+
+
+.body-builder-div {
+    position: absolute;
+    top: 0%;
+    left: 50%;
+    width: 25%;
+    height: 50%;
+    background: rgba(40, 40, 40, 1);
+    box-sizing: border-box;
+    border: solid thin black;
+}
+
+.joint-builder-div {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 25%;
+    height: 50%;
+    background: rgba(40, 40, 40, 1);
+    box-sizing: border-box;
+    border: solid thin black;
+}
+
+.add-body-button {
+    background: rgba(30, 30, 30, 1);
+    font-family: 'Courier New', monospace;
+    color: aquamarine;
+    box-sizing: border-box;
+    border: solid thin black;
+    position: absolute;
+    bottom: 0%;
+    width: 100%;
+    height: 10%;
+}
+
+.add-joint-button {
+    background: rgba(30, 30, 30, 1);
+    font-family: 'Courier New', monospace;
+    color: aquamarine;
+    box-sizing: border-box;
+    border: solid thin black;
+    position: absolute;
+    bottom: 0%;
+    width: 100%;
+    height: 10%;
+}
+
+.body-popup {
+    background: rgba(40, 40, 40, 1);
+    box-sizing: border-box;
+    border: solid thin black;
+    position: absolute;
+    top:10%;
+    width:100%;
+    height:20%;
+    left:0%;
+    display:none;
+    z-index: 1;
+}
+
+.joint-popup {
+    background: rgba(40, 40, 40, 1);
+    box-sizing: border-box;
+    border: solid thin black;
+    position: absolute;
+    top:5%;
+    width:100%;
+    height:10%;
+    left:0%;
+    display:none;
+    z-index: 1;
+}
+
+.add-body-save-button {
+    background: rgba(30, 30, 30, 1);
+    font-family: 'Courier New', monospace;
+    color: aquamarine;
+    box-sizing: border-box;
+    border: solid thin black;
+    position: absolute;
+    top: 50%;
+    left:0%;
+    width: 50%;
+    height: 50%;
+}
+
+.add-joint-save-button {
+    background: rgba(30, 30, 30, 1);
+    font-family: 'Courier New', monospace;
+    color: aquamarine;
+    box-sizing: border-box;
+    border: solid thin black;
+    position: absolute;
+    top: 50%;
+    left:0%;
+    width: 50%;
+    height: 50%;
+}
+
+.add-body-cancel-button {
+    background: rgba(30, 30, 30, 1);
+    font-family: 'Courier New', monospace;
+    color: crimson;
+    box-sizing: border-box;
+    border: solid thin black;
+    position: absolute;
+    left:50%;
+    top: 50%;
+    width: 50%;
+    height: 50%;
+}
+
+.add-joint-cancel-button {
+    background: rgba(30, 30, 30, 1);
+    font-family: 'Courier New', monospace;
+    color: crimson;
+    box-sizing: border-box;
+    border: solid thin black;
+    position: absolute;
+    left:50%;
+    top: 50%;
+    width: 50%;
+    height: 50%;
+}
+
+.body-name {
+    position: absolute;
+    left: 0%;
+    width: 100%;
+    height: 50%;
+}
+
+.joint-name {
+    position: absolute;
+    left: 0%;
+    width: 100%;
+    height: 50%;
+}
+
+.body-buttons {
+    background: rgba(35, 36, 36, 1);
+    color: whitesmoke;
+    position: relative;
+    left: 0%;
+    width: 100%;
+    height: 10%;
+    top: 10%;    
+    font-family: 'Courier New', monospace;
+    box-sizing: border-box;
+    border: solid thin black;
+}
+
+.active-border  {    
+    border: solid thin aquamarine;
+}
+
+.not-active-border {
+    border: solid thin black;
+}
+
+.joint-buttons {
+    background: rgba(35, 36, 36, 1);
+    color: whitesmoke;
+    position: relative;
+    left: 0%;
+    width: 100%;
+    height: 5%;
+    top: 0%;        
+    font-family: 'Courier New', monospace;
+}
+
+.joint-div {
+    position: absolute;
+    top:5%;
+    height:95%;
+    width:100%;
+    left:0%;
+    background: rgba(40, 40, 40, 1);
+    box-sizing: border-box;
+    border: solid thin black;
+    display:none;    
+}
+
+.joint-menu {
+    position: absolute;
+    top:5%;
+    height:95%;
+    width:100%;
+    left:0%;
+    background: rgba(40, 40, 40, 1);
+    box-sizing: border-box;
+    border: solid thin black;
+    display:none;
+    z-index: 1;
+}
+
+.joint-button {
+    background: rgba(35, 36, 36, 1);
+    color: aquamarine;
+    position: relative;
+    left: 0%;
+    width: 100%;
+    height: 5%;
+    top: 0%;
+    box-sizing: border-box;
+    border: solid thin black;
+    font-family: 'Courier New', monospace;
+}
+
+.cancel-joint-button {
+    background: rgba(35, 36, 36, 1);
+    color: crimson;
+    position: relative;
+    left: 0%;
+    width: 100%;
+    height: 5%;
+    top: 0%;
+    box-sizing: border-box;
+    border: solid thin black;
+    font-family: 'Courier New', monospace;
+}
+
+.details-popup-div {
+    background: rgba(40, 40, 40, 1);
+    position: absolute;
+    left: 0%;
+    width: 100%;
+    height: 90%;
+    top: 10%;
+    box-sizing: border-box;
+    border: solid thin black;
+    font-family: 'Courier New', monospace;
+    display: none;
+    z-index: 2
+}
+
+.save-body-details-button {
+    background: rgba(30, 30, 30, 1);
+    box-sizing: border-box;
+    border: solid thin black;
+    font-family: 'Courier New', monospace;
+    position: absolute;
+    left: 0%;
+    width: 50%;
+    height: 10%;
+    bottom: 0%;
+    color: aquamarine;
+}
+
+.cancel-body-details-button {
+    background: rgba(30, 30, 30, 1);
+    box-sizing: border-box;
+    border: solid thin black;
+    font-family: 'Courier New', monospace;
+    position: absolute;
+    left: 50%;
+    width: 50%;
+    height: 10%;
+    bottom: 0%;
+    color: crimson;
+}
+
+.form {
+    position: absolute;
+    height: 100%;
+    display: inline;
+    float: left;
+    font-size: small;
+}
+
+.form-font {
+    color: aquamarine;
+    font-family: 'Courier New', monospace;
+}
+
+.form-input {
+    color: white;
+    background-color: rgba(30, 30, 30, 1);
+    font-family: 'Courier New', Courier, monospace;
+    font-size: small;
+    box-sizing: border-box;
+    border: solid thin black
+}
+
+.console-log {
+    position: absolute;
+    top: 70%;
+    left: 0%;
+    width: 25%;
+    height: 30%;
+    background-color: rgba(35, 36, 36, 1);
+    color: white;
+    box-sizing: border-box;
+    border: solid thin black;    
+    overflow: auto;
+}
+
+.plots {
+    position: absolute;
+    top: 0%;
+    left: 35%;
+    height: 100%;
+    width: 65%;
+    background-color: rgba(35, 36, 36, 1);
+    box-sizing: border-box;
+    border: solid thin black;
+    overflow: hidden;
+    text-align: center;
+}
+
+.title-button {
+    background-color: rgba(20, 20, 20, 1);
+    border: solid thin black;
+    position: absolute;
+    top: 0%;
+    width: 100%;
+    height: 5%;
+    text-align: center;
+    font-family: 'Courier New', monospace;
+    align-items: middle;
+    color: white;
+}
+
+.states {
+    position: absolute;
+    top: 0%;
+    left: 25%;
+    width: 10%;
+    height: 100%;
+    background-color: rgba(35, 36, 35, 1);
+    box-sizing: border-box;
+    border: solid black thin;
+}
+
+.state-select {
+    position: relative;
+    top: 5%;
+    left: 0%;
+    width: 100%;
+    height: 90%;
+    background-color: rgba(35, 36, 35, 1);
+    border: none;
+    box-sizing: border-box;
+    color: aliceblue
+}
+
+.sims {
+    position: absolute;
+    top: 0%;
+    left: 0%;
+    width: 25%;
+    height: 70%;
+    background-color: rgba(35, 36, 35, 1);
+    box-sizing: border-box;
+    border: solid black thin;
+}
+
+.sim-select {
+    position: relative;
+    top: 5%;
+    left: 0%;
+    width: 100%;
+    height: 70%;
+    background-color: rgba(35, 36, 35, 1);
+    border: none;
+    box-sizing: border-box;
+    color: aliceblue;    
+}
+
+
+.plot-state {
+    background-color: rgba(20, 20, 20, 1);
+    box-sizing: border-box;
+    border: black thin solid;
+    color: aquamarine;
+    text-align: center;
+    position: absolute;
+    bottom: 0%;
+    left: 0%;
+    width: 100%;
+    height: 5%;
+}
+
+.plot-canvas {
+    position: absolute;
+    bottom: 0%;
+    left: 0%;
+    width: 100%;
+    height: 100%;
+}
+
+.animation-div {
+    position:absolute;
+    bottom: 0%;
+    left: 25%;
+    width: 75%;
+    height: 100%;
+}

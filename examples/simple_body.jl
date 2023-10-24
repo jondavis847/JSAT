@@ -1,4 +1,4 @@
-includet("..\\core.jl")
+includet("..\\src\\blue42.jl")
 
 N = WorldFrame()
 g = DOF6(:g,[0.,0.,0.,1.],[1.,0.,0.],[0.,0.,0.],[0.,-1.,0.])

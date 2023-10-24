@@ -1,0 +1,165 @@
+<!DOCTYPE HTML>
+<html>
+
+<head>
+  <link rel="stylesheet" href="css/jsat.css">
+
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"
+    integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+
+  <script src="https://cdn.plot.ly/plotly-2.26.0.min.js" charset="utf-8"></script>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.157.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.157.0/examples/jsm/"
+      }
+    }
+  </script>
+
+  <script src="js/jsat.js" charset="utf-8"></script>
+
+</head>
+
+<body>
+  <div class="main-window">
+    <!-- top bar-->
+    <div class="top-bar" id="topBar">
+      <button id="jsatTitle" class="jsat-title top-bar-button"> jsat v0.1 </button>
+      <div class="tab">
+        <button id="simTabButton" class="sim-tab top-bar-button tab-link">sim</button>
+        <button id="plotTabButton" class="plot-tab top-bar-button tab-link">plot</button>
+        <button id="animTabButton" class="animation-tab top-bar-button tab-link">animation</button>
+      </div>
+    </div>
+    <!-- main area -->
+    <div id="mainDiv" class="main-div">
+
+      <!-- console log -->
+      <textarea id="consoleLog" class="console-log">welcome to jsat!</textarea>
+
+      <div class="tab">
+
+        <!-- simulation tab -->
+        <div id="simTab" class="sim-tab tab-content">
+
+          <!-- simulation options -->
+          <div id="simOptionsDiv" class="sim-options-div">
+
+            <!-- options form -->
+            <form class="form">
+              <table class="table">
+                <tr>
+                  <td><label class="form-font" for="simName">sim name:</label><br></td>
+                  <td><input id="simName" class="form-input" type="text" name="simName" placeholder="optional"><br>
+                  </td>
+                </tr>
+                <tr>
+                  <td><label class="form-font" for="simStartTime">sim start time:</label><br></td>
+                  <td><input id="simStartTime" class="form-input" type="text" name="simStartTime" value="0"><br>
+                  </td>
+                </tr>
+                <tr>
+                  <td><label class="form-font" for="simStopTime">sim stop time:</label><br></td>
+                  <td><input id="simStopTime" class="form-input" type="text" name="simStopTime" value="10"><br></td>
+                </tr>
+                <tr>
+                  <td><label class="form-font" for="simNruns"># of MC runs:</label><br></td>
+                  <td><input id="simNruns" class="form-input" type="text" name="simNruns" value="0"><br></td>
+                </tr>
+                <tr>
+                  <td><label class="form-font" for="simSaveLocation">save location:</label><br></td>
+                  <td><input id="simSaveLocation" class="form-input" type="text" name="simSaveLocation"
+                      placeholder="optional"><br></td>
+                </tr>
+              </table>
+            </form>
+            <button id="simButton" class="sim-button"> simulate </button>
+          </div>
+
+
+          <!-- scenario loader -->
+          <div id="scenarioLoaderDiv" class="scenario-loader-div">
+            <button id="scenarioTitleButton" class="builder-title-button"> scenarios </button>
+            <button id="saveScenarioButton" class="loader-save-button">save</button>
+            <button id="loadScenarioButton" class="loader-load-button">load</button>
+          </div>
+
+
+          <!-- model loader -->
+          <div id="modelLoaderDiv" class="model-loader-div">
+            <button id="modelTitleButton" class="builder-title-button"> models </button>
+            <button id="saveModelButton" class="loader-save-button">save</button>
+            <button id="loadModelButton" class="loader-load-button">load</button>
+          </div>
+
+          <!-- body builder -->
+          <div id="bodyBuilderDiv" class="body-builder-div">
+            <button id="bodyTitleButton" class="builder-title-button"> bodies </button>
+            <button id="addBodyButton" class="add-body-button"> + body </button>
+            <div id="bodyPopup" class="body-popup">
+              <input id="bodyName" class="body-name form-input submit" type="text" name="bodyName"
+                placeholder="enter name" onfocus="this.select()">
+              <button id="addBodySaveButton" class="add-body-save-button">save</button>
+              <button id="addBodyCancelButton" class="add-body-cancel-button">cancel</button>
+            </div>
+            <div id="bodyDetailsDiv" class="details-popup-div"></div>
+          </div>
+        </div>
+
+        <!-- joint builder -->
+        <div id="jointBuilderDiv" class="joint-builder-div">
+          <button id="jointTitleButton" class="builder-title-button"> joints </button>
+          <button id="addJointButton" class="add-joint-button"> + joint </button>
+          <div id="jointMenu" class="joint-menu">
+            <button id="addRevoluteButton" class="joint-button"> + revolute </button>
+            <button id="addFloatingButton" class="joint-button"> + floating </button>
+            <button id="cancelJointButton" class="cancel-joint-button">cancel</button>
+          </div>
+          <div id="jointPopup" class="joint-popup">
+            <input id="jointName" class="joint-name form-input submit" type="text" name="jointName"
+              placeholder="enter name" onfocus="this.select()">
+            <button id="addJointSaveButton" class="add-joint-save-button">save</button>
+            <button id="addJointCancelButton" class="add-joint-cancel-button">cancel</button>
+            </script>
+          </div>
+        </div>
+      </div>
+
+
+
+
+      <!-- plotting tab -->
+      <div id="plotTab" class="plot-tab tab-content">
+        <!-- sims -->
+        <div id="sims" class="sims">
+          <button id="simsTitle" class="title-button"> simulations </button>
+          <select id="simSelect" class="sim-select" name="sims" multiple></select>
+          <button id="loadSimStates" class="plot-state"> load states </button>
+        </div>
+        <!-- states -->
+        <div class="states" id="states">
+          <button id="statesTitle" class="title-button"> states </button>
+          <select id="stateSelect" class="state-select" name="states" multiple></select>
+          <button id="plotState" class="plot-state"> plot </button>
+        </div>
+        <!-- plot viewer -->
+        <div class="plots" id="plotsDiv"></canvas></div>
+      </div>
+
+      <!-- animation tab -->
+      <div id="animationTab" class="animation-tab tab-content">
+        <div id="sims2" class="sims">
+          <button id="sims2Title" class="title-button"> simulations </button>
+          <select id="sim2Select" class="sim-select" name="sims" multiple></select>
+          <button id="animateBtn" class="plot-state"> animate </button>
+        </div>
+        <div id="animationDiv" class="animation-div"></div>
+      </div>
+    </div>
+  </div>
+  </div>
+</body>
+
+</html>

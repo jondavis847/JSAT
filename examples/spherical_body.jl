@@ -1,4 +1,4 @@
-includet("..\\core.jl")
+includet("..\\src\\blue42.jl")
 
 N = WorldFrame()
 g = Spherical(:g,[0.,0.,0.,1.],zeros(3))

@@ -1,4 +1,4 @@
-includet("..\\core.jl")
+includet("..\\src\\blue42.jl")
 
 N = WorldFrame()
 hinge = Revolute(:hinge,pi/4,0.)
