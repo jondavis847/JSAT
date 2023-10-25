@@ -97,13 +97,7 @@
           <!-- body builder -->
           <div id="bodyBuilderDiv" class="body-builder-div">
             <button id="bodyTitleButton" class="builder-title-button"> bodies </button>
-            <button id="addBodyButton" class="add-body-button"> + body </button>
-            <div id="bodyPopup" class="body-popup">
-              <input id="bodyName" class="body-name form-input submit" type="text" name="bodyName"
-                placeholder="enter name" onfocus="this.select()">
-              <button id="addBodySaveButton" class="add-body-save-button">save</button>
-              <button id="addBodyCancelButton" class="add-body-cancel-button">cancel</button>
-            </div>
+            <button id="addBodyButton" class="add-body-button"> + body </button>            
             <div id="bodyDetailsDiv" class="details-popup-div"></div>
           </div>
         </div>
@@ -113,16 +107,63 @@
           <button id="jointTitleButton" class="builder-title-button"> joints </button>
           <button id="addJointButton" class="add-joint-button"> + joint </button>
           <div id="jointMenu" class="joint-menu">
-            <button id="addRevoluteButton" class="joint-button"> + revolute </button>
-            <button id="addFloatingButton" class="joint-button"> + floating </button>
+            <button id="addRevoluteButton" class="add-jointtype-buttons"> + revolute </button>
+            <button id="addFloatingButton" class="add-jointtype-buttons"> + floating </button>
             <button id="cancelJointButton" class="cancel-joint-button">cancel</button>
           </div>
-          <div id="jointPopup" class="joint-popup">
-            <input id="jointName" class="joint-name form-input submit" type="text" name="jointName"
-              placeholder="enter name" onfocus="this.select()">
-            <button id="addJointSaveButton" class="add-joint-save-button">save</button>
-            <button id="addJointCancelButton" class="add-joint-cancel-button">cancel</button>
-            </script>
+          <div id="revoluteDetailsDiv" class="details-popup-div">
+            <table class="table">
+              <tr>
+                <td><label class="form-font" for="revName">name:</label><br></td>
+                <td><input id="revName" class="form-input" type="text" name="revName" placeholder="name"><br></td>
+              </tr>
+              <tr>
+                <td><label class="form-font" for="revPred">predecessor:</label><br></td>
+                <td><input id="revPred" class="form-input" type="text" name="revPred"
+                    placeholder="predecessor"><br></td>
+              </tr>
+              <tr>
+                <td><label class="form-font" for="revFpPhi">Fp &phi;:</label><br></td>
+                <td><input id="revFpPhi" class="form-input" type="text" name="revFpPhi"
+                    placeholder="Fp rotation"><br></td>
+              </tr>
+              <tr>
+                <td><label class="form-font" for="revFpRho">Fp &rho;:</label><br></td>
+                <td><input id="revFpRho" class="form-input" type="text" name="revFpRho"
+                    placeholder="Fp translation"><br></td>
+              </tr>
+              <tr>
+                <td><label class="form-font" for="revSucc">successor:</label><br></td>
+                <td><input id="revSucc" class="form-input" type="text" name="revSucc"
+                    placeholder="successor"><br></td>
+              </tr>
+              <tr>
+                <td><label class="form-font" for="revFsPhi">Fs &phi;:</label><br></td>
+                <td><input id="revFsPhi" class="form-input" type="text" name="revFsPhi"
+                    placeholder="Fs rotation"><br></td>
+              </tr>
+              <tr>
+                <td><label class="form-font" for="revFsRho">Fs &rho;:</label><br></td>
+                <td><input id="revFsRho" class="form-input" type="text" name="revFsRho"
+                    placeholder="Fs translation"><br></td>
+              </tr>
+              <tr>
+                <td><label class="form-font" for="revTheta">initial &theta;:</label><br></td>
+                <td><input id="revTheta" class="form-input" type="text" name="revTheta"
+                    placeholder="&theta;"><br></td>
+              </tr>
+              <tr>
+                <td><label class="form-font" for="revOmega">initial &omega;:</label><br></td>
+                <td><input id="revOmega" class="form-input" type="text" name="revOmega"
+                    placeholder="&omega;"><br></td>
+              </tr>
+
+              
+              <button id="revSaveButton" class="save-body-details-button">save</button>
+              <button id="revCancelButton" class="cancel-body-details-button">cancel</button>
+          </div>
+          
+
           </div>
         </div>
       </div>

@@ -150,7 +150,10 @@ button:focus {
 .builder-title-button {
     background-color: rgba(35, 35, 35, 1);
     box-sizing: border-box;
-    border: none;
+    border-left-style: none;
+    border-right-style: none;
+    border-top-style: none;
+    border-bottom-style: solid thin black;    
     color: #94c5dc;
     font-family: 'Courier New', monospace;
     text-align: center;
@@ -259,6 +262,18 @@ button:focus {
     height: 10%;
 }
 
+.add-jointtype-buttons {
+    background: rgba(30, 30, 30, 1);
+    font-family: 'Courier New', monospace;
+    color: aquamarine;
+    box-sizing: border-box;
+    border: solid thin black;
+    position: relative;
+    top: 0%;
+    width: 100%;
+    height: 10%;
+}
+
 .body-popup {
     background: rgba(40, 40, 40, 1);
     box-sizing: border-box;
@@ -270,71 +285,6 @@ button:focus {
     left:0%;
     display:none;
     z-index: 1;
-}
-
-.joint-popup {
-    background: rgba(40, 40, 40, 1);
-    box-sizing: border-box;
-    border: solid thin black;
-    position: absolute;
-    top:5%;
-    width:100%;
-    height:10%;
-    left:0%;
-    display:none;
-    z-index: 1;
-}
-
-.add-body-save-button {
-    background: rgba(30, 30, 30, 1);
-    font-family: 'Courier New', monospace;
-    color: aquamarine;
-    box-sizing: border-box;
-    border: solid thin black;
-    position: absolute;
-    top: 50%;
-    left:0%;
-    width: 50%;
-    height: 50%;
-}
-
-.add-joint-save-button {
-    background: rgba(30, 30, 30, 1);
-    font-family: 'Courier New', monospace;
-    color: aquamarine;
-    box-sizing: border-box;
-    border: solid thin black;
-    position: absolute;
-    top: 50%;
-    left:0%;
-    width: 50%;
-    height: 50%;
-}
-
-.add-body-cancel-button {
-    background: rgba(30, 30, 30, 1);
-    font-family: 'Courier New', monospace;
-    color: crimson;
-    box-sizing: border-box;
-    border: solid thin black;
-    position: absolute;
-    left:50%;
-    top: 50%;
-    width: 50%;
-    height: 50%;
-}
-
-.add-joint-cancel-button {
-    background: rgba(30, 30, 30, 1);
-    font-family: 'Courier New', monospace;
-    color: crimson;
-    box-sizing: border-box;
-    border: solid thin black;
-    position: absolute;
-    left:50%;
-    top: 50%;
-    width: 50%;
-    height: 50%;
 }
 
 .body-name {
@@ -372,14 +322,32 @@ button:focus {
     border: solid thin black;
 }
 
-.joint-buttons {
+.joint-button {
     background: rgba(35, 36, 36, 1);
     color: whitesmoke;
     position: relative;
     left: 0%;
     width: 100%;
-    height: 5%;
-    top: 0%;        
+    height: 10%;
+    top: 10%;    
+    box-sizing: border-box;        
+    border-left-style: none;
+    border-right-style: none;
+    border-bottom-style: solid thin black;    
+    border-top-style: none;
+    font-family: 'Courier New', monospace;
+}
+
+.cancel-joint-button {
+    background: rgba(35, 36, 36, 1);
+    color: crimson;
+    position: absolute;
+    left: 0%;
+    width: 100%;
+    height: 10%;
+    bottom: 0%;       
+    box-sizing: border-box;
+    border: solid thin black; 
     font-family: 'Courier New', monospace;
 }
 
@@ -397,8 +365,8 @@ button:focus {
 
 .joint-menu {
     position: absolute;
-    top:5%;
-    height:95%;
+    top:10%;
+    height:90%;
     width:100%;
     left:0%;
     background: rgba(40, 40, 40, 1);
@@ -406,32 +374,6 @@ button:focus {
     border: solid thin black;
     display:none;
     z-index: 1;
-}
-
-.joint-button {
-    background: rgba(35, 36, 36, 1);
-    color: aquamarine;
-    position: relative;
-    left: 0%;
-    width: 100%;
-    height: 5%;
-    top: 0%;
-    box-sizing: border-box;
-    border: solid thin black;
-    font-family: 'Courier New', monospace;
-}
-
-.cancel-joint-button {
-    background: rgba(35, 36, 36, 1);
-    color: crimson;
-    position: relative;
-    left: 0%;
-    width: 100%;
-    height: 5%;
-    top: 0%;
-    box-sizing: border-box;
-    border: solid thin black;
-    font-family: 'Courier New', monospace;
 }
 
 .details-popup-div {

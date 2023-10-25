@@ -16,9 +16,11 @@ let JSAT = {
 };
 
 //true when adding a new body by clicking + body, false when editing a body by clicking body button
-let NEWBODY = true;
+let NEWBODY;
+let NEWJOINT;
 //just used to know which body we're working with
 let CURRENTBODY;
+let CURRENTJOINT;
 
 function jsatConsole(msg) {
     $("#consoleLog").val($("#consoleLog").val() + msg);
@@ -56,11 +58,15 @@ function init() {
     $("#addBodyCancelButton").on("click", cancelBody);
     $("#loadModelButton").on("click", loadModel);
     $("#addJointButton").on("click", function () { $("#jointMenu").toggle() });
+    $("#addRevoluteButton").on("click", addRevolute)
     $("#cancelJointButton").on("click", function () { $("#jointMenu").toggle() });
-    $("#addJointCancelButton").on("click", cancelJointPopup);
+    $("#addJointCancelButton").on("click", cancelJointMenu);
     $("#loadSimStates").on("click", loadSimStates);
     $("#plotState").on("click", plotStateData);
     $("#animateBtn").on("click", makeAnimation);
+    $("#revSaveButton").on("click", saveRevolute);
+    $("#revCancelButton").on("click", function () { $("#jointMenu").hide(); $("#revoluteDetailsDiv").hide(); });
+
 
     //on keyup
     enterClick($("#bodyName"), $("#addBodySaveButton"));
@@ -92,14 +98,15 @@ function sendSimulationData() {
 
 function sendSimulationData() {
     const xhr = new XMLHttpRequest();
-    xhr.open("GET", "/simulate", true);
+    xhr.open("POST", "/simulate");
+    xhr.setRequestHeader("Content-Type", "application/json; charset=UTF-8");
     xhr.onreadystatechange = () => {
         // Call a function when the state changes.
         if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
             console.log("success")
         }
     };
-    xhr.send();
+    xhr.send(JSON.stringify(JSAT));
 }
 
 function getSimFileNames() {
@@ -379,18 +386,13 @@ function saveBody() {
         }
     }
 
-    //throw an error if a body with that name already exists
-    for (const [key, value] of Object.entries(JSAT.bodies)) {
-        if (key === body.name) {
-            jsatConsole("\nbody with that name already exists!")
-            return;
-        }
-    }
-
-    if (!NEWBODY) {
-        delete JSAT.bodies[CURRENTBODY]
+    if (!NEWBODY) {        
         $(`#${CURRENTBODY}BodyButton`).html(body.name)
+        $(`#${CURRENTBODY}BodyButton`).prop("onclick", null).off("click");        
+        $(`#${CURRENTBODY}BodyButton`).on("click", editBody.bind(body.name))
+        $(`#${CURRENTBODY}BodyButton`).attr("id", `${body.name}BodyButton`)// set id last
     }
+    delete JSAT.bodies[CURRENTBODY]
     JSAT.bodies[body.name] = body;
 
     if (NEWBODY) {
@@ -406,7 +408,103 @@ function saveBody() {
         btn.on("click", editBody.bind(body.name))
     }
     $("#bodyDetailsDiv").hide();
-    console.log(JSAT.bodies)
+};
+
+// cancels  the +spacecraft prompt without saving
+function cancelBody() {
+    $("#bodyPopup").style.display = "none";
+}
+
+function cancelJointMenu() {
+    $("#jointMenu").style.display = "none";
+}
+
+function addRevolute() {
+    NEWJOINT = true;
+    $("#revName").val("");
+    $("#revPred").val("");
+    $("#revFpPhi").val("");
+    $("#revFpRho").val("");
+    $("#revSucc").val("");
+    $("#revFsPhi").val("");
+    $("#revFsRho").val("");
+    $("#revTheta").val("");
+    $("#revOmega").val("");
+
+    $("#revoluteDetailsDiv").show()
+};
+
+function saveRevolute() {
+    const joint = {
+        name: $("#revName").val(),
+        type: "revolute",
+        predecessor: $("#revPred").val(),
+        FpPhi: $("#revFpPhi").val(),
+        FpRho: $("#revFpRho").val(),
+        successor: $("#revSucc").val(),
+        FsPhi: $("#revFsPhi").val(),
+        FsRho: $("#revFsRho").val(),
+        theta: $("#revTheta").val(),
+        omega: $("#revOmega").val()
+    };
+    saveJoint(joint);
+}
+
+function editRevolute() {
+    NEWJOINT = false;
+    CURRENTJOINT = this;
+    console.log(this)
+    console.log(JSAT.joints[this])
+    $("#revName").val(JSAT.joints[this].name);
+    $("#revPred").val(JSAT.joints[this].predecessor);
+    $("#revFpPhi").val(JSAT.joints[this].FpPhi);
+    $("#revFpRho").val(JSAT.joints[this].FpRho);
+    $("#revSucc").val(JSAT.joints[this].successor);
+    $("#revFsPhi").val(JSAT.joints[this].FsPhi);
+    $("#revFsRho").val(JSAT.joints[this].FsRho);
+    $("#revTheta").val(JSAT.joints[this].theta);
+    $("#revOmega").val(JSAT.joints[this].omega);
+
+    $("#revoluteDetailsDiv").show();
+};
+
+function saveJoint(joint) {
+    // throw error and return if any properties arent set        
+    for (const [key, value] of Object.entries(joint)) {
+        if (value === "") {
+            jsatConsole("\nall fields of joint are required to have a value!");
+            return;
+        };
+    };
+
+    if (!NEWJOINT) {        
+        $(`#${CURRENTJOINT}JointButton`).html(joint.name)        
+        $(`#${CURRENTJOINT}JointButton`).prop("onclick", null).off("click");
+        $(`#${CURRENTJOINT}JointButton`).on("click", editRevolute.bind(joint.name))
+        $(`#${CURRENTJOINT}JointButton`).attr("id", `${joint.name}JointButton`) //set id last
+    }
+    delete JSAT.joints[CURRENTJOINT]
+    JSAT.joints[joint.name] = joint;
+
+    if (NEWJOINT) {
+        //create new joint button
+        let btn = $('<button/>', {
+            id: `${joint.name}JointButton`,
+            html: joint.name
+        })
+        btn.addClass("joint-button")
+        //place button in div
+        $("#jointBuilderDiv").append(btn);
+
+        switch (joint.type) {
+            case "revolute":
+                btn.on("click", editRevolute.bind(joint.name))
+                break;
+        }
+    }
+    $(".details-popup-div").hide();
+    $("#jointMenu").hide();
+    console.log(JSAT.joints)
 };
 
 function addTableInput(table, name, attr, value, obj) {
@@ -448,122 +546,6 @@ function addTableInput(table, name, attr, value, obj) {
     // }
 }
 
-function addComponent(componentType) {
-
-    const name = $("#componentName").val();
-    //create new component button
-    let btn = $("<button/>", {
-        id: `${SPACECRAFT.name}_${name}_btn`,
-        html: name
-    })
-    btn.addClass("component-buttons")
-
-    //add button to current spacecraft div
-    SPACECRAFT_DIV.append(btn);
-    //hide the popup
-    $("#componentPopup").hide();
-    //deactivate button
-    $("#addComponentButton").removeClass("active-border");
-    //reset input field
-    $("#componentName").val(""); // make placeholder?
-
-    //create div for new component
-    const divId = `${SPACECRAFT.name}_${name}_div`
-    let newDiv = $("<div>", {
-        id: divId
-    });
-    newDiv.addClass("component-details-form-div");
-
-    //add component to global SC
-    switch (componentType) {
-        case component.body:
-            var tmp = {
-                name: `${SPACECRAFT.name}_${name}`,
-                ixx: "",
-                iyy: "",
-                izz: "",
-                ixy: "",
-                ixz: "",
-                iyz: "",
-                q: "",
-                w: "",
-                r: "",
-                v: "",
-            }
-            SPACECRAFT.body = tmp;
-            break;
-        case component.reactionWheel:
-            var tmp = {
-                name: `${SPACECRAFT.name}_${name}`,
-                J: "",
-                kt: "",
-                a: "",
-                w: "",
-            }
-            SPACECRAFT.reactionWheels.push(tmp);
-            break;
-        case component.thruster:
-            var tmp = {
-                name: `${SPACECRAFT.name}_${name}`,
-                F: "",
-                r: "",
-                R: "",
-            }
-            SPACECRAFT.thrusters.push(tmp);
-            break;
-        case component.iru:
-            var tmp = {
-                name: `${SPACECRAFT.name}_${name}`,
-                sigma: "",
-            }
-            SPACECRAFT.iru = tmp;
-            break;
-        case component.controller:
-            var tmp = {
-                name: `${SPACECRAFT.name}_${name}`,
-            }
-            SPACECRAFT.controller = tmp;
-            break;
-    }
-    btn.component = tmp;
-    let t = tableFromObject(tmp);
-    newDiv.append(t); //append table made in add<Component>()
-
-    const c = $("<button>/", {
-        html: "close"
-    });
-    c.addClass("save-component-details-button");
-
-    c.on("click", function () {
-        newDiv.hide();
-        btn.removeClass("active-border");
-        btn.addClass("not-active-border");
-    });
-    newDiv.append(c);
-
-    $("#componentDetailsDiv").append(newDiv);
-
-    //change the name field to the current name
-    $(`#${SPACECRAFT.name}_${name}_name`).val(name);
-
-    //onclick to switch component divs between spacecraft
-    btn.on("click", function () {
-        $(".component-details-form-div").hide();
-        newDiv.show();
-        //deactivate any currently active component
-        $(".component-buttons").removeClass("active-border");
-        $(".component-buttons").addClass("not-active-border");
-        //activate new button
-        btn.removeClass("not-active-border");
-        btn.addClass("active-border");
-
-        //set global component
-        COMPONENT = btn.component;
-        COMPONENT_BUTTON = btn;
-    });
-
-    btn.trigger("click");
-}
 
 function tableFromObject(object, id_name) {
     var t = document.createElement("table");

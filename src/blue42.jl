@@ -30,13 +30,13 @@ mutable struct Body <: AbstractBody
         return x
     end
 end
-mcI(b::Body) = mcI(b.m,b.cm,b.I)
+mcI(b::Body) = mcI(b.m, b.cm, b.I)
 
 includet("joints.jl")
 includet("utils//pathutils.jl")
 
 struct MultibodySystem
-    name::Union{String,Symbol}
+    name::Symbol
     bodies::OffsetVector{AbstractBody,Vector{AbstractBody}}
     joints::Vector{AbstractJoint}
     p::Vector{Int16} # joint predecessor body array
@@ -103,7 +103,7 @@ function MultibodySystem(name, bodies, joints)
     # body frame spatial vectors 
     r = MVector{nb - 1,SVector{7,Float64}}(fill(SVector{7,Float64}(zeros(7)), nb - 1))
     v = OffsetVector(fill(SVector{6,Float64}(zeros(6)), nb), 0:nb-1)
-    a = OffsetVector(fill(SVector{6,Float64}(zeros(6)), nb), 0:nb-1)    
+    a = OffsetVector(fill(SVector{6,Float64}(zeros(6)), nb), 0:nb-1)
     fˣ = MVector{nb - 1,SVector{6,Float64}}(fill(SVector{6,Float64}(zeros(6)), nb - 1))
     fᵇ = MVector{nb - 1,SVector{6,Float64}}(fill(SVector{6,Float64}(zeros(6)), nb - 1))
     f_gyro = MVector{nb - 1,SVector{6,Float64}}(fill(SVector{6,Float64}(zeros(6)), nb - 1))
@@ -177,7 +177,7 @@ function calculate_X!(ᵖXᵢᵐ, ᵖXᵢᶠ, ⁱXₚᵐ, ⁱXₚᶠ, ᵒXᵢᵐ
         p_to_i = inv(joint.connection.Fs) * joint.frame * joint.connection.Fp
         i_to_p = inv(joint.connection.Fp) * inv(joint.frame) * joint.connection.Fs
 
-        ᵖXᵢᵐ[i] = ℳ(i_to_p)            
+        ᵖXᵢᵐ[i] = ℳ(i_to_p)
         ᵖXᵢᶠ[i] = ℱ(i_to_p)
         ⁱXₚᵐ[i] = ℳ(p_to_i)
         ⁱXₚᶠ[i] = ℱ(p_to_i)
@@ -191,7 +191,7 @@ function calculate_X!(ᵖXᵢᵐ, ᵖXᵢᶠ, ⁱXₚᵐ, ⁱXₚᶠ, ᵒXᵢᵐ
 end
 
 function articulated_body_algorithm!(sys)
-    @unpack v, a, c, D, U, u, ⁱXₚᵐ, Iᵇ, Iᴬ, pᴬ, ⁱXₒᶠ, ᵖXᵢᶠ, ⁱXₚᵐ,fᵇ, fˣ, f_gyro, τ, λ, q̈, q̇, joints = sys
+    @unpack v, a, c, D, U, u, ⁱXₚᵐ, Iᵇ, Iᴬ, pᴬ, ⁱXₒᶠ, ᵖXᵢᶠ, ⁱXₚᵐ, fᵇ, fˣ, f_gyro, τ, λ, q̈, q̇, joints = sys
 
     # pass 1
     for i in 1:length(sys.bodies)-1
@@ -261,9 +261,9 @@ end
 function initialize_inertias(bodies, joints)
     Iᵇ = Vector{SMatrix{6,6,Float64}}(undef, length(bodies) - 1)
     for i in 1:length(bodies)-1
-        body = bodies[i]       
+        body = bodies[i]
         Iᵇ[i] = mcI(body)
-    end    
+    end
     Iᴬ = copy(Iᵇ)
     return Iᵇ, Iᴬ
 end
@@ -275,7 +275,7 @@ end
 
 function gravity!(sys::MultibodySystem)
     for i in 1:length(sys.bodies)-1
-        sys.fˣ[i] = sys.fˣ[i] .+ sys.Iᵇ[i] * sys.ⁱXₒᵐ[i] * SVector{6,Float64}(0, 0, 0, 0, -1, 0)        
+        sys.fˣ[i] = sys.fˣ[i] .+ sys.Iᵇ[i] * sys.ⁱXₒᵐ[i] * SVector{6,Float64}(0, 0, 0, 0, -1, 0)
     end
     nothing
 end
@@ -290,8 +290,8 @@ end
 function update_model!(sys, x)
     reset_f!(sys)
     sys.x .= x #we probably dont need to do this other than FYI
-    for joint in sys.joints        
-        set_state!(joint,x[joint.meta.xindex],x[joint.meta.ẋindex])
+    for joint in sys.joints
+        set_state!(joint, x[joint.meta.xindex], x[joint.meta.ẋindex])
         sys.q[joint.meta.qindex] = x[joint.meta.xindex]
         sys.q̇[joint.meta.q̇index] = x[joint.meta.ẋindex]
     end
@@ -306,14 +306,14 @@ function ode_func!(dx, x, p, t)
     nothing
 end
 
-function save_dict!(config,name,type,func)
+function save_dict!(config, name, type, func)
     d = Dict(
-            "name" => name,
-            "type" => type,
-            "func" => func
-        )
-        push!(config, d)
-        nothing
+        "name" => name,
+        "type" => type,
+        "func" => func
+    )
+    push!(config, d)
+    nothing
 end
 
 function configure_saving(sys::MultibodySystem)
@@ -322,79 +322,43 @@ function configure_saving(sys::MultibodySystem)
         #save joint state info
         states = fieldnames(typeof(sys.joints[i].state))
         for state in states
-            d = Dict(
-                "name" => "$(sys.joints[i].meta.name)_$(string(state))",
-                "type" => typeof(getfield(sys.joints[i].state, state)),
-                "func" => sys -> getfield(sys.joints[i].state, state)
+            save_dict!(
+                save_config,
+                "$(sys.joints[i].meta.name)_$(string(state))",
+                typeof(getfield(sys.joints[i].state, state)),
+                sys -> getfield(sys.joints[i].state, state)
             )
-            push!(save_config, d)
         end
-        #save joint frame
-        d = Dict(
-            "name" => "$(sys.joints[i].meta.name)_F",
-            "type" => typeof(sys.joints[i].frame),
-            "func" => sys -> sys.joints[i].frame
-        )
-        push!(save_config, d)
 
         # save q̈
-        d = Dict(
-            "name" => "$(sys.joints[i].meta.name)_q̈",
-            "type" => typeof(sys.q̈[sys.joints[i].meta.q̇index]),
-            "func" => sys -> sys.q̈[sys.joints[i].meta.q̇index]
+        save_dict!(
+            save_config,
+            "$(sys.joints[i].meta.name)_q̈",
+            typeof(sys.q̈[sys.joints[i].meta.q̇index]),
+            sys -> sys.q̈[sys.joints[i].meta.q̇index]
         )
-        push!(save_config, d)
-        #save body r,v,a,I
     end
     for i in 1:length(sys.bodies)-1
-        d = Dict(
-            "name" => "$(sys.bodies[i].name)_r",
-            "type" => typeof(sys.r[i]),
-            "func" => sys -> sys.r[i]
-        )
-        push!(save_config, d)
-        d = Dict(
-            "name" => "$(sys.bodies[i].name)_v",
-            "type" => typeof(sys.v[i]),
-            "func" => sys -> sys.v[i]
-        )
-        push!(save_config, d)
-        d = Dict(
-            "name" => "$(sys.bodies[i].name)_a",
-            "type" => typeof(sys.a[i]),
-            "func" => sys -> sys.a[i]
-        )
-        push!(save_config, d)
-
-        d = Dict(
-            "name" => "$(sys.bodies[i].name)_Xf",
-            "type" => typeof(sys.ᵒXᵢᶠ[i]),
-            "func" => sys -> sys.ᵒXᵢᶠ[i]
+        save_dict!(
+            save_config,
+            "$(sys.bodies[i].name)_r",
+            typeof(sys.r[i]),
+            sys -> sys.r[i]
         )
 
-        push!(save_config, d)
-
-        d = Dict(
-            "name" => "$(sys.bodies[i].name)_Xm",
-            "type" => typeof(sys.ᵒXᵢᵐ[i]),
-            "func" => sys -> sys.ᵒXᵢᵐ[i]
+        save_dict!(
+            save_config,
+            "$(sys.bodies[i].name)_v",
+            typeof(sys.v[i]),
+            sys -> sys.v[i]
         )
 
-        push!(save_config, d)
-
-        d = Dict(
-            "name" => "$(sys.bodies[i].name)_c",
-            "type" => typeof(sys.c[i]),
-            "func" => sys -> sys.c[i]
+        save_dict!(
+            save_config,
+            "$(sys.bodies[i].name)_a",
+            typeof(sys.a[i]),
+            sys -> sys.a[i]
         )
-        push!(save_config, d)
-
-        d = Dict(
-            "name" => "$(sys.bodies[i].name)_Ia",
-            "type" => typeof(sys.Iᴬ[i]),
-            "func" => sys -> sys.Iᴬ[i]
-        )
-        push!(save_config, d)
 
         save_dict!(
             save_config,
@@ -402,42 +366,6 @@ function configure_saving(sys::MultibodySystem)
             typeof(sys.fᵇ[i]),
             sys -> sys.fᵇ[i]
         )
-
-        save_dict!(
-            save_config,
-            "$(sys.bodies[i].name)_U",
-            typeof(sys.U[i]),
-            sys -> sys.U[i]
-        )
-
-        save_dict!(
-            save_config,
-            "$(sys.bodies[i].name)_D",
-            typeof(sys.D[i]),
-            sys -> sys.D[i]
-        )
-
-        save_dict!(
-            save_config,
-            "$(sys.bodies[i].name)_pᴬ",
-            typeof(sys.pᴬ[i]),
-            sys -> sys.pᴬ[i]
-        )
-
-        save_dict!(
-            save_config,
-            "$(sys.bodies[i].name)_u",
-            typeof(sys.u[i]),
-            sys -> sys.u[i]
-        )
-
-        save_dict!(
-            save_config,
-            "$(sys.bodies[i].name)_f_gyro",
-            typeof(sys.f_gyro[i]),
-            sys -> sys.f_gyro[i]
-        )
-
 
     end
 
@@ -447,17 +375,24 @@ function configure_saving(sys::MultibodySystem)
     return save_config, save_values, save_cb
 end
 
-function simulate(orig_sys::MultibodySystem, tspan)
+function simulate(orig_sys::MultibodySystem, tspan; output_type = nothing)
     sys = deepcopy(orig_sys)# make a copy so we can rerun orig sys without mutating it during previous sim    
     save_config, save_values, save_cb = configure_saving(sys)
     p = (sys=sys, save_config=save_config)
     prob = ODEProblem(ode_func!, sys.x, tspan, p)
-    solve(prob, callback=save_cb, adaptive=false, dt=0.01)
-    simout = wrap_save_values(save_values, save_config)
+    sol = solve(prob, callback=save_cb, adaptive=false, dt=0.01)    
+        
+    if output_type == DataFrame
+        simout = df_save_values(save_values, save_config)
+    elseif output_type == NamedTuple
+        simout = nt_save_values(save_values, save_config)
+    else
+        simout = sol
+    end
     return simout
 end
 
-function wrap_save_values(save_values, save_config)
+function nt_save_values(save_values, save_config)
     d = Dict()
     d[:t] = save_values.t
     for i in eachindex(save_values.saveval[1])
@@ -466,6 +401,10 @@ function wrap_save_values(save_values, save_config)
         d[name] = values
     end
     NamedTuple(d)
+end
+
+function df_save_values(save_values, save_config)
+    
 end
 
 #needed each timestep to fill dx with ode state derivatives [dq,q̈] (dq not q̇ since q̇ can = ω and dq is quaternion deriv)
@@ -477,11 +416,11 @@ function pack_dq_in_dx!(dx, sys)
     nothing
 end
 
-function Plots.plot(t::Vector{T}, x::Vector{SVector{S,T}} ) where {S,T<:AbstractFloat}    
-    p = plot(t,getindex.(x,1))
+function Plots.plot(t::Vector{T}, x::Vector{SVector{S,T}}) where {S,T<:AbstractFloat}
+    p = plot(t, getindex.(x, 1))
     if length(x[1]) > 1
         for i in 2:length(x[1])
-            plot!(t,getindex.(x,i))
+            plot!(t, getindex.(x, i))
         end
     end
     return p

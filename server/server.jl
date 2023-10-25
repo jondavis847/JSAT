@@ -1,4 +1,4 @@
-using HTTP, Sockets
+using HTTP, Sockets, JSON3
 includet("..\\src\\blue42.jl")
 function jsat_server()    
     ROUTER = HTTP.Router()
@@ -7,27 +7,80 @@ function jsat_server()
     routerCss(req::HTTP.Request) = HTTP.Response(200, read("server\\public\\css\\jsat.css"))
     routerJs(req::HTTP.Request) = HTTP.Response(200, read("server\\public\\js\\jsat.js"))
     function routerSimulate(req::HTTP.Request) 
+        message = JSON3.read(req.body)
+        sim = message[:sim]
+        bodies = message[:bodies]        
+        joints = message[:joints]
+
         N = WorldFrame()
-        j1 = Revolute(:j1,pi/4,0.)
-        p1 = Body(:p1,1,I(3),[0,-1,0])
-        fp1 = eye(Cartesian)
-        fs1 = eye(Cartesian)
+        Bodies = AbstractBody[N]
+        for k in keys(bodies)
+            body = bodies[k]
 
-        j2 = Revolute(:j2,pi/4,0.)
-        p2 = Body(:p2,1,I(3),[0,-1,0])
-        fp2 = Cartesian(I(3),[0,-1,0])
-        fs2 = eye(Cartesian)
+            mass = Float64(eval(Meta.parse(body[:mass])))
+            cm = Float64.(eval(Meta.parse(body[:cm])))
+            ixx = Float64(eval(Meta.parse(body[:ixx])))
+            iyy = Float64(eval(Meta.parse(body[:iyy])))
+            izz = Float64(eval(Meta.parse(body[:izz])))
+            ixy = Float64(eval(Meta.parse(body[:ixy])))
+            ixz = Float64(eval(Meta.parse(body[:ixz])))
+            iyz = Float64(eval(Meta.parse(body[:iyz])))
 
-        connect!(j1,N,p1,fp1,fs1)
-        connect!(j2,p1,p2,fp2,fs2)
+            inertia = [
+                ixx ixy ixz
+                ixy iyy iyz
+                ixz iyz izz
+            ]
+            
+            B =Body(
+                   body[:name],
+                    mass,
+                    inertia,
+                    cm
+            )
+            push!(Bodies,B)
+        end
+        
+        Bodies = OffsetArray(Bodies,0:length(Bodies)-1)
 
-        B = OffsetArray([N,p1,p2], 0:2) #offset array lets us do 0 based indexing which matches featherstone notation
-        G = [j1,j2]
+        Joints = []
+        for k in keys(joints)
+            joint = joints[k]
+            type = joint[:type]
+            if type == "revolute"
+                θ = eval(Meta.parse(joint[:theta]))
+                ω = eval(Meta.parse(joint[:omega]))
+                J = Revolute(Symbol(joint[:name]),θ,ω)                
+            else
+                error("bad joint type provided")
+                return
+            end
 
-        sys = MultibodySystem(:doublepend,B,G)
+            predecessor_name = joint[:predecessor]
+            successor_name = joint[:successor]
 
-        sol = simulate(sys,(0,10))
-        dump(sol)
+            if predecessor_name == "base"
+                predecessor = [N]
+            else
+                predecessor = Bodies[getfield.(Bodies,:name) .== Symbol(predecessor_name)]
+            end
+            successor = Bodies[getfield.(Bodies,:name) .== Symbol(successor_name)]
+
+            FpΦ = eval(Meta.parse(joint[:FpPhi]))
+            FsΦ = eval(Meta.parse(joint[:FsPhi]))
+            Fpρ = eval(Meta.parse(joint[:FpRho]))
+            Fsρ = eval(Meta.parse(joint[:FsRho]))
+            Fp = Cartesian(FpΦ,Fpρ)
+            Fs = Cartesian(FsΦ,Fsρ)
+
+            connect!(J,predecessor...,successor...,Fp,Fs)
+            push!(Joints,J)
+        end
+        
+        sys = MultibodySystem(Symbol(sim[:name]), Bodies, Joints)
+
+        sol = simulate(sys,eval(Meta.parse(sim[:tspan])))
+        
         HTTP.Response(200, "success")
     end
 
@@ -35,10 +88,11 @@ function jsat_server()
     HTTP.register!(ROUTER, "GET", "/css/jsat.css", routerCss)
     HTTP.register!(ROUTER, "GET", "/js/jsat.js", routerJs)
 
-    HTTP.register!(ROUTER, "GET", "/simulate", routerSimulate)
+    HTTP.register!(ROUTER, "POST", "/simulate", routerSimulate)
 
     server = HTTP.serve!(ROUTER, ip"127.0.0.1", 80)    
     printstyled("servers up! ctrl+click url to go : http://127.0.0.1:80", color=:light_yellow)
     return server
 
 end
+
