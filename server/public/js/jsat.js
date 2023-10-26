@@ -73,28 +73,11 @@ function init() {
     enterClick($("#jointName"), $("#addJointSaveButton"));
 
     createBodyDetailsDiv();
+    getSimFileNames();
     // loadModels();
-    // getSimFileNames();
+
 }
 $(window).on("load", init);
-
-/*
-function sendSimulationData() {
-    const socket = new WebSocket("ws://localhost:8081");
-    jsatConsole("\nconnecting to jsat server...")
-    socket.addEventListener("open", (event) => {
-        jsatConsole("connected!\nsending simulation data")
-        socket.send(JSON.stringify({ type: "simulationData", data: JSON.stringify(JSAT) }));
-    });
-    socket.addEventListener("message", (event) => {
-        console.log(event)
-        jsatConsole(event.data)
-        getSimFileNames()
-        socket.close()
-    });
-
-}
-*/
 
 function sendSimulationData() {
     const xhr = new XMLHttpRequest();
@@ -110,32 +93,34 @@ function sendSimulationData() {
 }
 
 function getSimFileNames() {
-    const socket = new WebSocket("ws://localhost:8081");
-    jsatConsole("\nconnecting to jsat server...")
-    socket.addEventListener("open", (event) => {
-        jsatConsole("connected!")
-        socket.send(JSON.stringify({ type: "getSimFileNames", data: [] }));
-    });
-    socket.addEventListener("message", (event) => {
-        jsatConsole("\nrecieved data from server")
-        const simFileNames = JSON.parse(event.data).simFileNames;
-        const simFileDates = JSON.parse(event.data).simFileDates;
+    const xhr = new XMLHttpRequest();
+    xhr.addEventListener("load", function () {        
+         let data = JSON.parse(this.responseText)
+        jsatConsole("\nrecieved sim file list from server")        
         // remove all options first...
         $("#simSelect").empty();
-        //then reload all options
-        for (let i = 0; i < simFileNames.length; i++) {
+        //then reload all options        
+        for (let i = 0; i < data.length; i++) {
             $("#simSelect").append($('<option>', {
-                value: simFileNames[i],
-                text: simFileNames[i].concat(' ').concat(simFileDates[i]),
+                value: data[i].fileName,
+                text: (data[i].fileName).concat(' ').concat(data[i].fileDate),
             }))
             $("#sim2Select").append($('<option>', {
-                value: simFileNames[i],
-                text: simFileNames[i].concat(' ').concat(simFileDates[i]),
+                value: data[i].fileName,
+                text: data[i].fileName.concat(' ').concat(data[i].fileDate),
             }))
         }
         jsatConsole("\nupdated available simulations")
-        socket.close()
-    });
+        
+    })
+    xhr.open("GET", "/simfiles", true);
+    xhr.onreadystatechange = () => {
+        // Call a function when the state changes.
+        if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {            
+           
+        }
+    };
+    xhr.send();
 }
 
 function loadSimStates() {
@@ -386,9 +371,9 @@ function saveBody() {
         }
     }
 
-    if (!NEWBODY) {        
+    if (!NEWBODY) {
         $(`#${CURRENTBODY}BodyButton`).html(body.name)
-        $(`#${CURRENTBODY}BodyButton`).prop("onclick", null).off("click");        
+        $(`#${CURRENTBODY}BodyButton`).prop("onclick", null).off("click");
         $(`#${CURRENTBODY}BodyButton`).on("click", editBody.bind(body.name))
         $(`#${CURRENTBODY}BodyButton`).attr("id", `${body.name}BodyButton`)// set id last
     }
@@ -477,8 +462,8 @@ function saveJoint(joint) {
         };
     };
 
-    if (!NEWJOINT) {        
-        $(`#${CURRENTJOINT}JointButton`).html(joint.name)        
+    if (!NEWJOINT) {
+        $(`#${CURRENTJOINT}JointButton`).html(joint.name)
         $(`#${CURRENTJOINT}JointButton`).prop("onclick", null).off("click");
         $(`#${CURRENTJOINT}JointButton`).on("click", editRevolute.bind(joint.name))
         $(`#${CURRENTJOINT}JointButton`).attr("id", `${joint.name}JointButton`) //set id last

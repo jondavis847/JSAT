@@ -19,6 +19,6 @@ function double_pendulum()
 
     sys = MultibodySystem(:doublepend,B,G)
 
-    sol = simulate(sys,(0,10))
+    sol = simulate(sys,(0,10); output_type = DataFrame)
     return sol
 end

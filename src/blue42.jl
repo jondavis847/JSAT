@@ -1,4 +1,4 @@
-using LinearAlgebra, DifferentialEquations, StaticArrays, Plots, UnPack, OffsetArrays, PlotThemes
+using LinearAlgebra, DifferentialEquations, StaticArrays, Plots, UnPack, OffsetArrays, PlotThemes, DataFrames,CSV
 import Base: show
 import Plots: plot, plot!
 
@@ -375,17 +375,17 @@ function configure_saving(sys::MultibodySystem)
     return save_config, save_values, save_cb
 end
 
-function simulate(orig_sys::MultibodySystem, tspan; output_type = nothing)
+function simulate(orig_sys::MultibodySystem, tspan; output_type=nothing)
     sys = deepcopy(orig_sys)# make a copy so we can rerun orig sys without mutating it during previous sim    
     save_config, save_values, save_cb = configure_saving(sys)
     p = (sys=sys, save_config=save_config)
     prob = ODEProblem(ode_func!, sys.x, tspan, p)
-    sol = solve(prob, callback=save_cb, adaptive=false, dt=0.01)    
-        
+    sol = solve(prob, callback=save_cb, adaptive=false, dt=0.01)
+
     if output_type == DataFrame
         simout = df_save_values(save_values, save_config)
     elseif output_type == NamedTuple
-        simout = nt_save_values(save_values, save_config)
+        simout = nt_save_values(save_values, save_config)    
     else
         simout = sol
     end
@@ -395,7 +395,7 @@ end
 function nt_save_values(save_values, save_config)
     d = Dict()
     d[:t] = save_values.t
-    for i in eachindex(save_values.saveval[1])
+    for i in eachindex(save_config)
         name = Symbol(save_config[i]["name"])
         values = getindex.(save_values.saveval, i)
         d[name] = values
@@ -403,8 +403,33 @@ function nt_save_values(save_values, save_config)
     NamedTuple(d)
 end
 
-function df_save_values(save_values, save_config)
-    
+function df_save_values(save_values, save_config)    
+    D = DataFrame()
+    D[!,"t"] = save_values.t
+    for i in eachindex(save_config)
+        name = String(save_config[i]["name"])
+        type = save_config[i]["type"]
+
+        if type <: AbstractVector
+            for j in eachindex(save_values.saveval[1][i])
+                this_name = "$(name)[$(j)]"
+                this_values = map(x -> x[i][j], save_values.saveval)
+                D[!,this_name] = this_values
+            end
+        elseif type <: AbstractMatrix
+            for k in axes(save_values.saveval[1][i])[2]
+                for j in axes(save_values[1][i])[1]
+                    this_name = "$(name)[$(j),$(k)]"
+                    this_values = map(x -> x[i][j, k], save_values.saveval)
+                    D[!,this_name] = this_values
+                end
+            end
+        else
+            values = getindex.(save_values.saveval, i)
+            D[!,name] = values
+        end
+    end
+    return D
 end
 
 #needed each timestep to fill dx with ode state derivatives [dq,q̈] (dq not q̇ since q̇ can = ω and dq is quaternion deriv)
