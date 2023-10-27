@@ -22,6 +22,9 @@ let NEWJOINT;
 let CURRENTBODY;
 let CURRENTJOINT;
 
+let MODELS;
+let CURRENTMODEL;
+
 function jsatConsole(msg) {
     $("#consoleLog").val($("#consoleLog").val() + msg);
 }
@@ -61,7 +64,7 @@ function init() {
     $("#addRevoluteButton").on("click", addRevolute)
     $("#cancelJointButton").on("click", function () { $("#jointMenu").toggle() });
     $("#addJointCancelButton").on("click", cancelJointMenu);
-    $("#loadSimStates").on("click", loadSimStates);
+    $("#loadSimStates").on("click", getSimStates);
     $("#plotState").on("click", plotStateData);
     $("#animateBtn").on("click", makeAnimation);
     $("#revSaveButton").on("click", saveRevolute);
@@ -74,7 +77,7 @@ function init() {
 
     createBodyDetailsDiv();
     getSimFileNames();
-    // loadModels();
+    loadModels();
 
 }
 $(window).on("load", init);
@@ -86,7 +89,8 @@ function sendSimulationData() {
     xhr.onreadystatechange = () => {
         // Call a function when the state changes.
         if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
-            console.log("success")
+            jsatConsole(`\nsimulation completed in ${xhr.responseText} seconds!`)
+            getSimFileNames()
         }
     };
     xhr.send(JSON.stringify(JSAT));
@@ -94,9 +98,8 @@ function sendSimulationData() {
 
 function getSimFileNames() {
     const xhr = new XMLHttpRequest();
-    xhr.addEventListener("load", function () {        
-         let data = JSON.parse(this.responseText)
-        jsatConsole("\nrecieved sim file list from server")        
+    xhr.addEventListener("load", function () {
+        let data = JSON.parse(this.responseText)
         // remove all options first...
         $("#simSelect").empty();
         //then reload all options        
@@ -110,31 +113,55 @@ function getSimFileNames() {
                 text: data[i].fileName.concat(' ').concat(data[i].fileDate),
             }))
         }
-        jsatConsole("\nupdated available simulations")
-        
     })
     xhr.open("GET", "/simfiles", true);
     xhr.onreadystatechange = () => {
         // Call a function when the state changes.
-        if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {            
-           
+        if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
+
         }
     };
     xhr.send();
 }
 
-function loadSimStates() {
+function loadModels() {
+    const xhr = new XMLHttpRequest();
+    xhr.addEventListener("load", function () {
+        MODELS = JSON.parse(this.responseText)
+
+        //make model buttons for each model
+        let keys = Object.keys(MODELS)
+        for (let i = 0; i < keys.length; i++) {
+            let btn = $('<button/>', {
+                id: `${keys[i]}ModelButton`,
+                html: keys[i]
+            });
+            btn.addClass("model-buttons");
+            //place button in div            
+            $("#modelLoaderDiv").append(btn);
+
+            btn.on("click", function () {
+                $(".model-buttons").removeClass("active-border")
+                btn.toggleClass("active-border")
+                console.log(keys[i])
+                console.log(MODELS)
+                console.log(MODELS[keys[i]])
+                CURRENTMODEL = MODELS[keys[i]]
+            });
+        };
+    });
+    xhr.open("GET", "/loadmodels", true);
+    xhr.send();
+}
+
+function getSimStates() {
 
     let selected = []
     $("#simSelect").find(":selected").each(function () { selected.push($(this).val()) })
-    const socket = new WebSocket("ws://localhost:8081");
-    jsatConsole("\nconnecting to jsat server...")
-    socket.addEventListener("open", (event) => {
-        jsatConsole("connected!")
-        socket.send(JSON.stringify({ type: "loadSimStates", data: selected }));
-    });
-    socket.addEventListener("message", (event) => {
-        const states = JSON.parse(event.data).states;
+
+    const xhr = new XMLHttpRequest();
+    xhr.addEventListener("load", function () {
+        const states = JSON.parse(xhr.responseText).states;
         // remove all options first...
         $("#stateSelect").empty();
         //then reload all options
@@ -144,10 +171,10 @@ function loadSimStates() {
                 text: states[i],
             }))
         }
-        jsatConsole("\nrecieved state data!")
 
-        socket.close()
-    });
+    })
+    xhr.open("POST", "/loadstates");
+    xhr.send(JSON.stringify(selected));
 }
 
 function plotStateData() {
@@ -167,14 +194,9 @@ function plotStateData() {
     $("#stateSelect").find(":selected").each(function () { selectedStates.push($(this).val()) })
 
 
-    const socket = new WebSocket("ws://localhost:8081");
-    jsatConsole("\nconnecting to jsat server...")
-    socket.addEventListener("open", (event) => {
-        jsatConsole("connected!")
-        socket.send(JSON.stringify({ type: "plot", data: JSON.stringify({ sims: selectedSims, states: selectedStates }) }));
-    });
-    socket.addEventListener("message", (event) => {
-        const data = JSON.parse(event.data).data;
+    const xhr = new XMLHttpRequest();
+    xhr.addEventListener("load", function () {    
+        const data = JSON.parse(xhr.responseText).data;
         const simData = JSON.parse(data);
 
         let traces = [];
@@ -240,6 +262,7 @@ function plotStateData() {
         socket.close()
 
     });
+    xhr.send(JSON.stringify(JSON.stringify({ sims: selectedSims, states: selectedStates })));
 }
 
 
@@ -274,6 +297,30 @@ function changeTab(evt) {
             break;
     }
 }
+
+function loadModel() {
+
+    let nbodies = CURRENTMODEL.bodies.length
+
+    for (let b = 0; b < nbodies; b++) {
+        NEWBODY = true;
+        CURRENTBODY = CURRENTMODEL.bodies[b];
+        $(".model-buttons").removeClass("active-border");
+        saveBody(CURRENTBODY);
+    }
+    console.log(CURRENTMODEL)
+    let njoints = (CURRENTMODEL.joints).length
+
+    for (let j = 0; j < njoints; j++) {
+        NEWJOINT = true;
+        CURRENTJOINT = CURRENTMODEL.joints[j];
+        $(".model-buttons").removeClass("active-border");
+        saveJoint(CURRENTJOINT);
+    }
+
+    CURRENTMODEL = {};
+}
+
 
 // called when user clicks +body, prompts user for the name, will save and add component on enter or click
 function addBody() {
@@ -350,24 +397,26 @@ function editBody() {
 
 
 // called when user saves the +body or edit body prompt
-function saveBody() {
-    const body = {
-        name: $("#body_name").val(),
-        mass: $("#body_mass").val(),
-        cm: $("#body_cm").val(),
-        ixx: $("#body_ixx").val(),
-        iyy: $("#body_iyy").val(),
-        izz: $("#body_izz").val(),
-        ixy: $("#body_ixy").val(),
-        ixz: $("#body_ixz").val(),
-        iyz: $("#body_iyz").val(),
-    };
+function saveBody(body) {
+    if (body === undefined) {
+        const body = {
+            name: $("#body_name").val(),
+            mass: $("#body_mass").val(),
+            cm: $("#body_cm").val(),
+            ixx: $("#body_ixx").val(),
+            iyy: $("#body_iyy").val(),
+            izz: $("#body_izz").val(),
+            ixy: $("#body_ixy").val(),
+            ixz: $("#body_ixz").val(),
+            iyz: $("#body_iyz").val(),
+        };
 
-    // throw error and return if any properties arent set        
-    for (const [key, value] of Object.entries(body)) {
-        if (value === "") {
-            jsatConsole("\nall fields of body are required to have a value!")
-            return;
+        // throw error and return if any properties arent set        
+        for (const [key, value] of Object.entries(body)) {
+            if (value === "") {
+                jsatConsole("\nall fields of body are required to have a value!")
+                return;
+            }
         }
     }
 
@@ -543,19 +592,6 @@ function tableFromObject(object, id_name) {
     return t;
 }
 
-
-
-
-// just loads the options from savedSpacecraft when the window loads and adds it to the loadselect
-function loadModels() {
-    //for (let i = 0; i < savedSpacecraft.length; i++) {
-    //   $("#spacecraftLoaderSelect").append($('<option>', {
-    //      value: i,
-    //     text: savedSpacecraft[i].name
-    // }))
-    // }
-}
-
 //takes fields from savedSpacecraft components and populates thier component fields when loaded
 function populateInputFields(comp) {
     const keys = Object.keys(comp);
@@ -567,11 +603,6 @@ function populateInputFields(comp) {
         //blur the field so that it updates SPACECRAFT and JSAT.sc
         $(`#${SPACECRAFT.name}_${comp.name}_${k}`).trigger("blur");
     })
-}
-
-//actually loads the selected savedSpacecraft into the console and makes buttons
-function loadModel() {
-
 }
 
 const savedSpacecraft = [

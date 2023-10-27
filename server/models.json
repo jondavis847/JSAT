@@ -1,0 +1,32 @@
+
+{
+    "simple_pendulum" : {
+        "bodies" : [
+            {
+                "name" : "pendulum",
+                "mass" : "1",
+                "cm" : "[0,-1,0]",
+                "ixx" : "1",
+                "iyy" : "1",
+                "izz" : "1",
+                "ixy" : "0",
+                "ixz" : "0",
+                "iyz" : "0"
+            }
+        ],
+        "joints" : [
+            {
+                "name" : "hinge",
+                "type" : "revolute",
+                "predecessor" : "base",
+                "successor" : "pendulum",
+                "FpPhi" : "I(3)",
+                "FpRho" : "zeros(3)",
+                "FsPhi" : "I(3)",
+                "FsRho" : "zeros(3)",
+                "theta" : "pi/4",
+                "omega" : "0"
+            }
+        ]
+    }
+} 
