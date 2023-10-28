@@ -195,19 +195,19 @@ function plotStateData() {
 
 
     const xhr = new XMLHttpRequest();
-    xhr.addEventListener("load", function () {    
-        const data = JSON.parse(xhr.responseText).data;
-        const simData = JSON.parse(data);
-
+    xhr.addEventListener("load", function () {          
+        const simData = JSON.parse(xhr.responseText);            
         let traces = [];
         let colorCtr = 0;
         simData.forEach(function (sim) {
             selectedStates.forEach(function (state) {
                 var putInLegend = true; //only 1 state per 1 sim in legend (collect runs)
                 sim.runData.forEach(function (run, i) {
+                    s = run.colindex.names.indexOf(state)
+                    t = run.colindex.names.indexOf("t")
                     traces.push({
-                        x: run.timestamp,
-                        y: run[state],
+                        x: run.columns[t],
+                        y: run.columns[s],
                         type: 'scatter',
                         mode: 'lines',
                         name: `${sim.sim}_${state}`,
@@ -257,12 +257,10 @@ function plotStateData() {
             },
         }
         Plotly.newPlot("plotsDiv", traces, layout, { scrollZoom: true })
-
-        jsatConsole("\nrecieved state data!")
-        socket.close()
-
     });
-    xhr.send(JSON.stringify(JSON.stringify({ sims: selectedSims, states: selectedStates })));
+
+    xhr.open("POST", "/plotstates");
+    xhr.send(JSON.stringify({ sims: selectedSims, states: selectedStates }));
 }
 
 

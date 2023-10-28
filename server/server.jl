@@ -5,7 +5,7 @@ function jsat_server()
 
     routerIndex(req::HTTP.Request) = HTTP.Response(200, read("server\\public\\index.html"))
     routerCss(req::HTTP.Request) = HTTP.Response(200, read("server\\public\\css\\jsat.css"))
-    routerJs(req::HTTP.Request) = HTTP.Response(200, read("server\\public\\js\\jsat.js"))       
+    routerJs(req::HTTP.Request) = HTTP.Response(200, read("server\\public\\js\\jsat.js"))
     routerLoadModels(req::HTTP.Request) = HTTP.Response(200, string(JSON3.read("server\\models.json")))
 
     HTTP.register!(ROUTER, "GET", "/", routerIndex)
@@ -16,6 +16,7 @@ function jsat_server()
     HTTP.register!(ROUTER, "GET", "/simfiles", routerSimFiles)
     HTTP.register!(ROUTER, "GET", "/loadmodels", routerLoadModels)
     HTTP.register!(ROUTER, "POST", "/loadstates", routerLoadStates)
+    HTTP.register!(ROUTER, "POST", "/plotstates", routerPlot)
 
     server = HTTP.serve!(ROUTER, ip"127.0.0.1", 80)
     printstyled("servers up! ctrl+click url to go : http://127.0.0.1:80 \n", color=:light_yellow)
@@ -120,7 +121,11 @@ function routerSimulate(req::HTTP.Request)
         sim_name = sim[:name]
     end
 
-    CSV.write("sim\\$(sim_name).csv", sol)
+    if !isdir("sim\\$(sim_name)")
+        mkdir("sim\\$(sim_name)")
+    end
+
+    CSV.write("sim\\$(sim_name)\\run0.csv", sol)
 
     HTTP.Response(200, "$(dt)")
 end
@@ -129,9 +134,28 @@ function routerLoadStates(req::HTTP.Request)
     message = JSON3.read(req.body)
     states = String[]
     for file in message
-        df = CSV.read("sim\\$(file).csv",DataFrame; limit = 0) # limit just reads headers for now
-        union!(states,string.(names(df)))
+        df = CSV.read("sim\\$(file)\\run0.csv", DataFrame; limit=0) # limit just reads headers for now
+        union!(states, string.(names(df)))
     end
     D = Dict("states" => states)
     HTTP.Response(200, JSON3.write(D))
+end
+
+function routerPlot(req::HTTP.Request)    
+    data = JSON3.read(req.body)    
+    sims = data[:sims]
+    xs = data[:states]
+    simdata = []
+    for i in eachindex(sims)
+        loc = "sim\\$(sims[i])"
+        f = readdir(loc)
+        runs = f[occursin.(".csv", f)]        
+        rundata = []
+        for r in eachindex(runs)            
+            rd = CSV.read("$(loc)\\$(runs[r])", DataFrame, select=["t", xs...])            
+            push!(rundata, rd)
+        end
+        push!(simdata, Dict("sim" => sims[i], "runData" => rundata))
+    end    
+    HTTP.Response(200, JSON3.write(simdata))
 end
