@@ -73,6 +73,8 @@ struct MultibodySystem
     r::MVector #body frame spatial position
     v::OffsetVector #body frame spatial velocity
     a::OffsetVector #body frame spatial acceleration    
+    r_base # base frame translation - for animation
+    q_base # base frame quaternion - for animation
 end
 
 #MultibodySystem constructor
@@ -108,6 +110,9 @@ function MultibodySystem(name, bodies, joints)
     fᵇ = MVector{nb - 1,SVector{6,Float64}}(fill(SVector{6,Float64}(zeros(6)), nb - 1))
     f_gyro = MVector{nb - 1,SVector{6,Float64}}(fill(SVector{6,Float64}(zeros(6)), nb - 1))
 
+    r_base = MVector{nb - 1,SVector{3,Float64}}(fill(SVector{3,Float64}(zeros(3)), nb - 1))
+    q_base = MVector{nb - 1,SVector{4,Float64}}(fill(SVector{4,Float64}(zeros(4)), nb - 1))
+
     # generalized vectors
     nq̇ = length(q̇)
     τ = MVector{nq̇}(zeros(nq̇))
@@ -129,7 +134,7 @@ function MultibodySystem(name, bodies, joints)
     ⁱXₒᵐ = OffsetVector(fill(identity_X, nb), 0:nb-1)
     ⁱXₒᶠ = OffsetVector(fill(identity_X, nb), 0:nb-1)
 
-    MultibodySystem(name, bodies, joints, p, s, λ, κ, μ, γ, U, D, u, c, pᴬ, ᵖXᵢᵐ, ᵖXᵢᶠ, ⁱXₚᵐ, ⁱXₚᶠ, ᵒXᵢᵐ, ᵒXᵢᶠ, ⁱXₒᵐ, ⁱXₒᶠ, q, q̇, q̈, x, H, C, τ, fˣ, fᵇ, f_gyro, Iᵇ, Iᴬ, r, v, a)
+    MultibodySystem(name, bodies, joints, p, s, λ, κ, μ, γ, U, D, u, c, pᴬ, ᵖXᵢᵐ, ᵖXᵢᶠ, ⁱXₚᵐ, ⁱXₚᶠ, ᵒXᵢᵐ, ᵒXᵢᶠ, ⁱXₒᵐ, ⁱXₒᶠ, q, q̇, q̈, x, H, C, τ, fˣ, fᵇ, f_gyro, Iᵇ, Iᴬ, r, v, a, r_base, q_base)
 end
 
 function model!(sys)
@@ -188,6 +193,27 @@ function calculate_X!(ᵖXᵢᵐ, ᵖXᵢᶠ, ⁱXₚᵐ, ⁱXₚᶠ, ᵒXᵢᵐ
         ⁱXₒᶠ[i] = ⁱXₚᶠ[i] * ⁱXₒᶠ[λ[i]]
     end
     nothing
+end
+
+calculate_r!(sys::MultibodySystem) = calculate_r!(sys.joints,sys.r_base,sys.q_base, sys.ᵒXᵢᵐ, sys.λ)
+function calculate_r!(joints,r_base,q_base, ᵒXᵢᵐ, λ)    
+    for i in eachindex(joints)
+        joint = joints[i]
+        r_Fs_to_Bi_in_Fs_frame = (joint.connection.Fs.Φ.value)' * (-joint.connection.Fs.r)
+        r_Fp_to_Fs_in_Fp_frame = joint.frame.Φ.value' * r_Fs_to_Bi_in_Fs_frame + joint.frame.r 
+        r_Bλ_to_Fp_in_Bλ_frame =  joint.connection.Fp.Φ.value' * r_Fp_to_Fs_in_Fp_frame + joint.connection.Fp.r
+        if λ[i] != 0
+            r_Bλ_to_Fp_in_base_frame = (ᵒXᵢᵐ[λ[i]][i3,i3])' * r_Bλ_to_Fp_in_Bλ_frame        
+            r_base_to_Fp_in_base_frame = r_Bλ_to_Fp_in_base_frame + r_base[λ[i]]
+            q_base[i] = atoq(joint.connection.Fs.Φ.value' * joint.frame.Φ.value * joint.connection.Fp.Φ.value * qtoa(q_base[λ[i]]))
+        else
+            r_base_to_Fp_in_base_frame = r_Bλ_to_Fp_in_Bλ_frame
+            q_base[i] = atoq(joint.connection.Fs.Φ.value' * joint.frame.Φ.value * joint.connection.Fp.Φ.value)
+        end
+        r_base[i] = r_base_to_Fp_in_base_frame
+        
+    end
+    nothing        
 end
 
 function articulated_body_algorithm!(sys)
@@ -296,6 +322,7 @@ function update_model!(sys, x)
         sys.q̇[joint.meta.q̇index] = x[joint.meta.ẋindex]
     end
     calculate_X!(sys)  # spatial transforms
+    calculate_r!(sys) # update generalized coords
     nothing
 end
 
@@ -367,6 +394,21 @@ function configure_saving(sys::MultibodySystem)
             sys -> sys.fᵇ[i]
         )
 
+        # get base frame position vars for animation        
+        
+        save_dict!(
+            save_config,
+            "$(sys.bodies[i].name)_q_base",
+            typeof(sys.q_base[i]),
+            sys -> (sys.q_base[i])
+        )
+
+        save_dict!(
+            save_config,
+            "$(sys.bodies[i].name)_r_base",
+            typeof(sys.r_base[i]),
+            sys -> (sys.r_base[i])
+        )
     end
 
     save_values = SavedValues(Float64, Tuple{getindex.(save_config, "type")...})

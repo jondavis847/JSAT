@@ -565,3 +565,88 @@ button:focus {
     width: 75%;
     height: 100%;
 }
+
+.cy-canvas-div {
+    position:absolute;
+    left:25%;
+    width:75%;
+    top:0%;
+    height:100%;    
+    background-color: rgba(35, 36, 35, 1);
+}
+
+.cy-add-body-div {
+    position:absolute;
+    left:25%;
+    width:50%;
+    top:25%;
+    height:50%;    
+    background-color: rgba(35, 36, 35, 1);
+    display: none;
+    border: solid thin black;
+    box-sizing: border-box;
+    z-index: 10
+}
+
+.cy-add-body-title-div {
+    background-color: rgba(25, 25, 25, 1);
+    box-sizing: border-box;
+    border: solid thin black;
+    position:absolute;
+    left:0%;
+    width:100%;
+    top:0%;
+    height:10%;   
+    color: aquamarine;
+    text-align: left;
+    font-family: 'Courier New', monospace;    
+}
+
+.cy-add-body-table-div {
+    background-color: rgba(35, 36, 35, 1);
+    box-sizing: border-box;
+    border: solid thin black;
+    position:absolute;
+    left:0%;
+    width:100%;
+    top:10%;
+    height:80%;   
+}
+
+.cy-add-body-buttons-div {    
+    box-sizing: border-box;
+    position:absolute;
+    border: solid thin black;
+    left:0%;
+    width:100%;
+    top:90%;
+    height:10%;   
+}
+
+.cy-add-body-save-button {
+    background-color: rgba(35, 36, 35, 1);
+    box-sizing: border-box;
+    border: solid thin black;
+    position:absolute;
+    left:0%;
+    width:50%;
+    top:0%;
+    height:100%;   
+    color: aquamarine;
+    text-align: center;
+    font-family: 'Courier New', monospace;       
+}
+
+.cy-add-body-cancel-button {
+    background-color: rgba(35, 36, 35, 1);
+    box-sizing: border-box;
+    border: solid thin black;
+    position:absolute;
+    left:50%;
+    width:50%;
+    top:0%;
+    height:100%;   
+    color: crimson;
+    text-align: center;
+    font-family: 'Courier New', monospace;       
+}

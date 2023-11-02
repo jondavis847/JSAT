@@ -25,6 +25,9 @@ let CURRENTJOINT;
 let MODELS;
 let CURRENTMODEL;
 
+let CY;
+let RP;
+
 function jsatConsole(msg) {
     $("#consoleLog").val($("#consoleLog").val() + msg);
 }
@@ -57,6 +60,7 @@ function init() {
     $("#animTabButton").on("click", changeTab);
     $("#simButton").on("click", sendSimulationData);
     $("#addBodyButton").on("click", addBody);
+    $("#cyAddBodyCancelButton").on("click", function () { $("#cyAddBodyDiv").hide() });
     $("#addBodySaveButton").on("click", saveBody);
     $("#addBodyCancelButton").on("click", cancelBody);
     $("#loadModelButton").on("click", loadModel);
@@ -78,9 +82,238 @@ function init() {
     createBodyDetailsDiv();
     getSimFileNames();
     loadModels();
+    initCytoscape();
 
 }
 $(window).on("load", init);
+
+
+
+function initCytoscape() {
+    let rp;
+    var cy = cytoscape({
+        container: $("#cyCanvasDiv"),
+        elements: [
+            { data: { id: "base", label: 'base' }, classes: 'base' },            
+            { data: { id: "addBody", label: '+body' }, classes: 'body' },
+            { data: { id: "addRevolute", label: '+revolute' }, classes: 'joint' }
+        ],
+        style: [
+            {
+                selector: '*',
+                style: {
+                    'font-size': 12,
+                    'text-valign': 'center',
+                    'text-halign': 'center',
+                    'label': 'data(label)'
+                }
+            },
+            {
+                selector: '.base',
+                style: {
+                    'shape': 'round-triangle',
+                    'background-color': 'whitesmoke',
+                    'width': 50,
+                    'height': 50,
+                }
+            },
+            {
+                selector: '.body',
+                style: {
+                    'shape': 'round-rectangle',
+                    'background-color': 'aquamarine',
+                    'width': 50,
+                    'height': 50,
+                }
+            },
+            {
+                selector: '.joint',
+                style: {
+                    'shape': 'ellipse',
+                    'background-color': 'aqua',
+                    'width': 50,
+                    'height': 50,
+                }
+            },
+            {
+                selector: '.pin',
+                style: {
+                    'shape': 'rectangle',
+                    'background-color': 'grey',
+                    'width': 5,
+                    'height': 5,
+                    'text-opacity': 0
+                }
+            },
+            {
+                selector: '.container',
+                style: {
+                    'border-opacity': 0,
+                    'background-opacity': 0,
+                    'text-opacity': 0
+                }
+            },
+            {
+                selector: 'edge',
+                style: {
+                    'width': 3,
+                    'line-color': '#ccc',
+                    'target-arrow-color': '#ccc',
+                    'target-arrow-shape': 'triangle',
+                    'curve-style': 'taxi'
+                }
+            }
+        ],
+    });
+    // the default values of each option are outlined below:
+    let ehdefaults = {
+        canConnect: function (sourceNode, targetNode) {
+            // whether an edge can be created between source and target
+            return !sourceNode.same(targetNode); // e.g. disallow loops
+        },
+        edgeParams: function (sourceNode, targetNode) {
+            // for edges between the specified source and target
+            // return element object to be passed to cy.add() for edge
+            return {};
+        },
+        hoverDelay: 150, // time spent hovering over a target node before it is considered selected
+        snap: true, // when enabled, the edge can be drawn by just moving close to a target node (can be confusing on compound graphs)
+        snapThreshold: 50, // the target node must be less than or equal to this many pixels away from the cursor/finger
+        snapFrequency: 15, // the number of times per second (Hz) that snap checks done (lower is less expensive)
+        noEdgeEventsInDraw: true, // set events:no to edges during draws, prevents mouseouts on compounds
+        disableBrowserGestures: true // during an edge drawing gesture, disable browser gestures such as two-finger trackpad swipe and pinch-to-zoom
+    };
+
+    let eh = cy.edgehandles(ehdefaults);
+
+
+
+    //eh.enableDrawMode();
+    cy.$('#base').renderedPosition({ x: cy.width()/2, y: cy.height()/2 })
+    cy.$('#addBody').renderedPosition({ x: 50, y: 50 })
+    cy.$('#addRevolute').renderedPosition({ x: 150, y: 50 })
+    let currentZoom = cy.zoom();
+    let zoomFactor = 1 / currentZoom;
+    let nodeSize = zoomFactor * 75;
+    let edgeSize = zoomFactor * 5;
+    let fontSize = nodeSize / 4;
+
+    cy.on('dragfree', 'node#addBody', function (evt) {
+        rp = this.renderedPosition()
+        cy.$('#addBody').renderedPosition({ x: 50, y: 50 })
+        $('#cyAddBodyDiv').show()
+    })
+
+    cy.on('dragfree', 'node#addRevolute', function (evt) {
+        rp = this.renderedPosition()
+        cy.$('#addRevolute').renderedPosition({ x: 150, y: 50 })
+        $('#cyAddRevoluteDiv').show()
+    })
+
+    cy.zoomingEnabled(false) // for now, until we figure out toolbar
+    cy.on('pan zoom', function () {
+        cy.$('#addBody').renderedPosition({ x: 50, y: 50 })
+        cy.$('#addRevolute').renderedPosition({ x: 150, y: 50 })
+    })
+
+    function cySaveBody() {
+        const body = {
+            name: $("#newBodyName").val(),
+            mass: $("#newBodyMass").val(),
+            cm: $("#newBodyCm").val(),
+            ixx: $("#newBodyIxx").val(),
+            iyy: $("#newBodyIyy").val(),
+            izz: $("#newBodyIzz").val(),
+            ixy: $("#newBodyIxy").val(),
+            ixz: $("#newBodyIxz").val(),
+            iyz: $("#newBodyIyz").val(),
+        };
+
+        // throw error and return if any properties arent set        
+        for (const [key, value] of Object.entries(body)) {
+            if (value === "") {
+                jsatConsole("\nall fields of body are required to have a value!")
+                return;
+            }
+        }
+
+        const name = $("#newBodyName").val();
+        let currentZoom = cy.zoom();
+        let zoomFactor = 1 / currentZoom;
+        let nodeSize = zoomFactor * 75;
+        let edgeSize = zoomFactor * 5;
+        let fontSize = nodeSize / 4;
+
+        cy.add({
+            group: 'nodes',
+            data: {
+                id: `body${name}Container`,
+                label:''
+            },
+            classes: 'container',
+            renderedPosition: {
+                x: rp.x,
+                y: rp.y,
+            },
+        })
+
+        cy.add({
+            group: 'nodes',
+            data: {
+                id: `body${name}`,
+                parent: `body${name}Container`,
+                label: name,
+            },
+            classes: 'body',
+            renderedPosition: {
+                x: rp.x,
+                y: rp.y,
+            },
+        })
+
+        cy.add({
+            group: 'nodes',
+            data: {
+                id: `body${name}pred`,
+                parent: `body${name}Container`,
+                label:''
+            },
+            classes: 'pin',
+            renderedPosition: {
+                x: rp.x - 46,
+                y: rp.y,
+            },
+        })
+
+        cy.add({
+            group: 'nodes',
+            data: {
+                id: `body${name}succ`,
+                parent: `body${name}Container`,
+                label:''
+            },
+            classes: 'pin',
+            renderedPosition: {
+                x: rp.x + 46,
+                y: rp.y,
+            },
+        })
+
+        cy.automove({
+            nodesMatching: cy.$(`#body${name}Container`).descendants(),
+            reposition: 'drag',
+            dragWith: cy.$(`#body${name}Container`).descendants()
+        });
+
+        JSAT.bodies[body.name] = body;
+        console.log(JSAT)
+        $('#cyAddBodyDiv').hide();
+    }
+
+    $("#cyAddBodySaveButton").on("click", cySaveBody)
+}
+
+
 
 function sendSimulationData() {
     const xhr = new XMLHttpRequest();
@@ -195,8 +428,8 @@ function plotStateData() {
 
 
     const xhr = new XMLHttpRequest();
-    xhr.addEventListener("load", function () {          
-        const simData = JSON.parse(xhr.responseText);            
+    xhr.addEventListener("load", function () {
+        const simData = JSON.parse(xhr.responseText);
         let traces = [];
         let colorCtr = 0;
         simData.forEach(function (sim) {
@@ -379,6 +612,7 @@ function createBodyDetailsDiv() {
 function editBody() {
     NEWBODY = false;
     CURRENTBODY = this;
+    console.log(JSAT.bodies)
     $("#body_name").val(JSAT.bodies[this].name);
     $("#body_mass").val(JSAT.bodies[this].mass);
     $("#body_cm").val(JSAT.bodies[this].cm);
@@ -485,8 +719,6 @@ function saveRevolute() {
 function editRevolute() {
     NEWJOINT = false;
     CURRENTJOINT = this;
-    console.log(this)
-    console.log(JSAT.joints[this])
     $("#revName").val(JSAT.joints[this].name);
     $("#revPred").val(JSAT.joints[this].predecessor);
     $("#revFpPhi").val(JSAT.joints[this].FpPhi);
@@ -536,7 +768,6 @@ function saveJoint(joint) {
     }
     $(".details-popup-div").hide();
     $("#jointMenu").hide();
-    console.log(JSAT.joints)
 };
 
 function addTableInput(table, name, attr, value, obj) {

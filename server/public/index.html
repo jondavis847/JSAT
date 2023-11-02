@@ -9,6 +9,11 @@
 
   <script src="https://cdn.plot.ly/plotly-2.26.0.min.js" charset="utf-8"></script>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.21/lodash.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.26.0/cytoscape.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/cytoscape-edgehandles@4.0.1/cytoscape-edgehandles.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/cytoscape-automove@1.10.3/cytoscape-automove.min.js"></script>
+
   <script type="importmap">
     {
       "imports": {
@@ -165,7 +170,68 @@
             </div>
           </div>
 
+
+          <div id="cyCanvasDiv" class="cy-canvas-div"></div>
+          <div id="cyAddBodyDiv" class="cy-add-body-div">
+            <div id="cyAddBodyTitleDiv" class="cy-add-body-title-div">
+              enter info to add a new body
+            </div>
+            <div id="cyAddBodyTableDiv" class="cy-add-body-table-div">
+              <table class="table">
+                <tr>
+                  <td><label class="form-font" for="newBodyName">name:</label><br></td>
+                  <td><input id="newBodyName" class="form-input" type="text" name="newBodyName" placeholder="name"><br>
+                  </td>
+                </tr>
+                <tr>
+                  <td><label class="form-font" for="newBodyMass">mass:</label><br></td>
+                  <td><input id="newBodyMass" class="form-input" type="text" name="newBodyMass" placeholder="mass"><br>
+                  </td>
+                </tr>
+                <tr>
+                  <td><label class="form-font" for="newBodyCm">cm:</label><br></td>
+                  <td><input id="newBodyCm" class="form-input" type="text" name="newBodyCm" placeholder="cm"><br>
+                  </td>
+                </tr>
+                <tr>
+                  <td><label class="form-font" for="newBodyIxx">Ixx:</label><br></td>
+                  <td><input id="newBodyIxx" class="form-input" type="text" name="newBodyIxx" placeholder="ixx"><br>
+                  </td>
+                </tr>
+                <tr>
+                  <td><label class="form-font" for="newBodyIxx">Iyy:</label><br></td>
+                  <td><input id="newBodyIyy" class="form-input" type="text" name="newBodyIyy" placeholder="iyy"><br>
+                  </td>
+                </tr>
+                <tr>
+                  <td><label class="form-font" for="newBodyIzz">Izz:</label><br></td>
+                  <td><input id="newBodyIzz" class="form-input" type="text" name="newBodyIzz" placeholder="izz"><br>
+                  </td>
+                </tr>
+                <tr>
+                  <td><label class="form-font" for="newBodyIxy">Ixy:</label><br></td>
+                  <td><input id="newBodyIxy" class="form-input" type="text" name="newBodyIxy" placeholder="ixy"><br>
+                  </td>
+                </tr>
+                <tr>
+                  <td><label class="form-font" for="newBodyIxx">Ixz:</label><br></td>
+                  <td><input id="newBodyIxz" class="form-input" type="text" name="newBodyIxz" placeholder="ixz"><br>
+                  </td>
+                </tr>
+                <tr>
+                  <td><label class="form-font" for="newBodyIxx">Iyz:</label><br></td>
+                  <td><input id="newBodyIyz" class="form-input" type="text" name="newBodyIyz" placeholder="iyz"><br>
+                  </td>
+                </tr>
+              </table>
+            </div>
+            <div id="cyAddBodyButtonsDiv" class="cy-add-body-buttons-div">
+              <button id="cyAddBodySaveButton" class="cy-add-body-save-button">save</button>
+              <button id="cyAddBodyCancelButton" class="cy-add-body-cancel-button">cancel</button>
+            </div>
+          </div>
         </div>
+
 
         <!-- plotting tab -->
         <div id="plotTab" class="plot-tab tab-content">
