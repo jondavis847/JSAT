@@ -229,10 +229,7 @@ function articulated_body_algorithm!(sys)
         Iᴬ[i] = Iᵇ[i]
         #fᵇ[i] = ⁱXₒᶠ[i] * fˣ[i]
         fᵇ[i] = fˣ[i]
-        f_gyro[i] = v[i] ×ᶠ (Iᵇ[i] * v[i])
-        # this is a heavy bandaid for not understanding the m(ω×v) term from example 2.6
-        #v_gyro = v[i].*SA[1,1,1,0,0,0]
-        #f_gyro[i] = v_gyro ×ᶠ (Iᵇ[i] * v_gyro)
+        f_gyro[i] = v[i] ×ᶠ (Iᵇ[i] * v[i])        
         pᴬ[i] = f_gyro[i] - fᵇ[i]
     end
 

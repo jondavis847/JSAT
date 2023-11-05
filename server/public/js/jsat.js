@@ -58,28 +58,14 @@ function init() {
     $("#simTabButton").on("click", changeTab);
     $("#plotTabButton").on("click", changeTab);
     $("#animTabButton").on("click", changeTab);
-    $("#simButton").on("click", sendSimulationData);
-    $("#addBodyButton").on("click", addBody);
+    $("#simButton").on("click", sendSimulationData);    
     $("#cyAddBodyCancelButton").on("click", function () { $("#cyAddBodyDiv").hide() });
-    $("#addBodySaveButton").on("click", saveBody);
-    $("#addBodyCancelButton").on("click", cancelBody);
+    $("#cyAddRevoluteCancelButton").on("click", function () { $("#cyAddRevoluteDiv").hide() });
     $("#loadModelButton").on("click", loadModel);
-    $("#addJointButton").on("click", function () { $("#jointMenu").toggle() });
-    $("#addRevoluteButton").on("click", addRevolute)
-    $("#cancelJointButton").on("click", function () { $("#jointMenu").toggle() });
-    $("#addJointCancelButton").on("click", cancelJointMenu);
     $("#loadSimStates").on("click", getSimStates);
     $("#plotState").on("click", plotStateData);
     $("#animateBtn").on("click", makeAnimation);
-    $("#revSaveButton").on("click", saveRevolute);
-    $("#revCancelButton").on("click", function () { $("#jointMenu").hide(); $("#revoluteDetailsDiv").hide(); });
 
-
-    //on keyup
-    enterClick($("#bodyName"), $("#addBodySaveButton"));
-    enterClick($("#jointName"), $("#addJointSaveButton"));
-
-    createBodyDetailsDiv();
     getSimFileNames();
     loadModels();
     initCytoscape();
@@ -94,7 +80,7 @@ function initCytoscape() {
     var cy = cytoscape({
         container: $("#cyCanvasDiv"),
         elements: [
-            { data: { id: "base", label: 'base' }, classes: 'base' },            
+            { data: { id: "base", label: 'base' }, classes: 'base' },
             { data: { id: "addBody", label: '+body' }, classes: 'body' },
             { data: { id: "addRevolute", label: '+revolute' }, classes: 'joint' }
         ],
@@ -136,31 +122,20 @@ function initCytoscape() {
                 }
             },
             {
-                selector: '.pin',
-                style: {
-                    'shape': 'rectangle',
-                    'background-color': 'grey',
-                    'width': 5,
-                    'height': 5,
-                    'text-opacity': 0
-                }
-            },
-            {
-                selector: '.container',
-                style: {
-                    'border-opacity': 0,
-                    'background-opacity': 0,
-                    'text-opacity': 0
-                }
-            },
-            {
                 selector: 'edge',
                 style: {
                     'width': 3,
                     'line-color': '#ccc',
                     'target-arrow-color': '#ccc',
                     'target-arrow-shape': 'triangle',
-                    'curve-style': 'taxi'
+                    'curve-style': 'bezier'
+                }
+            },
+            { // just to suppress a warning with edgehandles https://github.com/cytoscape/cytoscape.js-edgehandles/issues/119
+                //didnt work
+                selector: '.eh-ghost-node',
+                style: {
+                    'label': ''
                 }
             }
         ],
@@ -187,16 +162,66 @@ function initCytoscape() {
     let eh = cy.edgehandles(ehdefaults);
 
 
+    $(document).on("keydown", (event) => {
+        if (event.keyCode === 17) {
+            eh.enableDrawMode();
+        }
+    });
+    $(document).on("keyup", (event) => {
+        if (event.keyCode === 17) {
+            eh.disableDrawMode();
+        }
+    });
 
-    //eh.enableDrawMode();
-    cy.$('#base').renderedPosition({ x: cy.width()/2, y: cy.height()/2 })
+    cy.on('ehcomplete', (evt, src, tar, edge) => {
+        console.log(JSAT)
+
+        if (tar.data().id === cy.$('#addBody').data().id) {
+            jsatConsole("\ncannot connect to this node")
+            edge.remove();
+        }
+
+        //set if predecessor
+        if (src.classes().includes("body")) {
+            if (tar.classes().includes("joint")) {
+                const source_id = src.data().label;
+                const target_id = tar.data().label;
+                JSAT.joints[target_id]["predecessor"] = source_id;
+            }
+        }
+
+        //set if successor
+        if (src.classes().includes("joint")) {
+            if (tar.classes().includes("body")) {
+                const source_id = src.data().label;
+                const target_id = tar.data().label;
+                JSAT.joints[source_id]["successor"] = target_id;
+            }
+        }
+
+        //set if base
+        if (src.classes().includes("base")) {
+            if (tar.classes().includes("joint")) {
+                const source_id = src.data().label;
+                const target_id = tar.data().label;
+                JSAT.joints[target_id]["predecessor"] = source_id;
+            }
+        }
+        console.log(JSAT)
+    })
+
+    cy.$('#base').renderedPosition({ x: cy.width() / 2, y: cy.height() / 2 })
     cy.$('#addBody').renderedPosition({ x: 50, y: 50 })
     cy.$('#addRevolute').renderedPosition({ x: 150, y: 50 })
-    let currentZoom = cy.zoom();
-    let zoomFactor = 1 / currentZoom;
-    let nodeSize = zoomFactor * 75;
-    let edgeSize = zoomFactor * 5;
-    let fontSize = nodeSize / 4;
+
+
+    cy.on('cxttapstart', 'node', function (evt) {
+        eh.enableDrawMode();
+    })
+
+    cy.on('cxttapend', function (evt) {
+        eh.disableDrawMode();
+    })
 
     cy.on('dragfree', 'node#addBody', function (evt) {
         rp = this.renderedPosition()
@@ -226,7 +251,10 @@ function initCytoscape() {
             izz: $("#newBodyIzz").val(),
             ixy: $("#newBodyIxy").val(),
             ixz: $("#newBodyIxz").val(),
-            iyz: $("#newBodyIyz").val(),
+            iyz: $("#newBodyIyz").val(),            
+            geometry: $("#newBodyGeometry").val(),
+            material: $("#newBodyMaterial").val(),
+            color: $("#newBodyColor").val(),
         };
 
         // throw error and return if any properties arent set        
@@ -247,21 +275,7 @@ function initCytoscape() {
         cy.add({
             group: 'nodes',
             data: {
-                id: `body${name}Container`,
-                label:''
-            },
-            classes: 'container',
-            renderedPosition: {
-                x: rp.x,
-                y: rp.y,
-            },
-        })
-
-        cy.add({
-            group: 'nodes',
-            data: {
                 id: `body${name}`,
-                parent: `body${name}Container`,
                 label: name,
             },
             classes: 'body',
@@ -271,49 +285,58 @@ function initCytoscape() {
             },
         })
 
-        cy.add({
-            group: 'nodes',
-            data: {
-                id: `body${name}pred`,
-                parent: `body${name}Container`,
-                label:''
-            },
-            classes: 'pin',
-            renderedPosition: {
-                x: rp.x - 46,
-                y: rp.y,
-            },
-        })
-
-        cy.add({
-            group: 'nodes',
-            data: {
-                id: `body${name}succ`,
-                parent: `body${name}Container`,
-                label:''
-            },
-            classes: 'pin',
-            renderedPosition: {
-                x: rp.x + 46,
-                y: rp.y,
-            },
-        })
-
-        cy.automove({
-            nodesMatching: cy.$(`#body${name}Container`).descendants(),
-            reposition: 'drag',
-            dragWith: cy.$(`#body${name}Container`).descendants()
-        });
 
         JSAT.bodies[body.name] = body;
         console.log(JSAT)
         $('#cyAddBodyDiv').hide();
     }
 
+    function cySaveRevolute() {
+        const joint = {
+            name: $("#newRevoluteName").val(),
+            type: "revolute",
+            theta: $("#newRevoluteTheta").val(),
+            omega: $("#newRevoluteOmega").val(),
+            predecessor: "undef", //defined after connection
+            successor: "undef",  //defined after connection
+            FpRho: $("#newRevoluteFpRho").val(),
+            FpPhi: $("#newRevoluteFpPhi").val(),
+            FsRho: $("#newRevoluteFsRho").val(),
+            FsPhi: $("#newRevoluteFsPhi").val(),
+        };
+
+        // throw error and return if any properties arent set        
+        for (const [key, value] of Object.entries(joint)) {
+            if (value === "") {
+                jsatConsole("\nall fields of body are required to have a value!")
+                return;
+            }
+        }
+
+        const name = $("#newRevoluteName").val();
+
+        cy.add({
+            group: 'nodes',
+            data: {
+                id: `joint${name}`,
+                label: name,
+            },
+            classes: 'joint',
+            renderedPosition: {
+                x: rp.x,
+                y: rp.y,
+            },
+        })
+
+
+        JSAT.joints[name] = joint;
+        console.log(JSAT)
+        $('#cyAddRevoluteDiv').hide();
+    }
+
     $("#cyAddBodySaveButton").on("click", cySaveBody)
+    $("#cyAddRevoluteSaveButton").on("click", cySaveRevolute)
 }
-
-
 
 function sendSimulationData() {
     const xhr = new XMLHttpRequest();
@@ -553,169 +576,6 @@ function loadModel() {
 }
 
 
-// called when user clicks +body, prompts user for the name, will save and add component on enter or click
-function addBody() {
-    NEWBODY = true;
-
-    //reset body details inputs
-    $("#body_name").val("");
-    $("#body_mass").val("");
-    $("#body_cm").val("");
-    $("#body_ixx").val("");
-    $("#body_iyy").val("");
-    $("#body_izz").val("");
-    $("#body_ixy").val("");
-    $("#body_ixz").val("");
-    $("#body_iyz").val("");
-
-    $("#bodyDetailsDiv").show();
-    $("#body_name").trigger("focus");
-}
-
-
-
-function createBodyDetailsDiv() {
-    let body = {
-        name: "",
-        mass: "",
-        cm: "",
-        ixx: "",
-        iyy: "",
-        izz: "",
-        ixy: "",
-        ixz: "",
-        iyz: "",
-    };
-
-    $("#bodyDetailsDiv").append(tableFromObject(body, "body"));
-    const saveBtn = $("<button>/", {
-        id: "bodyDetailsSaveBtn",
-        html: "save"
-    });
-
-    saveBtn.addClass("save-body-details-button");
-    saveBtn.on("click", saveBody)
-
-    $("#bodyDetailsDiv").append(saveBtn);
-
-    const cancelBtn = $("<button>/", {
-        id: "bodyDetailsCancelBtn",
-        html: "cancel"
-    });
-    cancelBtn.addClass("cancel-body-details-button");
-    cancelBtn.on("click", function () {
-        $("#bodyDetailsDiv").hide();
-    });
-    $("#bodyDetailsDiv").append(cancelBtn);
-}
-
-function editBody() {
-    NEWBODY = false;
-    CURRENTBODY = this;
-    console.log(JSAT.bodies)
-    $("#body_name").val(JSAT.bodies[this].name);
-    $("#body_mass").val(JSAT.bodies[this].mass);
-    $("#body_cm").val(JSAT.bodies[this].cm);
-    $("#body_ixx").val(JSAT.bodies[this].ixx);
-    $("#body_iyy").val(JSAT.bodies[this].iyy);
-    $("#body_izz").val(JSAT.bodies[this].izz);
-    $("#body_ixy").val(JSAT.bodies[this].ixy);
-    $("#body_ixz").val(JSAT.bodies[this].ixz);
-    $("#body_iyz").val(JSAT.bodies[this].iyz);
-    $("#bodyDetailsDiv").show();
-};
-
-
-
-
-// called when user saves the +body or edit body prompt
-function saveBody(body) {
-    if (body === undefined) {
-        const body = {
-            name: $("#body_name").val(),
-            mass: $("#body_mass").val(),
-            cm: $("#body_cm").val(),
-            ixx: $("#body_ixx").val(),
-            iyy: $("#body_iyy").val(),
-            izz: $("#body_izz").val(),
-            ixy: $("#body_ixy").val(),
-            ixz: $("#body_ixz").val(),
-            iyz: $("#body_iyz").val(),
-        };
-
-        // throw error and return if any properties arent set        
-        for (const [key, value] of Object.entries(body)) {
-            if (value === "") {
-                jsatConsole("\nall fields of body are required to have a value!")
-                return;
-            }
-        }
-    }
-
-    if (!NEWBODY) {
-        $(`#${CURRENTBODY}BodyButton`).html(body.name)
-        $(`#${CURRENTBODY}BodyButton`).prop("onclick", null).off("click");
-        $(`#${CURRENTBODY}BodyButton`).on("click", editBody.bind(body.name))
-        $(`#${CURRENTBODY}BodyButton`).attr("id", `${body.name}BodyButton`)// set id last
-    }
-    delete JSAT.bodies[CURRENTBODY]
-    JSAT.bodies[body.name] = body;
-
-    if (NEWBODY) {
-        //create new body button
-        let btn = $('<button/>', {
-            id: `${body.name}BodyButton`,
-            html: body.name
-        })
-        btn.addClass("body-buttons")
-        //place button in div
-        $("#bodyBuilderDiv").append(btn);
-
-        btn.on("click", editBody.bind(body.name))
-    }
-    $("#bodyDetailsDiv").hide();
-};
-
-// cancels  the +spacecraft prompt without saving
-function cancelBody() {
-    $("#bodyPopup").style.display = "none";
-}
-
-function cancelJointMenu() {
-    $("#jointMenu").style.display = "none";
-}
-
-function addRevolute() {
-    NEWJOINT = true;
-    $("#revName").val("");
-    $("#revPred").val("");
-    $("#revFpPhi").val("");
-    $("#revFpRho").val("");
-    $("#revSucc").val("");
-    $("#revFsPhi").val("");
-    $("#revFsRho").val("");
-    $("#revTheta").val("");
-    $("#revOmega").val("");
-
-    $("#revoluteDetailsDiv").show()
-};
-
-function saveRevolute() {
-    const joint = {
-        name: $("#revName").val(),
-        type: "revolute",
-        predecessor: $("#revPred").val(),
-        FpPhi: $("#revFpPhi").val(),
-        FpRho: $("#revFpRho").val(),
-        successor: $("#revSucc").val(),
-        FsPhi: $("#revFsPhi").val(),
-        FsRho: $("#revFsRho").val(),
-        theta: $("#revTheta").val(),
-        omega: $("#revOmega").val()
-    };
-    saveJoint(joint);
-}
-
 function editRevolute() {
     NEWJOINT = false;
     CURRENTJOINT = this;
@@ -732,107 +592,6 @@ function editRevolute() {
     $("#revoluteDetailsDiv").show();
 };
 
-function saveJoint(joint) {
-    // throw error and return if any properties arent set        
-    for (const [key, value] of Object.entries(joint)) {
-        if (value === "") {
-            jsatConsole("\nall fields of joint are required to have a value!");
-            return;
-        };
-    };
-
-    if (!NEWJOINT) {
-        $(`#${CURRENTJOINT}JointButton`).html(joint.name)
-        $(`#${CURRENTJOINT}JointButton`).prop("onclick", null).off("click");
-        $(`#${CURRENTJOINT}JointButton`).on("click", editRevolute.bind(joint.name))
-        $(`#${CURRENTJOINT}JointButton`).attr("id", `${joint.name}JointButton`) //set id last
-    }
-    delete JSAT.joints[CURRENTJOINT]
-    JSAT.joints[joint.name] = joint;
-
-    if (NEWJOINT) {
-        //create new joint button
-        let btn = $('<button/>', {
-            id: `${joint.name}JointButton`,
-            html: joint.name
-        })
-        btn.addClass("joint-button")
-        //place button in div
-        $("#jointBuilderDiv").append(btn);
-
-        switch (joint.type) {
-            case "revolute":
-                btn.on("click", editRevolute.bind(joint.name))
-                break;
-        }
-    }
-    $(".details-popup-div").hide();
-    $("#jointMenu").hide();
-};
-
-function addTableInput(table, name, attr, value, obj) {
-    var tr = document.createElement("tr");
-
-    //create label    
-    var td1 = document.createElement("td");
-    var l = document.createElement("label");
-    l.setAttribute('for', `${obj}_${name}`);
-    l.innerHTML = name;
-    l.classList.add("form-font");
-    var brl = document.createElement("br");
-    td1.appendChild(l);
-    td1.appendChild(brl);
-
-    //create input    
-    var td2 = document.createElement("td2");
-    var i = document.createElement("input");
-    i.setAttribute('type', "text");
-    i.id = `${obj}_${name}`;
-    i.setAttribute(attr, value);
-    i.classList.add("form-input");
-    var bri = document.createElement("br");
-    td2.appendChild(i);
-    td2.appendChild(bri);
-
-    //append to table
-    tr.appendChild(td1);
-    tr.appendChild(td2);
-    table.appendChild(tr);
-
-    //add onblur event caller to update global SC
-    //i.onblur = function () {
-    //  COMPONENT[name] = i.value;
-    //if this is name property, update the button text
-    //if (name === "name") {
-    //  COMPONENT_BUTTON.innerText = i.value;
-    //}
-    // }
-}
-
-
-function tableFromObject(object, id_name) {
-    var t = document.createElement("table");
-    t.classList.add("table");
-
-    const k = Object.keys(object);
-    for (let i = 0; i < k.length; i++) {
-        addTableInput(t, k[i], 'placeholder', `enter ${k[i]}`, id_name); //change body to enum    
-    }
-    return t;
-}
-
-//takes fields from savedSpacecraft components and populates thier component fields when loaded
-function populateInputFields(comp) {
-    const keys = Object.keys(comp);
-    keys.forEach(function (k) {
-        //focus first so that onblur will populate JSAT.sc
-        $(`#${SPACECRAFT.name}_${comp.name}_${k}`).trigger("focus");
-        //replace input field text with the savedSpacecraft values         
-        $(`#${SPACECRAFT.name}_${comp.name}_${k}`).val(comp[k]);
-        //blur the field so that it updates SPACECRAFT and JSAT.sc
-        $(`#${SPACECRAFT.name}_${comp.name}_${k}`).trigger("blur");
-    })
-}
 
 const savedSpacecraft = [
     {
