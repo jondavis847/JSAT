@@ -125,8 +125,15 @@ function routerSimulate(req::HTTP.Request)
         mkdir("sim\\$(sim_name)")
     end
 
+    #save simulation data file
     CSV.write("sim\\$(sim_name)\\run0.csv", sol)
 
+    #save system file
+    open("sim\\$(sim_name)\\system.json", "w") do io
+        JSON3.pretty(io, message)
+    end
+
+    println(message)
     HTTP.Response(200, "$(dt)")
 end
 
@@ -141,21 +148,21 @@ function routerLoadStates(req::HTTP.Request)
     HTTP.Response(200, JSON3.write(D))
 end
 
-function routerPlot(req::HTTP.Request)    
-    data = JSON3.read(req.body)    
+function routerPlot(req::HTTP.Request)
+    data = JSON3.read(req.body)
     sims = data[:sims]
     xs = data[:states]
     simdata = []
     for i in eachindex(sims)
         loc = "sim\\$(sims[i])"
         f = readdir(loc)
-        runs = f[occursin.(".csv", f)]        
+        runs = f[occursin.(".csv", f)]
         rundata = []
-        for r in eachindex(runs)            
-            rd = CSV.read("$(loc)\\$(runs[r])", DataFrame, select=["t", xs...])            
+        for r in eachindex(runs)
+            rd = CSV.read("$(loc)\\$(runs[r])", DataFrame, select=["t", xs...])
             push!(rundata, rd)
         end
         push!(simdata, Dict("sim" => sims[i], "runData" => rundata))
-    end    
+    end
     HTTP.Response(200, JSON3.write(simdata))
 end
