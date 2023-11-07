@@ -3,20 +3,23 @@ includet("..\\src\\blue42.jl")
 function jsat_server()
     ROUTER = HTTP.Router()
 
-    routerIndex(req::HTTP.Request) = HTTP.Response(200, read("server\\public\\index.html"))
+    routerIndex(req::HTTP.Request) = HTTP.Response(200,read("server\\public\\index.html"))
     routerCss(req::HTTP.Request) = HTTP.Response(200, read("server\\public\\css\\jsat.css"))
-    routerJs(req::HTTP.Request) = HTTP.Response(200, read("server\\public\\js\\jsat.js"))
+    routerJs(req::HTTP.Request) = HTTP.Response(200, ["Content-Type" => "application/javascript"],read("server\\public\\js\\jsat.js"))
+    #routerJs(req::HTTP.Request) = HTTP.Response(200, ["Content-Type" => "application/javascript"],read("server\\public\\dist\\bundle.js"))
     routerLoadModels(req::HTTP.Request) = HTTP.Response(200, string(JSON3.read("server\\models.json")))
 
     HTTP.register!(ROUTER, "GET", "/", routerIndex)
     HTTP.register!(ROUTER, "GET", "/css/jsat.css", routerCss)
     HTTP.register!(ROUTER, "GET", "/js/jsat.js", routerJs)
+    #HTTP.register!(ROUTER, "GET", "/dist/bundle.js", routerJs)
 
     HTTP.register!(ROUTER, "POST", "/simulate", routerSimulate)
     HTTP.register!(ROUTER, "GET", "/simfiles", routerSimFiles)
     HTTP.register!(ROUTER, "GET", "/loadmodels", routerLoadModels)
     HTTP.register!(ROUTER, "POST", "/loadstates", routerLoadStates)
     HTTP.register!(ROUTER, "POST", "/plotstates", routerPlot)
+    HTTP.register!(ROUTER, "POST", "/animation", routerAnimate)
 
     server = HTTP.serve!(ROUTER, ip"127.0.0.1", 80)
     printstyled("servers up! ctrl+click url to go : http://127.0.0.1:80 \n", color=:light_yellow)
@@ -165,4 +168,33 @@ function routerPlot(req::HTTP.Request)
         push!(simdata, Dict("sim" => sims[i], "runData" => rundata))
     end
     HTTP.Response(200, JSON3.write(simdata))
+end
+
+function routerAnimate(req::HTTP.Request)
+    data = JSON3.read(req.body)
+    sim = data[:sim]
+    run = data[:run]
+    loc = "sim\\$(sim)"
+    f = readdir(loc)
+    sys = JSON3.read("$(loc)\\system.json")
+    t = CSV.read("$(loc)\\$(run).csv", DataFrame, select=["t"])
+    rd = DataFrame(t)
+
+    for body in sys.bodies
+        body_name = body[2].name
+        states = [
+        "$(body_name)_q_base[1]"
+        "$(body_name)_q_base[2]"
+        "$(body_name)_q_base[3]"
+        "$(body_name)_q_base[4]"
+        "$(body_name)_r_base[1]"
+        "$(body_name)_r_base[2]"
+        "$(body_name)_r_base[3]"
+        ]
+        this_rd = CSV.read("$(loc)\\$(run).csv", DataFrame, select=[states...])        
+        rd = hcat(rd,this_rd)        
+    end    
+    
+    D = Dict("sys"=> sys, "data"=>rd)
+    HTTP.Response(200, JSON3.write(D))#JSON3.write(simdata))
 end

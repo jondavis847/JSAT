@@ -3,27 +3,19 @@
 
 <head>
   <link rel="stylesheet" href="css/jsat.css">
-
-  <script src="https://code.jquery.com/jquery-3.7.1.min.js"
-    integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
-
-  <script src="https://cdn.plot.ly/plotly-2.26.0.min.js" charset="utf-8"></script>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.21/lodash.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.26.0/cytoscape.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/cytoscape-edgehandles@4.0.1/cytoscape-edgehandles.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/cytoscape-automove@1.10.3/cytoscape-automove.min.js"></script>
-
+  <link href="https://cdn.jsdelivr.net/npm/jquery-ui@1.13.2/themes/base/theme.min.css" rel="stylesheet">
   <script type="importmap">
     {
-      "imports": {
-        "three": "https://unpkg.com/three@0.157.0/build/three.module.js",
-        "three/addons/": "https://unpkg.com/three@0.157.0/examples/jsm/"
-      }
+        "imports": {
+                "three": "https://unpkg.com/three@0.158.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.158.0/examples/jsm/"
+        }
     }
-  </script>
+</script>
+  <script src="./js/jsat.js" type="module"></script>
+  <!--<script src = "./dist/bundle.js"></script>-->
 
-  <script src="js/jsat.js" charset="utf-8"></script>
+
 
 </head>
 
@@ -153,17 +145,39 @@
                 </tr>
                 <tr>
                   <td><label class="form-font" for="newBodyGeometry">geometry:</label><br></td>
-                  <td><input id="newBodyGeometry" class="form-input" type="text" name="newBodyGeometry" placeholder="geometry"><br>
+                  <td><input id="newBodyGeometry" class="form-input" type="text" name="newBodyGeometry"
+                      placeholder="geometry"><br>
                   </td>
                 </tr>
                 <tr>
+                  <td><label class="form-font" for="newBodyLength">length:</label><br></td>
+                  <td><input id="newBodyLength" class="form-input" type="text" name="newBodyLength"
+                      placeholder="length"><br>
+                  </td>
+                </tr>
+                <tr>
+                  <td><label class="form-font" for="newBodyWidth">width:</label><br></td>
+                  <td><input id="newBodyWidth" class="form-input" type="text" name="newBodyWidth"
+                      placeholder="width"><br>
+                  </td>
+                </tr>
+                <tr>
+                  <td><label class="form-font" for="newBodyHeight">height:</label><br></td>
+                  <td><input id="newBodyHeight" class="form-input" type="text" name="newBodyHeight"
+                      placeholder="height"><br>
+                  </td>
+                </tr>
+
+                <tr>
                   <td><label class="form-font" for="newBodyMaterial">material:</label><br></td>
-                  <td><input id="newBodyMaterial" class="form-input" type="text" name="newBodyMaterial" placeholder="material"><br>
+                  <td><input id="newBodyMaterial" class="form-input" type="text" name="newBodyMaterial"
+                      placeholder="material"><br>
                   </td>
                 </tr>
                 <tr>
                   <td><label class="form-font" for="newBodyColor">color:</label><br></td>
-                  <td><input id="newBodyColor" class="form-input" type="text" name="newBodyColor" placeholder="color"><br>
+                  <td><input id="newBodyColor" class="form-input" type="text" name="newBodyColor"
+                      placeholder="color"><br>
                   </td>
                 </tr>
               </table>

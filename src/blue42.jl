@@ -203,7 +203,7 @@ function calculate_r!(joints,r_base,q_base, ᵒXᵢᵐ, λ)
         r_Fp_to_Fs_in_Fp_frame = joint.frame.Φ.value' * r_Fs_to_Bi_in_Fs_frame + joint.frame.r 
         r_Bλ_to_Fp_in_Bλ_frame =  joint.connection.Fp.Φ.value' * r_Fp_to_Fs_in_Fp_frame + joint.connection.Fp.r
         if λ[i] != 0
-            r_Bλ_to_Fp_in_base_frame = (ᵒXᵢᵐ[λ[i]][i3,i3])' * r_Bλ_to_Fp_in_Bλ_frame        
+            r_Bλ_to_Fp_in_base_frame = (ᵒXᵢᵐ[λ[i]][i3,i3]) * r_Bλ_to_Fp_in_Bλ_frame        
             r_base_to_Fp_in_base_frame = r_Bλ_to_Fp_in_base_frame + r_base[λ[i]]
             q_base[i] = atoq(joint.connection.Fs.Φ.value' * joint.frame.Φ.value * joint.connection.Fp.Φ.value * qtoa(q_base[λ[i]]))
         else
@@ -298,7 +298,7 @@ end
 
 function gravity!(sys::MultibodySystem)
     for i in 1:length(sys.bodies)-1
-        sys.fˣ[i] = sys.fˣ[i] .+ sys.Iᵇ[i] * sys.ⁱXₒᵐ[i] * SVector{6,Float64}(0, 0, 0, 0, -1, 0)
+        sys.fˣ[i] = sys.fˣ[i] .+ sys.Iᵇ[i] * sys.ⁱXₒᵐ[i] * SVector{6,Float64}(0, 0, 0, 0, -9.8, 0)
     end
     nothing
 end
