@@ -1,4 +1,3 @@
-//import $ from 'https://cdn.jsdelivr.net/npm/jquery@3.7.1/+esm';
 import 'https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js';
 import 'https://cdn.jsdelivr.net/npm/jquery-ui@1.13.2/dist/jquery-ui.min.js';
 import cytoscape from 'https://cdn.jsdelivr.net/npm/cytoscape@3.27.0/+esm';
@@ -7,9 +6,6 @@ cytoscape.use(edgehandles);
 import "https://cdn.jsdelivr.net/npm/plotly.js/dist/plotly.min.js";
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-//import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.158.0/+esm';
-//import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-//import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 export let JSAT = {
     bodies: {},
@@ -135,6 +131,7 @@ function initCytoscape() {
         ],
     });
     // the default values of each option are outlined below:
+    /*
     let ehdefaults = {
         canConnect: function (sourceNode, targetNode) {
             // whether an edge can be created between source and target
@@ -145,24 +142,24 @@ function initCytoscape() {
             // return element object to be passed to cy.add() for edge
             return {};
         },
-        hoverDelay: 150, // time spent hovering over a target node before it is considered selected
-        snap: true, // when enabled, the edge can be drawn by just moving close to a target node (can be confusing on compound graphs)
-        snapThreshold: 50, // the target node must be less than or equal to this many pixels away from the cursor/finger
-        snapFrequency: 15, // the number of times per second (Hz) that snap checks done (lower is less expensive)
-        noEdgeEventsInDraw: true, // set events:no to edges during draws, prevents mouseouts on compounds
-        disableBrowserGestures: true // during an edge drawing gesture, disable browser gestures such as two-finger trackpad swipe and pinch-to-zoom
+        //hoverDelay: 150, // time spent hovering over a target node before it is considered selected
+        snap: false, // when enabled, the edge can be drawn by just moving close to a target node (can be confusing on compound graphs)
+        //snapThreshold: 50, // the target node must be less than or equal to this many pixels away from the cursor/finger
+        //snapFrequency: 15, // the number of times per second (Hz) that snap checks done (lower is less expensive)
+        //noEdgeEventsInDraw: true, // set events:no to edges during draws, prevents mouseouts on compounds
+        //disableBrowserGestures: true // during an edge drawing gesture, disable browser gestures such as two-finger trackpad swipe and pinch-to-zoom
     };
-
-    let eh = cy.edgehandles(ehdefaults);
-
+*/
+    let eh = cy.edgehandles({snap:false});
+    //cy.autoungrabify(false);
 
     $(document).on("keydown", (event) => {
-        if (event.keyCode === 17) {
+        if (event.keyCode === 16) {
             eh.enableDrawMode();
         }
     });
     $(document).on("keyup", (event) => {
-        if (event.keyCode === 17) {
+        if (event.keyCode === 16) {
             eh.disableDrawMode();
         }
     });
@@ -202,24 +199,22 @@ function initCytoscape() {
             }
         }
         console.log(JSAT)
+        cy.nodes().forEach(function (ele) {
+            ele.grabify();
+            console.log(ele.grabbable());
+        })
+        //cy.$('node').grabify(true); //for some reason nodes become ungrabbable after connecting an edgehandle
     });
 
     cy.$('#base').renderedPosition({ x: cy.width() / 2, y: cy.height() / 2 });
     cy.$('#addBody').renderedPosition({ x: 50, y: 50 });
     cy.$('#addRevolute').renderedPosition({ x: 150, y: 50 });
 
-
-    cy.on('cxttapstart', 'node', function (evt) {
-        eh.enableDrawMode();
-    })
-
-    cy.on('cxttapend', function (evt) {
-        eh.disableDrawMode();
-    })
-
     cy.on('dragfree', 'node#addBody', function (evt) {
         rp = this.renderedPosition()
         cy.$('#addBody').renderedPosition({ x: 50, y: 50 })
+        $("#cyAddBodySaveButton").off();
+        $("#cyAddBodySaveButton").on("click", {new:true,name:''}, cySaveBody)
         $('#cyAddBodyDiv').show()
     })
 
@@ -229,13 +224,43 @@ function initCytoscape() {
         $('#cyAddRevoluteDiv').show()
     })
 
+    cy.on('tap','node', function (evt) {
+        evt.target.select();
+        console.log(cy.$('node').selected())
+    });
+
+    cy.on('dbltap', '.body', function (evt) {
+        const name = this.data().label;
+        const body = JSAT.bodies[name];
+        $("#newBodyName").val(body.name);
+        $("#newBodyMass").val(body.mass);
+        $("#newBodyCm").val(body.cm);
+        $("#newBodyIxx").val(body.ixx);
+        $("#newBodyIyy").val(body.iyy);
+        $("#newBodyIzz").val(body.izz);
+        $("#newBodyIxy").val(body.ixy);
+        $("#newBodyIxz").val(body.ixz);
+        $("#newBodyIyz").val(body.iyz);
+        $("#newBodyGeometry").val(body.geometry);
+        $("#newBodyLength").val(body.length);
+        $("#newBodyWidth").val(body.width);
+        $("#newBodyHeight").val(body.height);
+        $("#newBodyMaterial").val(body.material);
+        $("#newBodyColor").val(body.color);
+        $("#cyAddBodySaveButton").off();
+        $("#cyAddBodySaveButton").on("click", {new:false,name:name}, cySaveBody)
+        $("#cyAddBodyDiv").show();        
+    })
+
     cy.zoomingEnabled(false) // for now, until we figure out toolbar
     cy.on('pan zoom', function () {
         cy.$('#addBody').renderedPosition({ x: 50, y: 50 })
         cy.$('#addRevolute').renderedPosition({ x: 150, y: 50 })
     })
 
-    function cySaveBody() {
+    function cySaveBody(event) {
+        console.log(event)        
+
         const body = {
             name: $("#newBodyName").val(),
             mass: $("#newBodyMass").val(),
@@ -262,27 +287,31 @@ function initCytoscape() {
             }
         }
 
-        const name = $("#newBodyName").val();
-        let currentZoom = cy.zoom();
-        let zoomFactor = 1 / currentZoom;
-        let nodeSize = zoomFactor * 75;
-        let edgeSize = zoomFactor * 5;
-        let fontSize = nodeSize / 4;
+        // create button if this is a new body        
+        if (event.data.new) {            
+            const name = $("#newBodyName").val();
+            let currentZoom = cy.zoom();
+            let zoomFactor = 1 / currentZoom;
+            let nodeSize = zoomFactor * 75;
+            let edgeSize = zoomFactor * 5;
+            let fontSize = nodeSize / 4;
 
-        cy.add({
-            group: 'nodes',
-            data: {
-                id: `body${name}`,
-                label: name,
-            },
-            classes: 'body',
-            renderedPosition: {
-                x: rp.x,
-                y: rp.y,
-            },
-        });
-
-
+            cy.add({
+                group: 'nodes',
+                data: {
+                    id: `body${name}`,
+                    label: name,
+                },
+                classes: 'body',
+                renderedPosition: {
+                    x: rp.x,
+                    y: rp.y,
+                },
+            });
+        } else {
+            delete JSAT.bodies[event.data.name] 
+        }        
+        
         JSAT.bodies[body.name] = body;
         console.log(JSAT)
         $('#cyAddBodyDiv').hide();
@@ -331,7 +360,7 @@ function initCytoscape() {
         $('#cyAddRevoluteDiv').hide();
     }
 
-    $("#cyAddBodySaveButton").on("click", cySaveBody)
+    $("#cyAddBodySaveButton").on("click", {new:true,name:''}, cySaveBody)
     $("#cyAddRevoluteSaveButton").on("click", cySaveRevolute)
 }
 
@@ -355,6 +384,7 @@ function getSimFileNames() {
         let data = JSON.parse(this.responseText)
         // remove all options first...
         $("#simSelect").empty();
+        $("#sim2Select").empty();
         //then reload all options        
         for (let i = 0; i < data.length; i++) {
             $("#simSelect").append($('<option>', {
@@ -694,17 +724,17 @@ function makeAnimation() {
         animationDiv.appendChild(renderer.domElement);
 
         const scene = new THREE.Scene();
-        const axesHelper = new THREE.AxesHelper( 1 );
-        scene.add( axesHelper );
+        const axesHelper = new THREE.AxesHelper(1);
+        scene.add(axesHelper);
         const camera = new THREE.PerspectiveCamera(300, w / h, 1, 100);
         camera.position.set(0, 0, 10);
-        camera.rotation.set(0,0,Math.PI)
+        camera.rotation.set(0, 0, Math.PI)
         //camera.up.set(0,1,0);
-        
+
 
         //const controls = new OrbitControls(camera, renderer.domElement);
         //controls.update()
-        
+
         const light = new THREE.AmbientLight('white', 1); // soft white light
         scene.add(light);
 
@@ -740,7 +770,7 @@ function makeAnimation() {
         const clock = new THREE.Clock({ autoStart: false });
         //controls.update();
 
-        
+
         /*
         let deltaSpacecraftCamera = new THREE.Vector3(0, 0, 300);
         controls.addEventListener("change", function () {
@@ -758,9 +788,9 @@ function makeAnimation() {
         function animate() {
             requestAnimationFrame(animate);
 
-            if (clock.running) {                
+            if (clock.running) {
                 sim_elapsed_time = clock.getElapsedTime() - start_time;
-                t = t0 + sim_elapsed_time;                
+                t = t0 + sim_elapsed_time;
                 if (t > time_data[time_data.length - 1]) {
                     t = t0;
                     start_time = clock.getElapsedTime()

@@ -1,4 +1,4 @@
-using LinearAlgebra, DifferentialEquations, StaticArrays, Plots, UnPack, OffsetArrays, PlotThemes, DataFrames,CSV,Dates
+using LinearAlgebra, DifferentialEquations, StaticArrays, Plots, UnPack, OffsetArrays, PlotThemes, DataFrames,CSV,Dates, ConcreteStructs
 import Base: show
 import Plots: plot, plot!
 
@@ -34,7 +34,7 @@ mcI(b::Body) = mcI(b.m, b.cm, b.I)
 
 includet("joints.jl")
 includet("utils//pathutils.jl")
-
+#=
 struct MultibodySystem
     name::Symbol
     bodies::OffsetVector{AbstractBody,Vector{AbstractBody}}
@@ -76,6 +76,49 @@ struct MultibodySystem
     r_base # base frame translation - for animation
     q_base # base frame quaternion - for animation
 end
+=#
+@concrete struct MultibodySystem
+    name
+    bodies
+    joints
+    p# joint predecessor body array
+    s# joint successor body array
+    λ# body parent array
+    κ# all joints between body i and base
+    μ# body children array
+    γ# all bodies from body i to tip (this is nu in Featherstone but nu just looks like v in Julia, so \gamma it is)    
+    U
+    D
+    u
+    c
+    pᴬ
+    ᵖXᵢᵐ
+    ᵖXᵢᶠ
+    ⁱXₚᵐ
+    ⁱXₚᶠ
+    ᵒXᵢᵐ
+    ᵒXᵢᶠ
+    ⁱXₒᵐ
+    ⁱXₒᶠ
+    q
+    q̇
+    q̈
+    x
+    H
+    C
+    τ
+    fˣ
+    fᵇ
+    f_gyro
+    Iᵇ
+    Iᴬ
+    r
+    v
+    a
+    r_base
+    q_base
+end
+
 
 #MultibodySystem constructor
 function MultibodySystem(name, bodies, joints)
@@ -419,7 +462,7 @@ function simulate(orig_sys::MultibodySystem, tspan; output_type=nothing)
     save_config, save_values, save_cb = configure_saving(sys)
     p = (sys=sys, save_config=save_config)
     prob = ODEProblem(ode_func!, sys.x, tspan, p)
-    sol = solve(prob, callback=save_cb, adaptive=false, dt=0.01)
+    sol = solve(prob, callback=save_cb, adaptive=false, dt=0.01) # higher sample rate until three animation keyframetracks are better understood for interpolation
 
     if output_type == DataFrame
         simout = df_save_values(save_values, save_config)

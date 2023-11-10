@@ -1,5 +1,11 @@
 using LinearAlgebra, StaticArrays
 
+#create random ortho normal matrices
+function randOrtho()
+    Q,R = qr(randn(3,3))
+    O = Q*Diagonal(sign.(diag(R)))
+end
+
 #inverse quaternion,  if q is SVector, btime 31.584 ns (1 allocations: 48 bytes)
 qinv(q) = normalize(q .* SVector{4,Float64}(-1, -1, -1, 1))# / norm(q)^2
 
@@ -9,6 +15,8 @@ qtov(q) = 2 * atan(norm(view(q, Base.OneTo(3))), q[4]) * normalize(view(q, Base.
 #qtov(q) = 2 * acos(q[4]) * normalize(view(q,Base.OneTo(3)))
 
 #rotation matrix to quaternion
+
+#= q[4] singularity bit me, using PACE implementation
 function atoq(A) # if A is a SMatrix btime 43.016 ns (1 allocations: 48 bytes)   
     # From Markley, singular when q[4] gets close to 0
     imax = findmax(abs.(SVector{4,Float64}(
@@ -44,6 +52,64 @@ function atoq(A) # if A is a SMatrix btime 43.016 ns (1 allocations: 48 bytes)
         )
     end
     return normalize(q)
+end
+=#
+function atoq(A)
+    # This function computes the attitude quaternion corresponding
+    # to a given attitude matrix...
+    #
+    #  INPUT
+    #         A   Input attitude matrix.
+    #  OUTPUT
+    #         q   Output attitude quaternion.
+    #
+    #  EXTERNAL REFERENCES:  NONE.
+    #    
+
+    # Check norm of input Direction Cosine Matrix A
+    # if abs(abs(det(A))-1) > 1e-12
+    #     error('LIB:atoq','Input attitude matrix is not an orthonormal matrix.');
+    # end    
+
+    q = MVector{4,Float64}(undef)
+    e1 = SA[0; 1 + A[1, 1] - A[2, 2] - A[3, 3]]
+    e2 = SA[0; 1 - A[1, 1] + A[2, 2] - A[3, 3]]
+    e3 = SA[0; 1 - A[1, 1] - A[2, 2] + A[3, 3]]
+    e4 = SA[0; 1 + A[1, 1] + A[2, 2] + A[3, 3]]
+    q[1] = sqrt(maximum(e1))
+    q[2] = sqrt(maximum(e2))
+    q[3] = sqrt(maximum(e3))
+    q[4] = sqrt(maximum(e4))
+    qa = abs.(q)
+    qmax = maximum(qa)
+    if qa[1] == qmax
+        q[1] = 0.5 * q[1]
+        rq = 0.25 / q[1]
+        q[2] = rq * (A[1, 2] + A[2, 1])
+        q[3] = rq * (A[1, 3] + A[3, 1])
+        q[4] = rq * (A[2, 3] - A[3, 2])
+    elseif qa[2] == qmax
+        q[2] = 0.5 * q[2]
+        rq = 0.25 / q[2]
+        q[1] = rq * (A[1, 2] + A[2, 1])
+        q[3] = rq * (A[2, 3] + A[3, 2])
+        q[4] = rq * (A[3, 1] - A[1, 3])
+    elseif qa[3] == qmax
+        q[3] = 0.5 * q[3]
+        rq = 0.25 / q[3]
+        q[1] = rq * (A[3, 1] + A[1, 3])
+        q[2] = rq * (A[3, 2] + A[2, 3])
+        q[4] = rq * (A[1, 2] - A[2, 1])
+    else
+        q[4] = 0.5 * q[4]
+        rq = 0.25 / q[4]
+        q[1] = rq * (A[2, 3] - A[3, 2])
+        q[2] = rq * (A[3, 1] - A[1, 3])
+        q[3] = rq * (A[1, 2] - A[2, 1])
+    end
+
+    # Normalize quaternion output
+    SVector{4,Float64}(normalize(q))
 end
 
 
@@ -131,12 +197,13 @@ end
 
 qtoa(q::Vector{Float64}) = qtoa(SVector{4,Float64}(q))
 function qtoa(q::SVector{4,Float64}) #0 allocations 20 ns
-    I3 = SMatrix{3,3,Float64}(1,0,0,0,1,0,0,0,1); #allocation free identity matrix
-    i123 = SVector{3,Int64}(1,2,3) 
+    I3 = SMatrix{3,3,Float64}(1, 0, 0, 0, 1, 0, 0, 0, 1) #allocation free identity matrix
+    i123 = SVector{3,Int64}(1, 2, 3)
     q123 = q[i123] #q[1:3]
 
-    I3*(q[4]^2 - q123' * q123) + 2 * q123 * q123' - 2 * scross(q123 * q[4])
+    I3 * (q[4]^2 - q123' * q123) + 2 * q123 * q123' - 2 * scross(q123 * q[4])
 end
 
 scross(x::Vector{Float64}) = scross(SVector{3,Float64}(x))
-scross(x) = SMatrix{3,3,Float64}(0,x[3],-x[2],-x[3],0,x[1],x[2],-x[1],0)
+scross(x) = SMatrix{3,3,Float64}(0, x[3], -x[2], -x[3], 0, x[1], x[2], -x[1], 0)
+
