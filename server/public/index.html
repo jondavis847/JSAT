@@ -48,26 +48,26 @@
             <form class="form">
               <table class="table">
                 <tr>
-                  <td><label class="form-font" for="simName">sim name:</label><br></td>
-                  <td><input id="simName" class="form-input" type="text" name="simName" placeholder="optional"><br>
+                  <td><label class='form-font' for="simName">sim name:</label><br></td>
+                  <td><input id="simName" class='form-input' type='text' name="simName" placeholder="optional"><br>
                   </td>
                 </tr>
                 <tr>
-                  <td><label class="form-font" for="simStartTime">sim start time:</label><br></td>
-                  <td><input id="simStartTime" class="form-input" type="text" name="simStartTime" value="0"><br>
+                  <td><label class='form-font' for="simStartTime">sim start time:</label><br></td>
+                  <td><input id="simStartTime" class='form-input' type='text' name="simStartTime" value="0"><br>
                   </td>
                 </tr>
                 <tr>
-                  <td><label class="form-font" for="simStopTime">sim stop time:</label><br></td>
-                  <td><input id="simStopTime" class="form-input" type="text" name="simStopTime" value="10"><br></td>
+                  <td><label class='form-font' for="simStopTime">sim stop time:</label><br></td>
+                  <td><input id="simStopTime" class='form-input' type='text' name="simStopTime" value="10"><br></td>
                 </tr>
                 <tr>
-                  <td><label class="form-font" for="simNruns"># of MC runs:</label><br></td>
-                  <td><input id="simNruns" class="form-input" type="text" name="simNruns" value="0"><br></td>
+                  <td><label class='form-font' for="simNruns"># of MC runs:</label><br></td>
+                  <td><input id="simNruns" class='form-input' type='text' name="simNruns" value="0"><br></td>
                 </tr>
                 <tr>
-                  <td><label class="form-font" for="simSaveLocation">save location:</label><br></td>
-                  <td><input id="simSaveLocation" class="form-input" type="text" name="simSaveLocation"
+                  <td><label class='form-font' for="simSaveLocation">save location:</label><br></td>
+                  <td><input id="simSaveLocation" class='form-input' type='text' name="simSaveLocation"
                       placeholder="optional"><br></td>
                 </tr>
               </table>
@@ -86,168 +86,133 @@
 
           <!-- model loader -->
           <div id="modelLoaderDiv" class="model-loader-div">
-            <button id="modelTitleButton" class="builder-title-button"> models </button>
-            <button id="saveModelButton" class="loader-save-button">save</button>
-            <button id="loadModelButton" class="loader-load-button">load</button>
+            <button id="basesButton" class="model-button">bases</button>
+            <button id="bodiesButton" class="model-button">bodies</button>
+            <button id="jointsButton" class="model-button">joints</button>
           </div>
 
+          <div id="basesLoaderDiv" class="model-loader-div hidden-loader-div">
+            <button id="baseButton" class="model-button">+base</button>
+            <button id="earthButton" class="model-button not-avail">+earth</button>
+            <button id="solarButton" class="model-button not-avail">+solar system</button>
+            <button id="basesBackButton" class="model-button model-loader-back-btn">back</button>
+          </div>
+          <div id="bodiesLoaderDiv" class="model-loader-div hidden-loader-div">
+            <button id="boxButton" class="model-button">+box</button>
+            <button id="sphereButton" class="model-button not-avail">+sphere</button>
+            <button id="cylinderButton" class="model-button">+cylinder</button>
+            <button id="bodyBackButton" class="model-button model-loader-back-btn">back</button>
+          </div>
+
+          <div id="jointsLoaderDiv" class="model-loader-div hidden-loader-div">
+            <button id="prismaticButton" class="model-button not-avail">+prismatic</button>
+            <button id="revoluteButton" class="model-button">+revolute</button>
+            <button id="sphericalButton" class="model-button not-avail">+spherical</button>
+            <button id="jointBackButton" class="model-button model-loader-back-btn">back</button>
+          </div>
+          <div id='cyToolbar' class='cy-toolbar'>
+            <button id='drawModeBtn' class='draw-mode-btn not-active-border'>connect</button>
+          </div>
           <div id="cyCanvasDiv" class="cy-canvas-div"></div>
-          <div id="cyAddBodyDiv" class="cy-add-body-div">
-            <div id="cyAddBodyTitleDiv" class="cy-add-body-title-div">
+          <div id="addBodyDiv" class="element-details-div">
+            <div class="element-title-div">
               enter info to add a new body
             </div>
-            <div id="cyAddBodyTableDiv" class="cy-add-body-table-div">
-              <table class="table">
+            <div class="element-table-div">
+              <table id="bodyTable" class="table">
                 <tr>
-                  <td><label class="form-font" for="newBodyName">name:</label><br></td>
-                  <td><input id="newBodyName" class="form-input" type="text" name="newBodyName" placeholder="name"><br>
+                  <td><label class='form-font'>name:</label><br></td>
+                  <td><input id="newBodyName" class='form-input' type='text' placeholder="name"><br>
                   </td>
                 </tr>
                 <tr>
-                  <td><label class="form-font" for="newBodyMass">mass:</label><br></td>
-                  <td><input id="newBodyMass" class="form-input" type="text" name="newBodyMass" placeholder="mass"><br></td>
-                  <td><input id="newBodyMassDist" class="form-input" type="text" name="newBodyMassDist"
-                      placeholder="distribution"><br>
-                  </td>
+                  <td><label class='form-font'>mass:</label><br></td>
+                  <td><input id="newBodyMass" class='form-input' type='text' placeholder="mass"><br></td>
+                  <td><input id="newBodyMassDist" class='form-input' type='text' placeholder="distribution"><br></td>
                 </tr>
                 <tr>
-                  <td><label class="form-font" for="newBodyCm">cm:</label><br></td>
-                  <td><input id="newBodyCm" class="form-input" type="text" name="newBodyCm" placeholder="cm"><br></td>
-                  <td><input id="newBodyCmDist" class="form-input" type="text" name="newBodyCmDist"
+                  <td><label class='form-font'>cm:</label><br></td>
+                  <td><input id="newBodyCm" class='form-input' type='text' placeholder="cm"><br></td>
+                  <td><input id="newBodyCmDist" class='form-input' type='text' placeholder="distribution"><br></td>
+                </tr>
+                <tr>
+                  <td><label class='form-font'>Ixx:</label><br></td>
+                  <td><input id="newBodyIxx" class='form-input' type='text' placeholder="ixx"><br></td>
+                  <td><input id="newBodyIxxDist" class='form-input' type='text' placeholder="distribution"><br></td>
+                </tr>
+                <tr>
+                  <td><label class='form-font'>Iyy:</label><br></td>
+                  <td><input id="newBodyIyy" class='form-input' type='text' placeholder="iyy"><br></td>
+                  <td><input id="newBodyIyyDist" class='form-input' type='text' placeholder="distribution"><br></td>
+                </tr>
+                <tr>
+                  <td><label class='form-font'>Izz:</label><br></td>
+                  <td><input id="newBodyIzz" class='form-input' type='text' placeholder="izz"><br></td>
+                  <td><input id="newBodyIzzDist" class='form-input' type='text' name="newBodyIzzDist"
                       placeholder="distribution"><br></td>
                 </tr>
                 <tr>
-                  <td><label class="form-font" for="newBodyIxx">Ixx:</label><br></td>
-                  <td><input id="newBodyIxx" class="form-input" type="text" name="newBodyIxx" placeholder="ixx"><br>
-                  </td>
-                  <td><input id="newBodyIxxDist" class="form-input" type="text" name="newBodyIxxDist" placeholder="distribution"><br>
-                  </td>
+                  <td><label class='form-font'>Ixy:</label><br></td>
+                  <td><input id="newBodyIxy" class='form-input' type='text' placeholder="ixy"><br></td>
+                  <td><input id="newBodyIxyDist" class='form-input' type='text' placeholder="distribution"><br></td>
                 </tr>
                 <tr>
-                  <td><label class="form-font" for="newBodyIxx">Iyy:</label><br></td>
-                  <td><input id="newBodyIyy" class="form-input" type="text" name="newBodyIyy" placeholder="iyy"><br>
-                  </td>
-                  <td><input id="newBodyIyyDist" class="form-input" type="text" name="newBodyIyyDist" placeholder="distribution"><br>
-                  </td>
+                  <td><label class='form-font'>Ixz:</label><br></td>
+                  <td><input id="newBodyIxz" class='form-input' type='text' placeholder="ixz"><br></td>
+                  <td><input id="newBodyIxzDist" class='form-input' type='text' placeholder="distribution"><br></td>
                 </tr>
                 <tr>
-                  <td><label class="form-font" for="newBodyIzz">Izz:</label><br></td>
-                  <td><input id="newBodyIzz" class="form-input" type="text" name="newBodyIzz" placeholder="izz"><br>
-                  </td>
-                  <td><input id="newBodyIzzDist" class="form-input" type="text" name="newBodyIzzDist" placeholder="distribution"><br>
-                  </td>
-                </tr>
-                <tr>
-                  <td><label class="form-font" for="newBodyIxy">Ixy:</label><br></td>
-                  <td><input id="newBodyIxy" class="form-input" type="text" name="newBodyIxy" placeholder="ixy"><br>
-                  </td>
-                  <td><input id="newBodyIxyDist" class="form-input" type="text" name="newBodyIxyDist" placeholder="distribution"><br>
-                  </td>
-                </tr>
-                <tr>
-                  <td><label class="form-font" for="newBodyIxx">Ixz:</label><br></td>
-                  <td><input id="newBodyIxz" class="form-input" type="text" name="newBodyIxz" placeholder="ixz"><br>
-                  </td>
-                  <td><input id="newBodyIxzDist" class="form-input" type="text" name="newBodyIxzDist" placeholder="distribution"><br>
-                  </td>
-                </tr>
-                <tr>
-                  <td><label class="form-font" for="newBodyIxx">Iyz:</label><br></td>
-                  <td><input id="newBodyIyz" class="form-input" type="text" name="newBodyIyz" placeholder="iyz"><br>
-                  </td>
-                  <td><input id="newBodyIyzDist" class="form-input" type="text" name="newBodyIyzDist" placeholder="distribution"><br>
-                  </td>
-                </tr>
-                <tr>
-                  <td><label class="form-font" for="newBodyGeometry">geometry:</label><br></td>
-                  <td><input id="newBodyGeometry" class="form-input" type="text" name="newBodyGeometry"
-                      placeholder="geometry"><br>
-                  </td>
-                </tr>
-                <tr>
-                  <td><label class="form-font" for="newBodyLength">length:</label><br></td>
-                  <td><input id="newBodyLength" class="form-input" type="text" name="newBodyLength"
-                      placeholder="length"><br>
-                  </td>
-                </tr>
-                <tr>
-                  <td><label class="form-font" for="newBodyWidth">width:</label><br></td>
-                  <td><input id="newBodyWidth" class="form-input" type="text" name="newBodyWidth"
-                      placeholder="width"><br>
-                  </td>
-                </tr>
-                <tr>
-                  <td><label class="form-font" for="newBodyHeight">height:</label><br></td>
-                  <td><input id="newBodyHeight" class="form-input" type="text" name="newBodyHeight"
-                      placeholder="height"><br>
-                  </td>
+                  <td><label class='form-font'>Iyz:</label><br></td>
+                  <td><input id="newBodyIyz" class='form-input' type='text' placeholder="iyz"><br></td>
+                  <td><input id="newBodyIyzDist" class='form-input' type='text' placeholder="distribution"><br></td>
                 </tr>
 
                 <tr>
-                  <td><label class="form-font" for="newBodyMaterial">material:</label><br></td>
-                  <td><input id="newBodyMaterial" class="form-input" type="text" name="newBodyMaterial"
-                      placeholder="material"><br>
-                  </td>
+                  <td><label class='form-font'>material:</label><br></td>
+                  <td><input id="newBodyMaterial" class='form-input' type='text' placeholder="material"><br></td>
                 </tr>
                 <tr>
-                  <td><label class="form-font" for="newBodyColor">color:</label><br></td>
-                  <td><input id="newBodyColor" class="form-input" type="text" name="newBodyColor"
-                      placeholder="color"><br>
-                  </td>
+                  <td><label class='form-font'>color:</label><br></td>
+                  <td><input id="newBodyColor" class='form-input' type='text' placeholder="color"><br></td>
                 </tr>
               </table>
             </div>
-            <div id="cyAddBodyButtonsDiv" class="cy-add-body-buttons-div">
-              <button id="cyAddBodySaveButton" class="cy-add-body-save-button">save</button>
-              <button id="cyAddBodyCancelButton" class="cy-add-body-cancel-button">cancel</button>
+            <div class="add-body-buttons-div">
+              <button id="addBodySaveButton" class="add-body-save-button">save</button>
+              <button id="addBodyCancelButton" class="add-body-cancel-button">cancel</button>
             </div>
           </div>
-          <div id="cyAddRevoluteDiv" class="cy-add-body-div">
-            <div id="cyAddRevoluteTitleDiv" class="cy-add-body-title-div">
-              enter info to add a new revolute joint
+          <div id='addJointDiv' class='element-details-div'>
+            <div class="element-title-div">
+              enter info to add a new joint
             </div>
-            <div id="cyAddRevoluteTableDiv" class="cy-add-body-table-div">
-              <table class="table">
+            <div class='element-table-div'>
+              <table id='jointTable' class='table'>
                 <tr>
-                  <td><label class="form-font" for="newRevoluteName">name:</label><br></td>
-                  <td><input id="newRevoluteName" class="form-input" type="text" name="newRevoluteName"
-                      placeholder="name"><br></td>
+                  <td><label class='form-font'>name:</label><br></td>
+                  <td><input id='newJointName' class='form-input' type='text' placeholder='name'><br></td>
                 </tr>
                 <tr>
-                  <td><label class="form-font" for="newRevoluteTheta">&theta;:</label><br></td>
-                  <td><input id="newRevoluteTheta" class="form-input" type="text" name="newRevoluteTheta"
-                      placeholder="&theta;"><br></td>
+                  <td><label class='form-font'>Fp&Phi;:</label><br></td>
+                  <td><input id='newJointFpPhi' class='form-input' type='text' placeholder='I(3)'><br></td>
                 </tr>
                 <tr>
-                  <td><label class="form-font" for="newRevoluteOmega">&omega;:</label><br></td>
-                  <td><input id="newRevoluteOmega" class="form-input" type="text" name="newRevoluteOmega"
-                      placeholder="&omega;"><br></td>
+                  <td><label class='form-font'>Fp&rho;:</label><br></td>
+                  <td><input id='newJointFpRho' class='form-input' type='text' placeholder='zeros(3)'><br></td>
                 </tr>
                 <tr>
-                  <td><label class="form-font" for="newRevoluteFpPhi">Fp&Phi;:</label><br></td>
-                  <td><input id="newRevoluteFpPhi" class="form-input" type="text" name="newRevoluteFpPhi"
-                      placeholder="&Phi;"><br></td>
+                  <td><label class='form-font'>Fs&Phi;:</label><br></td>
+                  <td><input id='newJointFsPhi' class='form-input' type='text' placeholder='I(3)'><br></td>
                 </tr>
                 <tr>
-                  <td><label class="form-font" for="newRevoluteFpRho">Fp&rho;:</label><br></td>
-                  <td><input id="newRevoluteFpRho" class="form-input" type="text" name="newRevoluteFpRho"
-                      placeholder="&rho;"><br></td>
-                </tr>
-                <tr>
-                  <td><label class="form-font" for="newRevoluteFsPhi">Fs&Phi;:</label><br></td>
-                  <td><input id="newRevoluteFsPhi" class="form-input" type="text" name="newRevoluteFsPhi"
-                      placeholder="&Phi;"><br></td>
-                </tr>
-                <tr>
-                  <td><label class="form-font" for="newRevoluteFsRho">Fs&rho;:</label><br></td>
-                  <td><input id="newRevoluteFsRho" class="form-input" type="text" name="newRevoluteFsRho"
-                      placeholder="&rho;"><br></td>
+                  <td><label class='form-font'>Fs&rho;:</label><br></td>
+                  <td><input id='newJointFsRho' class='form-input' type='text' placeholder='zeros(3)'><br></td>
                 </tr>
               </table>
             </div>
-            <div id="cyAddRevoluteButtonsDiv" class="cy-add-body-buttons-div">
-              <button id="cyAddRevoluteSaveButton" class="cy-add-body-save-button">save</button>
-              <button id="cyAddRevoluteCancelButton" class="cy-add-body-cancel-button">cancel</button>
+            <div class="add-body-buttons-div">
+              <button id="addJointSaveButton" class="add-body-save-button">save</button>
+              <button id="addJointCancelButton" class="add-body-cancel-button">cancel</button>
             </div>
           </div>
         </div>

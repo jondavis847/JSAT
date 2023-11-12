@@ -37,310 +37,496 @@ function enterClick(enter, click) {
     })
 }
 
-function init() {
-    //on blur
-    $("#simStartTime").on("blur", getSimOptions);
-    $("#simStopTime").on("blur", getSimOptions);
-    $("#simName").on("blur", getSimOptions);
-    $("#simNruns").on("blur", getSimOptions);
-    $("#simSaveLocation").on("blur", getSimOptions);
-    //on click
-    $("#simTabButton").on("click", changeTab);
-    $("#plotTabButton").on("click", changeTab);
-    $("#animTabButton").on("click", changeTab);
-    $("#simButton").on("click", sendSimulationData);
-    $("#cyAddBodyCancelButton").on("click", function () { $("#cyAddBodyDiv").hide() });
-    $("#cyAddRevoluteCancelButton").on("click", function () { $("#cyAddRevoluteDiv").hide() });
-    $("#loadModelButton").on("click", loadModel);
-    $("#loadSimStates").on("click", getSimStates);
-    $("#plotState").on("click", plotStateData);
-    $("#animateBtn").on("click", makeAnimation);
 
-    getSimFileNames();
-    loadModels();
-    initCytoscape();
+//on blur
+$("#simStartTime").on("blur", getSimOptions);
+$("#simStopTime").on("blur", getSimOptions);
+$("#simName").on("blur", getSimOptions);
+$("#simNruns").on("blur", getSimOptions);
+$("#simSaveLocation").on("blur", getSimOptions);
+//on click
+$("#simTabButton").on("click", changeTab);
+$("#plotTabButton").on("click", changeTab);
+$("#animTabButton").on("click", changeTab);
+$("#simButton").on("click", sendSimulationData);
+$("#addBodyCancelButton").on("click", () => { $("#addBodyDiv").hide() });
+$("#addRevoluteCancelButton").on("click", () => { $("#cyAddRevoluteDiv").hide() });
+$("#loadModelButton").on("click", loadModel);
+$("#loadSimStates").on("click", getSimStates);
+$("#plotState").on("click", plotStateData);
+$("#animateBtn").on("click", makeAnimation);
+$("#basesButton").on("click", () => { $("#basesLoaderDiv").show() });
+$("#basesBackButton").on("click", () => { $("#basesLoaderDiv").hide() });
+$("#bodiesButton").on("click", () => { $("#bodiesLoaderDiv").show() });
+$("#bodyBackButton").on("click", () => { $("#bodiesLoaderDiv").hide() });
+$("#jointsButton").on("click", () => { $("#jointsLoaderDiv").show() });
+$("#jointBackButton").on("click", () => { $("#jointsLoaderDiv").hide() });
+$("#boxButton").on('click', clickAddBoxBody);
+$("#cylinderButton").on('click', clickAddCylinderBody);
+$('#baseButton').on('click', addBase);
+$('#revoluteButton').on('click', clickAddRevoluteJoint);
+$('#drawModeBtn').on('click',toggleDrawMode);
 
-}
-$(window).on("load", init);
+getSimFileNames();
+loadModels();
 
-
-
-function initCytoscape() {
-    let rp;
-    var cy = cytoscape({
-        container: $("#cyCanvasDiv"),
-        elements: [
-            { data: { id: "base", label: 'base' }, classes: 'base' },
-            { data: { id: "addBody", label: '+body' }, classes: 'body' },
-            { data: { id: "addRevolute", label: '+revolute' }, classes: 'joint' }
-        ],
-        style: [
-            {
-                selector: '*',
-                style: {
-                    'font-size': 12,
-                    'text-valign': 'center',
-                    'text-halign': 'center',
-                    'label': 'data(label)'
-                }
-            },
-            {
-                selector: '.base',
-                style: {
-                    'shape': 'round-triangle',
-                    'background-color': 'whitesmoke',
-                    'width': 50,
-                    'height': 50,
-                }
-            },
-            {
-                selector: '.body',
-                style: {
-                    'shape': 'round-rectangle',
-                    'background-color': 'aquamarine',
-                    'width': 50,
-                    'height': 50,
-                }
-            },
-            {
-                selector: '.joint',
-                style: {
-                    'shape': 'ellipse',
-                    'background-color': 'aqua',
-                    'width': 50,
-                    'height': 50,
-                }
-            },
-            {
-                selector: 'edge',
-                style: {
-                    'width': 3,
-                    'line-color': '#ccc',
-                    'target-arrow-color': '#ccc',
-                    'target-arrow-shape': 'triangle',
-                    'curve-style': 'bezier'
-                }
-            },
-            { // just to suppress a warning with edgehandles https://github.com/cytoscape/cytoscape.js-edgehandles/issues/119
-                //didnt work
-                selector: '.eh-ghost-node',
-                style: {
-                    'label': ''
-                }
+let rp;
+var cy = cytoscape({
+    container: $("#cyCanvasDiv"),
+    style: [
+        {
+            selector: '*',
+            style: {
+                'font-size': 12,
+                'text-valign': 'center',
+                'text-halign': 'center',
+                'label': 'data(label)'
             }
-        ],
-    });
-    // the default values of each option are outlined below:
-    /*
-    let ehdefaults = {
-        canConnect: function (sourceNode, targetNode) {
-            // whether an edge can be created between source and target
-            return !sourceNode.same(targetNode); // e.g. disallow loops
         },
-        edgeParams: function (sourceNode, targetNode) {
-            // for edges between the specified source and target
-            // return element object to be passed to cy.add() for edge
-            return {};
+        {
+            selector: '.base',
+            style: {
+                'shape': 'round-triangle',
+                'background-color': 'whitesmoke',
+                'width': 50,
+                'height': 50,
+            }
         },
-        //hoverDelay: 150, // time spent hovering over a target node before it is considered selected
-        snap: false, // when enabled, the edge can be drawn by just moving close to a target node (can be confusing on compound graphs)
-        //snapThreshold: 50, // the target node must be less than or equal to this many pixels away from the cursor/finger
-        //snapFrequency: 15, // the number of times per second (Hz) that snap checks done (lower is less expensive)
-        //noEdgeEventsInDraw: true, // set events:no to edges during draws, prevents mouseouts on compounds
-        //disableBrowserGestures: true // during an edge drawing gesture, disable browser gestures such as two-finger trackpad swipe and pinch-to-zoom
-    };
+        {
+            selector: '.body',
+            style: {
+                'shape': 'round-rectangle',
+                'background-color': 'aquamarine',
+                'width': 50,
+                'height': 50,
+            }
+        },
+        {
+            selector: '.joint',
+            style: {
+                'shape': 'ellipse',
+                'background-color': 'aqua',
+                'width': 50,
+                'height': 50,
+            }
+        },
+        {
+            selector: 'edge',
+            style: {
+                'width': 3,
+                'line-color': '#ccc',
+                'target-arrow-color': '#ccc',
+                'target-arrow-shape': 'triangle',
+                'curve-style': 'bezier'
+            }
+        },
+        { // just to suppress a warning with edgehandles https://github.com/cytoscape/cytoscape.js-edgehandles/issues/119
+            //didnt work
+            selector: '.eh-ghost-node',
+            style: {
+                'label': ''
+            }
+        }
+    ],
+});
+// the default values of each option are outlined below:
+/*
+let ehdefaults = {
+    canConnect: function (sourceNode, targetNode) {
+        // whether an edge can be created between source and target
+        return !sourceNode.same(targetNode); // e.g. disallow loops
+    },
+    edgeParams: function (sourceNode, targetNode) {
+        // for edges between the specified source and target
+        // return element object to be passed to cy.add() for edge
+        return {};
+    },
+    //hoverDelay: 150, // time spent hovering over a target node before it is considered selected
+    snap: false, // when enabled, the edge can be drawn by just moving close to a target node (can be confusing on compound graphs)
+    //snapThreshold: 50, // the target node must be less than or equal to this many pixels away from the cursor/finger
+    //snapFrequency: 15, // the number of times per second (Hz) that snap checks done (lower is less expensive)
+    //noEdgeEventsInDraw: true, // set events:no to edges during draws, prevents mouseouts on compounds
+    //disableBrowserGestures: true // during an edge drawing gesture, disable browser gestures such as two-finger trackpad swipe and pinch-to-zoom
+};
 */
-    let eh = cy.edgehandles({snap:false});
-    //cy.autoungrabify(false);
+let eh = cy.edgehandles({ snap: false });
+//cy.autoungrabify(false);
 
-    $(document).on("keydown", (event) => {
-        if (event.keyCode === 16) {
-            eh.enableDrawMode();
+$(document).on("keydown", (event) => {
+    if (event.keyCode === 16) {
+        eh.enableDrawMode();
+    }
+});
+$(document).on("keyup", (event) => {
+    if (event.keyCode === 16) {
+        eh.disableDrawMode();
+    }
+});
+
+cy.on('ehcomplete', (evt, src, tar, edge) => {
+    console.log(JSAT)
+
+    //set if predecessor
+    if (src.classes().includes("body")) {
+        if (tar.classes().includes("joint")) {
+            const source_id = src.data().label;
+            const target_id = tar.data().label;
+            JSAT.joints[target_id]["predecessor"] = source_id;
         }
-    });
-    $(document).on("keyup", (event) => {
-        if (event.keyCode === 16) {
-            eh.disableDrawMode();
-        }
-    });
-
-    cy.on('ehcomplete', (evt, src, tar, edge) => {
-        console.log(JSAT)
-
-        if (tar.data().id === cy.$('#addBody').data().id) {
-            jsatConsole("\ncannot connect to this node")
-            edge.remove();
-        }
-
-        //set if predecessor
-        if (src.classes().includes("body")) {
-            if (tar.classes().includes("joint")) {
-                const source_id = src.data().label;
-                const target_id = tar.data().label;
-                JSAT.joints[target_id]["predecessor"] = source_id;
-            }
-        }
-
-        //set if successor
-        if (src.classes().includes("joint")) {
-            if (tar.classes().includes("body")) {
-                const source_id = src.data().label;
-                const target_id = tar.data().label;
-                JSAT.joints[source_id]["successor"] = target_id;
-            }
-        }
-
-        //set if base
-        if (src.classes().includes("base")) {
-            if (tar.classes().includes("joint")) {
-                const source_id = src.data().label;
-                const target_id = tar.data().label;
-                JSAT.joints[target_id]["predecessor"] = source_id;
-            }
-        }
-        console.log(JSAT)
-        cy.nodes().forEach(function (ele) {
-            ele.grabify();
-            console.log(ele.grabbable());
-        })
-        //cy.$('node').grabify(true); //for some reason nodes become ungrabbable after connecting an edgehandle
-    });
-
-    cy.$('#base').renderedPosition({ x: cy.width() / 2, y: cy.height() / 2 });
-    cy.$('#addBody').renderedPosition({ x: 50, y: 50 });
-    cy.$('#addRevolute').renderedPosition({ x: 150, y: 50 });
-
-    cy.on('dragfree', 'node#addBody', function (evt) {
-        rp = this.renderedPosition()
-        cy.$('#addBody').renderedPosition({ x: 50, y: 50 })
-        $("#cyAddBodySaveButton").off();
-        $("#cyAddBodySaveButton").on("click", {new:true,name:''}, cySaveBody)
-        $('#cyAddBodyDiv').show()
-    })
-
-    cy.on('dragfree', 'node#addRevolute', function (evt) {
-        rp = this.renderedPosition()
-        cy.$('#addRevolute').renderedPosition({ x: 150, y: 50 })
-        $('#cyAddRevoluteDiv').show()
-    })
-
-    cy.on('tap','node', function (evt) {
-        evt.target.select();
-        console.log(cy.$('node').selected())
-    });
-
-    cy.on('dbltap', '.body', function (evt) {
-        const name = this.data().label;
-        const body = JSAT.bodies[name];
-        $("#newBodyName").val(body.name);
-        $("#newBodyMass").val(body.mass);
-        $("#newBodyCm").val(body.cm);
-        $("#newBodyIxx").val(body.ixx);
-        $("#newBodyIyy").val(body.iyy);
-        $("#newBodyIzz").val(body.izz);
-        $("#newBodyIxy").val(body.ixy);
-        $("#newBodyIxz").val(body.ixz);
-        $("#newBodyIyz").val(body.iyz);
-        $("#newBodyGeometry").val(body.geometry);
-        $("#newBodyLength").val(body.length);
-        $("#newBodyWidth").val(body.width);
-        $("#newBodyHeight").val(body.height);
-        $("#newBodyMaterial").val(body.material);
-        $("#newBodyColor").val(body.color);
-        $("#cyAddBodySaveButton").off();
-        $("#cyAddBodySaveButton").on("click", {new:false,name:name}, cySaveBody)
-        $("#cyAddBodyDiv").show();        
-    })
-
-    cy.zoomingEnabled(false) // for now, until we figure out toolbar
-    cy.on('pan zoom', function () {
-        cy.$('#addBody').renderedPosition({ x: 50, y: 50 })
-        cy.$('#addRevolute').renderedPosition({ x: 150, y: 50 })
-    })
-
-    function cySaveBody(event) {
-        console.log(event)        
-
-        const body = {
-            name: $("#newBodyName").val(),
-            mass: $("#newBodyMass").val(),
-            cm: $("#newBodyCm").val(),
-            ixx: $("#newBodyIxx").val(),
-            iyy: $("#newBodyIyy").val(),
-            izz: $("#newBodyIzz").val(),
-            ixy: $("#newBodyIxy").val(),
-            ixz: $("#newBodyIxz").val(),
-            iyz: $("#newBodyIyz").val(),
-            geometry: $("#newBodyGeometry").val(),
-            length: $("#newBodyLength").val(),
-            width: $("#newBodyWidth").val(),
-            height: $("#newBodyHeight").val(),
-            material: $("#newBodyMaterial").val(),
-            color: $("#newBodyColor").val(),
-        };
-
-        // throw error and return if any properties arent set        
-        for (const [key, value] of Object.entries(body)) {
-            if (value === "") {
-                jsatConsole("\nall fields of body are required to have a value!")
-                return;
-            }
-        }
-
-        // create button if this is a new body        
-        if (event.data.new) {            
-            const name = $("#newBodyName").val();
-            let currentZoom = cy.zoom();
-            let zoomFactor = 1 / currentZoom;
-            let nodeSize = zoomFactor * 75;
-            let edgeSize = zoomFactor * 5;
-            let fontSize = nodeSize / 4;
-
-            cy.add({
-                group: 'nodes',
-                data: {
-                    id: `body${name}`,
-                    label: name,
-                },
-                classes: 'body',
-                renderedPosition: {
-                    x: rp.x,
-                    y: rp.y,
-                },
-            });
-        } else {
-            delete JSAT.bodies[event.data.name] 
-        }        
-        
-        JSAT.bodies[body.name] = body;
-        console.log(JSAT)
-        $('#cyAddBodyDiv').hide();
     }
 
-    function cySaveRevolute() {
-        const joint = {
-            name: $("#newRevoluteName").val(),
-            type: "revolute",
-            theta: $("#newRevoluteTheta").val(),
-            omega: $("#newRevoluteOmega").val(),
-            predecessor: "undef", //defined after connection
-            successor: "undef",  //defined after connection
-            FpRho: $("#newRevoluteFpRho").val(),
-            FpPhi: $("#newRevoluteFpPhi").val(),
-            FsRho: $("#newRevoluteFsRho").val(),
-            FsPhi: $("#newRevoluteFsPhi").val(),
-        };
-
-        // throw error and return if any properties arent set        
-        for (const [key, value] of Object.entries(joint)) {
-            if (value === "") {
-                jsatConsole("\nall fields of body are required to have a value!")
-                return;
-            }
+    //set if successor
+    if (src.classes().includes("joint")) {
+        if (tar.classes().includes("body")) {
+            const source_id = src.data().label;
+            const target_id = tar.data().label;
+            JSAT.joints[source_id]["successor"] = target_id;
         }
+    }
 
-        const name = $("#newRevoluteName").val();
+    //set if base
+    if (src.classes().includes("base")) {
+        if (tar.classes().includes("joint")) {
+            const source_id = src.data().label;
+            const target_id = tar.data().label;
+            JSAT.joints[target_id]["predecessor"] = source_id;
+        }
+    }
+    console.log(JSAT)
+    cy.nodes().forEach(function (ele) {
+        ele.grabify();
+        console.log(ele.grabbable());
+    })
+    //cy.$('node').grabify(true); //for some reason nodes become ungrabbable after connecting an edgehandle
+});
 
+
+cy.on('dbltap', '.body', editBody)
+
+cy.on('dragfree', 'node#addBody', function (evt) {
+    rp = this.renderedPosition()
+    cy.$('#addBody').renderedPosition({ x: 50, y: 50 })
+    $("#cyAddBodySaveButton").off();
+    $("#cyAddBodySaveButton").on("click", { new: true, name: '' }, cySaveBody)
+    $('#cyAddBodyDiv').show()
+})
+
+cy.on('dragfree', 'node#addRevolute', function (evt) {
+    rp = this.renderedPosition()
+    cy.$('#addRevolute').renderedPosition({ x: 150, y: 50 })
+    $('#cyAddRevoluteDiv').show()
+})
+
+cy.on('tap', 'node', function (evt) {
+    evt.target.select();
+    console.log(cy.$('node').selected())
+});
+
+
+
+cy.zoomingEnabled(false) // for now, until we figure out toolbar
+cy.on('pan zoom', function () {
+    cy.$('#addBody').renderedPosition({ x: 50, y: 50 })
+    cy.$('#addRevolute').renderedPosition({ x: 150, y: 50 })
+})
+
+function toggleDrawMode() {
+    if (eh.drawMode) {
+        eh.disableDrawMode();             
+        $('#drawModeBtn').removeClass("active-border")
+        $('#drawModeBtn').addClass("not-active-border")
+    } else {
+        eh.enableDrawMode();        
+        $('#drawModeBtn').removeClass("not-active-border")
+        $('#drawModeBtn').addClass("active-border")
+    }    
+}
+
+function addBase() {
+    if (cy.$('.base').length > 0) {
+        jsatConsole('\ncant have more than 1 base!')
+    } else {
+        cy.add({
+            group: 'nodes',
+            data: {
+                id: 'base',
+                label: 'base'
+            },
+            classes: 'base',
+            renderedPosition: {
+                x: 300,
+                y: 300,
+            },
+        });
+    }
+}
+
+function addBodyBoxInputs() {
+    $('#bodyTable tbody').append('<tr class = "geometry-input"> \
+            <td><label class="form-font " for="newBodyXLength">x length:</label><br></td> \
+            <td><input id="newBodyXLength" class="form-input" type="text" name="newXBodyLength" placeholder="x length"><br></td>\
+        </tr>');
+
+    $('#bodyTable tbody').append('<tr class = "geometry-input"> \
+            <td><label class="form-font " for="newBodyYLength">y length:</label><br></td> \
+            <td><input id="newBodyYLength" class="form-input" type="text" name="newYBodyLength" placeholder="y length"><br></td>\
+        </tr>');
+
+    $('#bodyTable tbody').append('<tr class = "geometry-input"> \
+            <td><label class="form-font " for="newBodyZLength">z length:</label><br></td> \
+            <td><input id="newBodyZLength" class="form-input" type="text" name="newZBodyLength" placeholder="z length"><br></td>\
+        </tr>');
+}
+
+function clickAddBoxBody() {
+    //remove any inputs already there
+    $('.geometry-input').remove();
+
+    // add box geometry specifc inputs
+    addBodyBoxInputs()
+
+    // bind box to save event, mark as new 
+    $("#addBodySaveButton").off()
+    $("#addBodySaveButton").on("click", { new: true, geometry: 'box', name: '' }, saveBody)
+    //show the details div
+    $('#addBodyDiv').show();
+}
+
+function addBodyCylinderInputs() {
+    $('#bodyTable tbody').append('<tr class = "geometry-input"> \
+            <td><label class="form-font " for="newBodyRadiusTop">radius top:</label><br></td> \
+            <td><input id="newBodyRadiusTop" class="form-input" type="text" name="newBodyRadiusTop" placeholder="default 1"><br></td>\
+        </tr>');
+
+    $('#bodyTable tbody').append('<tr class = "geometry-input"> \
+            <td><label class="form-font " for="newBodyRadiusBottom">radius bottom:</label><br></td> \
+            <td><input id="newBodyRadiusBottom" class="form-input" type="text" name="newBodyRadiusBottom" placeholder="default 1"><br></td>\
+        </tr>');
+
+    $('#bodyTable tbody').append('<tr class = "geometry-input"> \
+            <td><label class="form-font " for="newBodyHeight">height:</label><br></td> \
+            <td><input id="newBodyHeight" class="form-input" type="text" name="newBodyHeight" placeholder="default 1"><br></td>\
+        </tr>');
+
+    $('#bodyTable tbody').append('<tr class = "geometry-input"> \
+            <td><label class="form-font">radial segments:</label><br></td> \
+            <td><input id="newBodyRadialSegments" class="form-input" type="text" placeholder="default 32"><br></td>\
+        </tr>');
+
+    $('#bodyTable tbody').append('<tr class = "geometry-input"> \
+            <td><label class="form-font">height segments:</label><br></td> \
+            <td><input id="newBodyHeightSegments" class="form-input" type="text" placeholder="default 1"><br></td>\
+        </tr>');
+
+    $('#bodyTable tbody').append('<tr class = "geometry-input"> \
+            <td><label class="form-font">open ended:</label><br></td> \
+            <td><input id="newBodyOpenEnded" class="form-input" type="text" placeholder="default capped"><br></td>\
+        </tr>');
+
+    $('#bodyTable tbody').append('<tr class = "geometry-input"> \
+            <td><label class="form-font">theta start:</label><br></td> \
+            <td><input id="newBodyThetaStart" class="form-input" type="text" placeholder="default 0"><br></td>\
+        </tr>');
+
+    $('#bodyTable tbody').append('<tr class = "geometry-input"> \
+            <td><label class="form-font">theta length:</label><br></td> \
+            <td><input id="newBodyThetaLength" class="form-input" type="text" placeholder="default 2pi"><br></td>\
+        </tr>');
+}
+
+function clickAddCylinderBody() {
+
+    //remove any inputs already there
+    $('.geometry-input').remove();
+
+    // add cylinder specific inputs to the add body table 
+    addBodyCylinderInputs();
+
+    // bind box to save event, mark as new 
+    $("#addBodySaveButton").off()
+    $("#addBodySaveButton").on("click", { new: true, geometry: 'cylinder', name: '' }, saveBody)
+    //show the details div
+    $('#addBodyDiv').show();
+}
+
+function saveBody(event) {
+    let body = {
+        name: $("#newBodyName").val(),
+        mass: $("#newBodyMass").val(),
+        cm: $("#newBodyCm").val(),
+        ixx: $("#newBodyIxx").val(),
+        iyy: $("#newBodyIyy").val(),
+        izz: $("#newBodyIzz").val(),
+        ixy: $("#newBodyIxy").val(),
+        ixz: $("#newBodyIxz").val(),
+        iyz: $("#newBodyIyz").val(),
+        geometry: event.data.geometry,
+        material: $("#newBodyMaterial").val(),
+        color: $("#newBodyColor").val(),         
+    };
+
+    //defaults
+    if (body.mass === "") { body.mass = "1" }
+    if (body.cm === "") { body.cm = "zeros(3)" }
+    if (body.ixx === "") { body.ixx = "1" }
+    if (body.iyy === "") { body.iyy = "1" }
+    if (body.izz === "") { body.izz = "1" }
+    if (body.ixy === "") { body.ixy = "0" }
+    if (body.ixz === "") { body.ixz = "0" }
+    if (body.iyz === "") { body.iyz = "0" }
+    if (body.material === "") { body.material = "basic" }
+    if (body.color === "") { body.color = "green" }
+
+    if (event.data.geometry === 'box') {
+        body['xlength'] = $("#newBodyXLength").val();
+        body['ylength'] = $("#newBodyYLength").val();
+        body['zlength'] = $("#newBodyZLength").val();
+
+        //defaults
+        if (body.xlength === "") { body.xlength = 1 }
+        if (body.ylength === "") { body.ylength = 1 }
+        if (body.zlength === "") { body.zlength = 1 }
+    }
+
+    if (event.data.geometry === 'cylinder') {
+        body['radiusTop'] = $('#newBodyRadiusTop').val();
+        body['radiusBottom'] = $('#newBodyRadiusBottom').val();
+        body['radialSegments'] = $('#newBodyRadialSegments').val();
+        body['heightSegments'] = $('#newBodyHeightSegments').val();
+        body['openEnded'] = $('#newBodyOpenEnded').val();
+        body['thetaStart'] = $('#newBodyThetaStart').val();
+        body['thetaLength'] = $('#newBodyThetaLength').val();
+
+        //defaults
+        if (body.radiusTop === "") { body.radiusTop = 1 }
+        if (body.radiusBottom === "") { body.radiusBottom = 1 }
+        if (body.height === "") { body.height = 1 }
+        if (body.radialSegments === "") { body.radialSegments = 32 }
+        if (body.heightSegments === "") { body.heightSegments = 1 }
+        if (body.openEnded === "") { body.openEnded = false }
+        if (body.thetaStart === "") { body.thetaStart = 0 }
+        if (body.thetaLength === "") { body.thetaLength = 2 * Math.PI }
+    }
+
+    // create button if this is a new body        
+    if (event.data.new) {
+        const name = $("#newBodyName").val();
+
+        cy.add({
+            group: 'nodes',
+            data: {
+                id: `body${name}`,
+                label: name,
+            },
+            classes: 'body',
+            renderedPosition: {
+                x: 300,
+                y: 300,
+            },
+        });
+    } else {
+        delete JSAT.bodies[event.data.name]
+    }
+    
+    JSAT.bodies[body.name] = body;
+    console.log(JSAT)
+    $('#addBodyDiv').hide();
+}
+
+function editBody() {
+    const name = this.data().label;
+    const body = JSAT.bodies[name];
+    $("#newBodyName").val(body.name);
+    $("#newBodyMass").val(body.mass);
+    $("#newBodyCm").val(body.cm);
+    $("#newBodyIxx").val(body.ixx);
+    $("#newBodyIyy").val(body.iyy);
+    $("#newBodyIzz").val(body.izz);
+    $("#newBodyIxy").val(body.ixy);
+    $("#newBodyIxz").val(body.ixz);
+    $("#newBodyIyz").val(body.iyz);
+    $("#newBodyMaterial").val(body.material);
+    $("#newBodyColor").val(body.color);
+
+    if (body.geometry === 'box') {
+        addBodyBoxInputs();
+        $("#newBodyXLength").val(body.xlength);
+        $("#newBodyYLength").val(body.ylength);
+        $("#newBodyZLength").val(body.zlength);
+    }
+
+    if (body.geometry === 'cylinder') {
+        addBodyCylinderInputs();
+        $('#newBodyRadiusTop').val(body.radiusTop);
+        $('#newBodyRadiusBottom').val(body.radiusBottom);
+        $('#newBodyRadialSegments').val(body.radialSegments);
+        $('#newBodyHeightSegments').val(body.heightSegments);
+        $('#newBodyOpenEnded').val(body.openEnded);
+        $('#newBodyThetaStart').val(body.thetaStart);
+        $('#newBodyThetaLength').val(body.thetaLength);
+    }
+
+    $("#addBodySaveButton").off();
+    $("#addBodySaveButton").on("click", { new: false, geometry: body.geometry, name: name }, saveBody)
+    $("#addBodyDiv").show();
+}
+
+function addJointRevoluteInputs() {
+    $('#jointTable tbody').append("<tr class = 'joint-input'> \
+            <td><label class='form-font'>&theta;:</label><br></td> \
+            <td><input id='newJointTheta' class='form-input' type='text' placeholder='0'><br></td>\
+        </tr>");
+
+    $('#jointTable tbody').append("<tr class = 'joint-input'> \
+            <td><label class='form-font'>&omega;:</label><br></td> \
+            <td><input id='newJointOmega' class='form-input' type='text' placeholder='0'><br></td>\
+        </tr>");
+
+}
+
+function clickAddRevoluteJoint() {
+    //remove all old inputs
+    $('.joint-input').remove();
+    //add revolute specific inputs
+    addJointRevoluteInputs();
+    // bind revolute to save event, mark as new 
+    $("#addJointSaveButton").off()
+    $("#addJointSaveButton").on("click", { new: true, type: 'revolute', name: '' }, saveJoint)
+    //show the details div
+    $('#addJointDiv').show();
+}
+
+function saveJoint(event) {
+    const name = $("#newJointName").val();
+
+    let joint = {
+        name: name,
+        type: event.data.type,                
+        FpRho: $("#newJointFpRho").val(),
+        FpPhi: $("#newJointFpPhi").val(),
+        FsRho: $("#newJointFsRho").val(),
+        FsPhi: $("#newJointFsPhi").val(),
+        predecessor: "undef", //defined after connection
+        successor: "undef",  //defined after connection
+    };
+
+    //defaults
+    if (joint.FpRho === "") { joint.FpRho = "zeros(3)" }
+    if (joint.FsRho === "") { joint.FsRho = "zeros(3)" }
+    if (joint.FpPhi === "") { joint.FpPhi = "I(3)" }
+    if (joint.FsPhi === "") { joint.FsPhi = "I(3)" }
+    
+
+    if (event.data.type === 'revolute') {
+        joint['theta'] = $("#newJointTheta").val();
+        joint['omega'] = $("#newJointOmega").val();
+
+        //defaults
+        if (joint.theta === "") { joint.theta = "0" }
+        if (joint.omega === "") { joint.omega = "0" }
+    }
+    
+    if (event.data.new) {
         cy.add({
             group: 'nodes',
             data: {
@@ -349,19 +535,17 @@ function initCytoscape() {
             },
             classes: 'joint',
             renderedPosition: {
-                x: rp.x,
-                y: rp.y,
+                x: 300,
+                y: 300,
             },
-        });
-
-
-        JSAT.joints[name] = joint;
-        console.log(JSAT);
-        $('#cyAddRevoluteDiv').hide();
+        });        
+    } else {
+        delete JSAT.joints[event.data.name]    
     }
-
-    $("#cyAddBodySaveButton").on("click", {new:true,name:''}, cySaveBody)
-    $("#cyAddRevoluteSaveButton").on("click", cySaveRevolute)
+    
+    JSAT.joints[name] = joint;
+    console.log(JSAT);
+    $('#addJointDiv').hide();
 }
 
 function sendSimulationData() {
@@ -741,8 +925,26 @@ function makeAnimation() {
         //create bodys
         const body_keys = Object.keys(sys.bodies);
         for (let i = 0; i < body_keys.length; i++) {
-            let body = sys.bodies[body_keys[i]];
-            const geometry = new THREE.BoxGeometry(body.width, body.height, body.length);
+            const body = sys.bodies[body_keys[i]];
+            let geometry;
+            if (body.geometry === 'box') {
+                geometry = new THREE.BoxGeometry(
+                    body.width,
+                    body.height,
+                    body.length
+                );
+            } else if (body.geometry === 'cylinder') {
+                geometry = new THREE.CylinderGeometry(
+                    body.radiusTop,
+                    body.radiusBottom,
+                    body.height,
+                    body.radialSegments,
+                    body.heightSegments,
+                    body.openEnded,
+                    body.thetaStart,
+                    body.thetaLength
+                );
+            }
             const material = new THREE.MeshBasicMaterial({ color: body.color });
             const mesh = new THREE.Mesh(geometry, material);
             mesh.name = body.name;
