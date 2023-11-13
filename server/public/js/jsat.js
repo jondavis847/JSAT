@@ -50,7 +50,7 @@ $("#plotTabButton").on("click", changeTab);
 $("#animTabButton").on("click", changeTab);
 $("#simButton").on("click", sendSimulationData);
 $("#addBodyCancelButton").on("click", () => { $("#addBodyDiv").hide() });
-$("#addRevoluteCancelButton").on("click", () => { $("#cyAddRevoluteDiv").hide() });
+$("#addJointCancelButton").on("click", () => { $("#addJointDiv").hide() });
 $("#loadModelButton").on("click", loadModel);
 $("#loadSimStates").on("click", getSimStates);
 $("#plotState").on("click", plotStateData);
@@ -152,6 +152,7 @@ let ehdefaults = {
 let eh = cy.edgehandles({ snap: false });
 //cy.autoungrabify(false);
 
+/*
 $(document).on("keydown", (event) => {
     if (event.keyCode === 16) {
         eh.enableDrawMode();
@@ -162,7 +163,7 @@ $(document).on("keyup", (event) => {
         eh.disableDrawMode();
     }
 });
-
+*/
 cy.on('ehcomplete', (evt, src, tar, edge) => {
     console.log(JSAT)
 
@@ -202,33 +203,14 @@ cy.on('ehcomplete', (evt, src, tar, edge) => {
 
 
 cy.on('dbltap', '.body', editBody)
+cy.on('dbltap', '.joint', editJoint)
 
-cy.on('dragfree', 'node#addBody', function (evt) {
-    rp = this.renderedPosition()
-    cy.$('#addBody').renderedPosition({ x: 50, y: 50 })
-    $("#cyAddBodySaveButton").off();
-    $("#cyAddBodySaveButton").on("click", { new: true, name: '' }, cySaveBody)
-    $('#cyAddBodyDiv').show()
-})
-
-cy.on('dragfree', 'node#addRevolute', function (evt) {
-    rp = this.renderedPosition()
-    cy.$('#addRevolute').renderedPosition({ x: 150, y: 50 })
-    $('#cyAddRevoluteDiv').show()
-})
-
+/*
 cy.on('tap', 'node', function (evt) {
     evt.target.select();
     console.log(cy.$('node').selected())
 });
-
-
-
-cy.zoomingEnabled(false) // for now, until we figure out toolbar
-cy.on('pan zoom', function () {
-    cy.$('#addBody').renderedPosition({ x: 50, y: 50 })
-    cy.$('#addRevolute').renderedPosition({ x: 150, y: 50 })
-})
+*/
 
 function toggleDrawMode() {
     if (eh.drawMode) {
@@ -434,6 +416,9 @@ function saveBody(event) {
 }
 
 function editBody() {
+    //remove any previously stored geometry specific inputs
+    $('.geometry-input').remove();
+
     const name = this.data().label;
     const body = JSAT.bodies[name];
     $("#newBodyName").val(body.name);
@@ -548,6 +533,28 @@ function saveJoint(event) {
     $('#addJointDiv').hide();
 }
 
+function editJoint() {
+    //remove all previously stored joint specific inputs
+    $('.joint-input').remove();
+
+    const name = this.data().label;
+    const joint = JSAT.joints[name];    
+    
+    $("#newJointName").val(joint.name);    
+    $("#newJointFpPhi").val(joint.FpPhi);
+    $("#newJointFpRho").val(joint.FpRho);    
+    $("#newJointFsPhi").val(joint.FsPhi);
+    $("#newJointFsRho").val(joint.FsRho);    
+
+    if (joint.type === 'revolute') {
+        addJointRevoluteInputs();
+        $("#newJointTheta").val(joint.theta);
+        $("#newJointOmega").val(joint.omega);
+    }
+
+    $("#addJointDiv").show();
+};
+
 function sendSimulationData() {
     const xhr = new XMLHttpRequest();
     xhr.open("POST", "/simulate");
@@ -633,10 +640,15 @@ function getSimStates() {
     xhr.addEventListener("load", function () {
         const states = JSON.parse(xhr.responseText).states;
         // remove all options first...
-        $("#stateSelect").empty();
+        $("#xStateSelect").empty();
+        $("#yStateSelect").empty();
         //then reload all options
         for (let i = 0; i < states.length; i++) {
-            $("#stateSelect").append($('<option>', {
+            $("#xStateSelect").append($('<option>', {
+                value: states[i],
+                text: states[i],
+            }))
+            $("#yStateSelect").append($('<option>', {
                 value: states[i],
                 text: states[i],
             }))
@@ -660,27 +672,28 @@ function plotStateData() {
 
     let selectedSims = []
     $("#simSelect").find(":selected").each(function () { selectedSims.push($(this).val()) })
-    let selectedStates = []
-    $("#stateSelect").find(":selected").each(function () { selectedStates.push($(this).val()) })
-
-
+    let selectedXState = $("#xStateSelect").find(":selected").val();    
+    let selectedYStates = []
+    $("#yStateSelect").find(":selected").each(function () { selectedYStates.push($(this).val()) })
+    const selectedStates  = [ ...new Set([selectedXState, ...selectedYStates])]
+    console.log(selectedStates)
     const xhr = new XMLHttpRequest();
     xhr.addEventListener("load", function () {
         const simData = JSON.parse(xhr.responseText);
         let traces = [];
-        let colorCtr = 0;
+        let colorCtr = 0;        
         simData.forEach(function (sim) {
-            selectedStates.forEach(function (state) {
+            selectedYStates.forEach(function (yState) {
                 var putInLegend = true; //only 1 state per 1 sim in legend (collect runs)
-                sim.runData.forEach(function (run, i) {
-                    let s = run.colindex.names.indexOf(state)
-                    let t = run.colindex.names.indexOf("t")
+                sim.runData.forEach(function (run, i) {                    
+                    let x = run.colindex.names.indexOf(selectedXState)
+                    let y = run.colindex.names.indexOf(yState)
                     traces.push({
-                        x: run.columns[t],
-                        y: run.columns[s],
+                        x: run.columns[x],
+                        y: run.columns[y],
                         type: 'scatter',
                         mode: 'lines',
-                        name: `${sim.sim}_${state}`,
+                        name: `${sim.sim}_${yState}`,
                         showlegend: putInLegend,
                         line: {
                             color: `rgb(${colormap[colorCtr]})`,
@@ -705,14 +718,14 @@ function plotStateData() {
                 size: 10,
                 color: 'aliceblue'
             },
-            title: selectedStates.join(),
+            title: selectedYStates.join(),
             showlegend: true,
             legend: {
                 orientation: "h",
                 bgcolor: 'rgba(0,0,0,0)' //transparent
             },
             xaxis: {
-                title: "t(s)",
+                title: selectedXState,
                 gridcolor: "rgb(0,0,0)"
             },
             yaxis: {
@@ -790,21 +803,7 @@ function loadModel() {
 }
 
 
-function editRevolute() {
-    NEWJOINT = false;
-    CURRENTJOINT = this;
-    $("#revName").val(JSAT.joints[this].name);
-    $("#revPred").val(JSAT.joints[this].predecessor);
-    $("#revFpPhi").val(JSAT.joints[this].FpPhi);
-    $("#revFpRho").val(JSAT.joints[this].FpRho);
-    $("#revSucc").val(JSAT.joints[this].successor);
-    $("#revFsPhi").val(JSAT.joints[this].FsPhi);
-    $("#revFsRho").val(JSAT.joints[this].FsRho);
-    $("#revTheta").val(JSAT.joints[this].theta);
-    $("#revOmega").val(JSAT.joints[this].omega);
 
-    $("#revoluteDetailsDiv").show();
-};
 
 
 const savedSpacecraft = [
@@ -944,6 +943,7 @@ function makeAnimation() {
                     body.thetaStart,
                     body.thetaLength
                 );
+                geometry.rotateX(Math.PI/2) //force cylinders to be z in the height direction
             }
             const material = new THREE.MeshBasicMaterial({ color: body.color });
             const mesh = new THREE.Mesh(geometry, material);

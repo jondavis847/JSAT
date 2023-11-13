@@ -225,9 +225,15 @@
             <button id="loadSimStates" class="plot-state"> load states </button>
           </div>
           <!-- states -->
-          <div class="states" id="states">
-            <button id="statesTitle" class="title-button"> states </button>
-            <select id="stateSelect" class="state-select" name="states" multiple></select>
+          <div class='states' id='states'>
+            <div class='x-states' id='xStates'>
+              <button class='title-button'>x axis</button>
+              <select id="xStateSelect" class="state-select" multiple></select>
+            </div>
+            <div class="y-states" id="yStates">
+              <button class="title-button">y axis</button>
+              <select id="yStateSelect" class="state-select" multiple></select>
+            </div>
             <button id="plotState" class="plot-state"> plot </button>
           </div>
           <!-- plot viewer -->
