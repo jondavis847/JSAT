@@ -222,19 +222,22 @@
           <div id="sims" class="sims">
             <button id="simsTitle" class="title-button"> simulations </button>
             <select id="simSelect" class="sim-select" name="sims" multiple></select>
-            <button id="loadSimStates" class="plot-state"> load states </button>
+            <button id="loadSimStates" class="load-from-sim-btn"> load states from sim </button>
+            <input type='file' id='loadFileInput' class='load-file-input' accept=".csv">
+            <button id="chooseFileButton" class="choose-file-btn">choose file</button>
+            <button id="loadFileStates" class="load-from-file-btn"> load states from file </button>
           </div>
           <!-- states -->
-          <div class='states' id='states'>
+          <div class='states' id='states'>            
             <div class='x-states' id='xStates'>
-              <button class='title-button'>x axis</button>
-              <select id="xStateSelect" class="state-select" multiple></select>
-            </div>
+              <button class='x-axis-title-button'>x axis</button>
+              <select id="xStateSelect" class="x-state-select"></select>
+            </div>            
             <div class="y-states" id="yStates">
               <button class="title-button">y axis</button>
               <select id="yStateSelect" class="state-select" multiple></select>
             </div>
-            <button id="plotState" class="plot-state"> plot </button>
+            <button id="plotState" class="load-from-file-btn"> plot </button>
           </div>
           <!-- plot viewer -->
           <div class="plots" id="plotsDiv"></canvas></div>
@@ -245,7 +248,7 @@
           <div id="sims2" class="sims">
             <button id="sims2Title" class="title-button"> simulations </button>
             <select id="sim2Select" class="sim-select" name="sims" multiple></select>
-            <button id="animateBtn" class="plot-state"> animate </button>
+            <button id="animateBtn" class="load-from-file-btn"> animate </button>
           </div>
           <div id="animationDiv" class="animation-div"></div>
         </div>

@@ -4,8 +4,13 @@ import cytoscape from 'https://cdn.jsdelivr.net/npm/cytoscape@3.27.0/+esm';
 import edgehandles from 'https://cdn.jsdelivr.net/npm/cytoscape-edgehandles@4.0.1/+esm';
 cytoscape.use(edgehandles);
 import "https://cdn.jsdelivr.net/npm/plotly.js/dist/plotly.min.js";
+//import "https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js";
+import Papa from 'https://cdn.jsdelivr.net/npm/papaparse@5.4.1/+esm'
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { TrackballControls } from 'three/addons/controls/TrackballControls.js';
+
+
 
 export let JSAT = {
     bodies: {},
@@ -65,7 +70,35 @@ $("#boxButton").on('click', clickAddBoxBody);
 $("#cylinderButton").on('click', clickAddCylinderBody);
 $('#baseButton').on('click', addBase);
 $('#revoluteButton').on('click', clickAddRevoluteJoint);
-$('#drawModeBtn').on('click',toggleDrawMode);
+$('#drawModeBtn').on('click', toggleDrawMode);
+$('#chooseFileButton').on('click', () => { $('#loadFileInput').click() });
+
+$('#loadFileInput').on('change', function (e) {
+    console.log(e)
+    if (e.target.files[0]) {
+        $('#loadFileStates').on('click', function () {
+            Papa.parse(e.target.files[0], {
+                complete: function (results) {
+                    const states = results.data[0];
+                    // remove all options first...
+                    $("#xStateSelect").empty();
+                    $("#yStateSelect").empty();
+                    //then reload all options
+                    for (let i = 0; i < states.length; i++) {
+                        $("#xStateSelect").append($('<option>', {
+                            value: states[i],
+                            text: states[i],
+                        }))
+                        $("#yStateSelect").append($('<option>', {
+                            value: states[i],
+                            text: states[i],
+                        }))
+                    }
+                }
+            });
+        });
+    }
+});
 
 getSimFileNames();
 loadModels();
@@ -214,14 +247,14 @@ cy.on('tap', 'node', function (evt) {
 
 function toggleDrawMode() {
     if (eh.drawMode) {
-        eh.disableDrawMode();             
+        eh.disableDrawMode();
         $('#drawModeBtn').removeClass("active-border")
         $('#drawModeBtn').addClass("not-active-border")
     } else {
-        eh.enableDrawMode();        
+        eh.enableDrawMode();
         $('#drawModeBtn').removeClass("not-active-border")
         $('#drawModeBtn').addClass("active-border")
-    }    
+    }
 }
 
 function addBase() {
@@ -344,7 +377,7 @@ function saveBody(event) {
         iyz: $("#newBodyIyz").val(),
         geometry: event.data.geometry,
         material: $("#newBodyMaterial").val(),
-        color: $("#newBodyColor").val(),         
+        color: $("#newBodyColor").val(),
     };
 
     //defaults
@@ -409,7 +442,7 @@ function saveBody(event) {
     } else {
         delete JSAT.bodies[event.data.name]
     }
-    
+
     JSAT.bodies[body.name] = body;
     console.log(JSAT)
     $('#addBodyDiv').hide();
@@ -486,21 +519,27 @@ function saveJoint(event) {
 
     let joint = {
         name: name,
-        type: event.data.type,                
+        type: event.data.type,
         FpRho: $("#newJointFpRho").val(),
         FpPhi: $("#newJointFpPhi").val(),
         FsRho: $("#newJointFsRho").val(),
-        FsPhi: $("#newJointFsPhi").val(),
-        predecessor: "undef", //defined after connection
-        successor: "undef",  //defined after connection
+        FsPhi: $("#newJointFsPhi").val(),        
     };
+
+    if (event.data.new) {
+        joint.predecessor = "undef"; //defined after connection    
+        joint.successor = "undef";  //defined after connection
+    } else {
+        joint.predecessor = event.data.predecessor;
+        joint.successor = event.data.successor;
+    }
 
     //defaults
     if (joint.FpRho === "") { joint.FpRho = "zeros(3)" }
     if (joint.FsRho === "") { joint.FsRho = "zeros(3)" }
     if (joint.FpPhi === "") { joint.FpPhi = "I(3)" }
     if (joint.FsPhi === "") { joint.FsPhi = "I(3)" }
-    
+
 
     if (event.data.type === 'revolute') {
         joint['theta'] = $("#newJointTheta").val();
@@ -510,7 +549,7 @@ function saveJoint(event) {
         if (joint.theta === "") { joint.theta = "0" }
         if (joint.omega === "") { joint.omega = "0" }
     }
-    
+
     if (event.data.new) {
         cy.add({
             group: 'nodes',
@@ -523,11 +562,11 @@ function saveJoint(event) {
                 x: 300,
                 y: 300,
             },
-        });        
+        });
     } else {
-        delete JSAT.joints[event.data.name]    
+        delete JSAT.joints[event.data.name]
     }
-    
+
     JSAT.joints[name] = joint;
     console.log(JSAT);
     $('#addJointDiv').hide();
@@ -538,21 +577,24 @@ function editJoint() {
     $('.joint-input').remove();
 
     const name = this.data().label;
-    const joint = JSAT.joints[name];    
-    
-    $("#newJointName").val(joint.name);    
+    const joint = JSAT.joints[name];
+
+    $("#newJointName").val(joint.name);
     $("#newJointFpPhi").val(joint.FpPhi);
-    $("#newJointFpRho").val(joint.FpRho);    
+    $("#newJointFpRho").val(joint.FpRho);
     $("#newJointFsPhi").val(joint.FsPhi);
-    $("#newJointFsRho").val(joint.FsRho);    
+    $("#newJointFsRho").val(joint.FsRho);
 
     if (joint.type === 'revolute') {
         addJointRevoluteInputs();
         $("#newJointTheta").val(joint.theta);
         $("#newJointOmega").val(joint.omega);
     }
-
+    
+    $("#addJointSaveButton").off();
+    $("#addJointSaveButton").on("click", { new: false, type: joint.type, name: name , predecessor: joint.predecessor, successor:joint.successor}, saveJoint)
     $("#addJointDiv").show();
+    
 };
 
 function sendSimulationData() {
@@ -672,20 +714,20 @@ function plotStateData() {
 
     let selectedSims = []
     $("#simSelect").find(":selected").each(function () { selectedSims.push($(this).val()) })
-    let selectedXState = $("#xStateSelect").find(":selected").val();    
+    let selectedXState = $("#xStateSelect").find(":selected").val();
     let selectedYStates = []
     $("#yStateSelect").find(":selected").each(function () { selectedYStates.push($(this).val()) })
-    const selectedStates  = [ ...new Set([selectedXState, ...selectedYStates])]
+    const selectedStates = [...new Set([selectedXState, ...selectedYStates])]
     console.log(selectedStates)
     const xhr = new XMLHttpRequest();
     xhr.addEventListener("load", function () {
         const simData = JSON.parse(xhr.responseText);
         let traces = [];
-        let colorCtr = 0;        
+        let colorCtr = 0;
         simData.forEach(function (sim) {
             selectedYStates.forEach(function (yState) {
                 var putInLegend = true; //only 1 state per 1 sim in legend (collect runs)
-                sim.runData.forEach(function (run, i) {                    
+                sim.runData.forEach(function (run, i) {
                     let x = run.colindex.names.indexOf(selectedXState)
                     let y = run.colindex.names.indexOf(yState)
                     traces.push({
@@ -911,13 +953,15 @@ function makeAnimation() {
         scene.add(axesHelper);
         const camera = new THREE.PerspectiveCamera(300, w / h, 1, 100);
         camera.position.set(0, 0, 10);
-        camera.rotation.set(0, 0, Math.PI)
-        //camera.up.set(0,1,0);
-
-
-        //const controls = new OrbitControls(camera, renderer.domElement);
-        //controls.update()
-
+        //camera.rotation.set(0,0,Math.PI);
+        
+        const controls = new TrackballControls(camera, renderer.domElement);
+        controls.rotateSpeed = 10.0
+        camera.up.set(0,1,0);
+        //camera.rotation.set(0, 0, Math.PI)
+        controls.update()
+        
+        
         const light = new THREE.AmbientLight('white', 1); // soft white light
         scene.add(light);
 
@@ -928,9 +972,9 @@ function makeAnimation() {
             let geometry;
             if (body.geometry === 'box') {
                 geometry = new THREE.BoxGeometry(
-                    body.width,
-                    body.height,
-                    body.length
+                    body.xlength,
+                    body.ylength,
+                    body.zlength
                 );
             } else if (body.geometry === 'cylinder') {
                 geometry = new THREE.CylinderGeometry(
@@ -943,7 +987,7 @@ function makeAnimation() {
                     body.thetaStart,
                     body.thetaLength
                 );
-                geometry.rotateX(Math.PI/2) //force cylinders to be z in the height direction
+                geometry.rotateX(Math.PI / 2) //force cylinders to be z in the height direction
             }
             const material = new THREE.MeshBasicMaterial({ color: body.color });
             const mesh = new THREE.Mesh(geometry, material);
@@ -970,8 +1014,6 @@ function makeAnimation() {
             scene.add(mesh);
         }
         const clock = new THREE.Clock({ autoStart: false });
-        //controls.update();
-
 
         /*
         let deltaSpacecraftCamera = new THREE.Vector3(0, 0, 300);
@@ -988,7 +1030,7 @@ function makeAnimation() {
         let t0 = time_data[0];
 
         function animate() {
-            requestAnimationFrame(animate);
+            requestAnimationFrame(animate);            
 
             if (clock.running) {
                 sim_elapsed_time = clock.getElapsedTime() - start_time;
@@ -1016,6 +1058,7 @@ function makeAnimation() {
             camera.position.set(data.r1[i] + deltaSpacecraftCamera.x, data.r2[i] + deltaSpacecraftCamera.y, data.r3[i] + deltaSpacecraftCamera.z)
             controls.target.copy(spacecraft.position);
             */
+            controls.update();
             renderer.render(scene, camera);
 
         }
@@ -1091,6 +1134,5 @@ function makeAnimation() {
     
             */
 
-
-
 }
+
