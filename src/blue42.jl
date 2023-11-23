@@ -81,25 +81,25 @@ end
     name
     bodies
     joints
-    p# joint predecessor body array
-    s# joint successor body array
-    λ# body parent array
-    κ# all joints between body i and base
-    μ# body children array
-    γ# all bodies from body i to tip (this is nu in Featherstone but nu just looks like v in Julia, so \gamma it is)    
+    p       # joint predecessor body array
+    s       # joint successor body array
+    λ       # body parent array
+    κ       # all joints between body i and base
+    μ       # body children array
+    γ       # all bodies from body i to tip (this is nu in Featherstone but nu just looks like v in Julia, so \gamma it is)    
     U
     D
     u
     c
     pᴬ
-    ᵖXᵢᵐ
-    ᵖXᵢᶠ
-    ⁱXₚᵐ
-    ⁱXₚᶠ
-    ᵒXᵢᵐ
-    ᵒXᵢᶠ
-    ⁱXₒᵐ
-    ⁱXₒᶠ
+    ᵖXᵢᵐ        #spatial motion transform from body i to predecessor of body i
+    ᵖXᵢᶠ        #spatial force transform from body i to predecessor of body i
+    ⁱXₚᵐ        #spatial motion transform from predecessor of body i to body i
+    ⁱXₚᶠ        #spatial force transform from predecessor of body i to body i       
+    ᵒXᵢᵐ        #spatial motion transform from body i to worldframe
+    ᵒXᵢᶠ        #spatial force transform from body i to worldframe
+    ⁱXₒᵐ        #spatial motion transform from worldframe to body i
+    ⁱXₒᶠ        #spatial force transform from worldframe to body i  
     q
     q̇
     q̈
@@ -329,6 +329,22 @@ function initialize_inertias(bodies, joints)
     for i in 1:length(bodies)-1
         body = bodies[i]
         Iᵇ[i] = mcI(body)
+
+        # make the assumption for revolute or spherical joints that the body frame is coincident with the joint Fs frame
+        # shift mass properties to the joint frame
+        if typeof(joints[i]) in [Revolute,Spherical]
+            Fs = joints[i].connection.Fs # Fs is joint frame expressed in body frame, or transform from body to joint
+            ᵇXⱼᵐ = ℳ(inv(Fs)) # need motion transformation from joint to body
+            ʲXᵦᶠ = ℱ(Fs) # need force transformation from body to joint
+            Iʲ = ʲXᵦᶠ * Iᵇ[i] *  ᵇXⱼᵐ # Featherstone equations 2.66 for transform of spatial inertia
+            Iᵇ[i] = Iʲ
+        end
+
+        # make the assumption for DOF6 joints that the body frame is coincident with the com
+        # shift mass properties to the com
+        if typeof(joints[i]) == DOF6            
+            Iᵇ[i] = mcI(body.m, zeros(3), body.I)
+        end
     end
     Iᴬ = copy(Iᵇ)
     return Iᵇ, Iᴬ
