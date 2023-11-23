@@ -343,7 +343,7 @@ function initialize_inertias(bodies, joints)
         # make the assumption for DOF6 joints that the body frame is coincident with the com
         # shift mass properties to the com
         if typeof(joints[i]) == DOF6            
-            Iᵇ[i] = mcI(body.m, zeros(3), body.I)
+            Iᵇ[i] = mcI(body.m, SVector{3,Float64}(zeros(3)), body.I)
         end
     end
     Iᴬ = copy(Iᵇ)

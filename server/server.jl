@@ -41,6 +41,7 @@ end
 
 function routerSimulate(req::HTTP.Request)
     message = JSON3.read(req.body)
+    println(message)
     sim = message[:sim]
     bodies = message[:bodies]
     joints = message[:joints]
@@ -84,6 +85,12 @@ function routerSimulate(req::HTTP.Request)
             θ = eval(Meta.parse(joint[:theta]))
             ω = eval(Meta.parse(joint[:omega]))
             J = Revolute(Symbol(joint[:name]), θ, ω)
+        elseif type == "dof6"
+            q = eval(Meta.parse(joint[:q]))
+            ω = eval(Meta.parse(joint[:omega]))
+            r = eval(Meta.parse(joint[:position]))
+            v = eval(Meta.parse(joint[:velocity]))
+            J = DOF6(Symbol(joint[:name]),q,ω,r,v)
         else
             error("bad joint type provided")
             return
@@ -134,7 +141,7 @@ function routerSimulate(req::HTTP.Request)
         JSON3.pretty(io, message)
     end
 
-    println(message)
+   
     HTTP.Response(200, "$(dt)")
 end
 

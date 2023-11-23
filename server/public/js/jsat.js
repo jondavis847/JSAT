@@ -77,13 +77,17 @@ $("#boxButton").on('click', clickAddBoxBody);
 $("#cylinderButton").on('click', clickAddCylinderBody);
 $('#baseButton').on('click', addBase);
 $('#revoluteButton').on('click', clickAddRevoluteJoint);
+$('#dof6Button').on('click', clickAddDof6Joint);
+
+
+
 $('#drawModeBtn').on('click', toggleDrawMode);
 $('#chooseFileButton').on('click', () => { $('#loadFileInput').click() });
 $('#deleteBtn').on('click', deleteElements);
 $('#createModelBtn').on('click', clickCreateModel);
 $('#addInportButton').on('click', clickAddInport);
 $('#addOutportButton').on('click', clickAddOutport);
-$('#addElementCancelButton').on('click', ()=> {$('#nameOnlyDiv').hide()})
+$('#addElementCancelButton').on('click', () => { $('#nameOnlyDiv').hide() })
 
 $('#loadFileInput').on('change', function (e) {
     console.log(e)
@@ -281,10 +285,10 @@ cy.on('ehcomplete', (evt, src, tar, edge) => {
     }
 
     //set if predecessor
-    if (src.classes().includes("port")) {        
+    if (src.classes().includes("port")) {
         const source_id = src.data().label;
         const target_id = tar.data().label;
-        JSAT.inports[source_id].successor = target_id;        
+        JSAT.inports[source_id].successor = target_id;
         if (tar.classes().includes("joint")) {
             JSAT.joints[target_id]["predecessor"] = source_id;
         }
@@ -535,12 +539,12 @@ function saveBody(event) {
                 y: 300,
             },
         });
-    } else {        
+    } else {
         //update node data
-        cy.$(`#body${event.data.name}`).data('id',`body${name}`)
-        cy.$(`#body${event.data.name}`).data('label',name)
+        cy.$(`#body${event.data.name}`).data('id', `body${name}`)
+        cy.$(`#body${event.data.name}`).data('label', name)
         delete JSAT.bodies[event.data.name]
-        
+
     }
 
     JSAT.bodies[body.name] = body;
@@ -602,6 +606,30 @@ function addJointRevoluteInputs() {
 
 }
 
+function addJointDof6Inputs() {
+    $('#jointTable tbody').append("<tr class = 'joint-input'> \
+            <td><label class='form-font'>quaternion:</label><br></td> \
+            <td><input id='newJointQuat' class='form-input' type='text' placeholder='[0,0,0,1]'><br></td>\
+        </tr>");
+
+    $('#jointTable tbody').append("<tr class = 'joint-input'> \
+            <td><label class='form-font'>&omega;:</label><br></td> \
+            <td><input id='newJointOmega' class='form-input' type='text' placeholder='zeros(3)'><br></td>\
+        </tr>");
+
+    $('#jointTable tbody').append("<tr class = 'joint-input'> \
+            <td><label class='form-font'>position:</label><br></td> \
+            <td><input id='newJointPosition' class='form-input' type='text' placeholder='zeros(3)'><br></td>\
+        </tr>");
+
+    $('#jointTable tbody').append("<tr class = 'joint-input'> \
+            <td><label class='form-font'>velocity:</label><br></td> \
+            <td><input id='newJointVelocity' class='form-input' type='text' placeholder='zeros(3)'><br></td>\
+        </tr>");
+
+}
+
+
 function clickAddRevoluteJoint() {
     //remove all old inputs
     $('.joint-input').remove();
@@ -610,6 +638,18 @@ function clickAddRevoluteJoint() {
     // bind revolute to save event, mark as new 
     $("#addJointSaveButton").off()
     $("#addJointSaveButton").on("click", { new: true, type: 'revolute', name: '' }, saveJoint)
+    //show the details div
+    $('#addJointDiv').show();
+}
+
+function clickAddDof6Joint() {
+    //remove all old inputs
+    $('.joint-input').remove();
+    //add revolute specific inputs
+    addJointDof6Inputs();
+    // bind revolute to save event, mark as new 
+    $("#addJointSaveButton").off()
+    $("#addJointSaveButton").on("click", { new: true, type: 'dof6', name: '' }, saveJoint)
     //show the details div
     $('#addJointDiv').show();
 }
@@ -650,6 +690,20 @@ function saveJoint(event) {
         if (joint.omega === "") { joint.omega = "0" }
     }
 
+    if (event.data.type === 'dof6') {
+        joint['q'] = $("#newJointQuat").val();
+        joint['omega'] = $("#newJointOmega").val();
+        joint['position'] = $("#newJointPosition").val();
+        joint['velocity'] = $("#newJointVelocity").val();
+
+        //defaults
+        if (joint.q === "") { joint.q = "[0,0,0,1]" }
+        if (joint.omega === "") { joint.omega = "zeros(3)" }
+        if (joint.position === "") { joint.position = "zeros(3)" }
+        if (joint.velocity === "") { joint.velocity = "zeros(3)" }
+    }
+
+
     if (event.data.new) {
         cy.add({
             group: 'nodes',
@@ -664,8 +718,8 @@ function saveJoint(event) {
             },
         });
     } else {
-        cy.$(`#joint${event.data.name}`).data('id',`body${name}`)
-        cy.$(`#joint${event.data.name}`).data('label',name)
+        cy.$(`#joint${event.data.name}`).data('id', `body${name}`)
+        cy.$(`#joint${event.data.name}`).data('label', name)
         delete JSAT.joints[event.data.name]
     }
 
@@ -691,6 +745,14 @@ function editJoint() {
         addJointRevoluteInputs();
         $("#newJointTheta").val(joint.theta);
         $("#newJointOmega").val(joint.omega);
+    }
+
+    if (joint.type === 'dof6') {
+        addJointDof6Inputs();
+        $("#newJointQuat").val(joint.q);
+        $("#newJointOmega").val(joint.omega);
+        $("#newJointPosition").val(joint.position);
+        $("#newJointVelocity").val(joint.velocity);
     }
 
     $("#addJointSaveButton").off();
@@ -1028,7 +1090,7 @@ function makeAnimation() {
         animationDiv.appendChild(renderer.domElement);
 
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color("rgb(30,30,30)" )
+        scene.background = new THREE.Color("rgb(30,30,30)")
         const axesHelper = new THREE.AxesHelper(1);
         scene.add(axesHelper);
         const camera = new THREE.PerspectiveCamera(300, w / h, 1, 100);
@@ -1110,7 +1172,7 @@ function makeAnimation() {
         let sim_elapsed_time;
         let t0 = time_data[0];
 
-        function animate() {            
+        function animate() {
 
             ANIMATION_ID = requestAnimationFrame(animate);
 
@@ -1252,7 +1314,7 @@ function clickCreateModel() {
     $('#nameOnlyDiv').show();
     // bind box to save event, mark as new 
     $("#addElementSaveButton").off()
-    $("#addElementSaveButton").on("click", { new: true, name: ""}, createModel)
+    $("#addElementSaveButton").on("click", { new: true, name: "" }, createModel)
 }
 function createModel(event) {
     const name = $('#newElementName').val();
@@ -1273,9 +1335,9 @@ function createModel(event) {
                 JSAT.outports[ele.data().label].nodeRenderedPosition = ele.renderedPosition;
             }
         }
-        
+
     });
-    
+
     const xhr = new XMLHttpRequest();
     xhr.open("POST", "/createmodel");
     xhr.setRequestHeader("Content-Type", "application/json; charset=UTF-8");
@@ -1283,10 +1345,10 @@ function createModel(event) {
         // Call a function when the state changes.
         if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
             loadModels();
-            jsatConsole(`added ${name} to models.jld2 on jsat server. check model library`)            
+            jsatConsole(`added ${name} to models.jld2 on jsat server. check model library`)
         }
     };
-    let modelData = {name:name, model:JSAT}
+    let modelData = { name: name, model: JSAT }
     xhr.send(JSON.stringify(modelData));
 
     $('#nameOnlyDiv').hide()
