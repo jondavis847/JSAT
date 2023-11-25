@@ -15,6 +15,7 @@ import { TrackballControls } from 'three/addons/controls/TrackballControls.js';
 let JSAT = {
     bodies: {},
     joints: {},
+    forces: {},
     inports: {}, //only useful for defining models
     outports: {}, //only useful for defining models
     sim: {
@@ -60,6 +61,7 @@ $("#animTabButton").on("click", changeTab);
 $("#simButton").on("click", sendSimulationData);
 $("#addBodyCancelButton").on("click", () => { $("#addBodyDiv").hide() });
 $("#addJointCancelButton").on("click", () => { $("#addJointDiv").hide() });
+$("#createModelCancelButton").on("click", () => { $("#createModelDiv").hide() });
 $("#loadSimStates").on("click", getSimStates);
 $("#plotState").on("click", plotStateData);
 $("#animateBtn").on("click", makeAnimation);
@@ -77,7 +79,8 @@ $("#boxButton").on('click', clickAddBoxBody);
 $("#cylinderButton").on('click', clickAddCylinderBody);
 $('#baseButton').on('click', addBase);
 $('#revoluteButton').on('click', clickAddRevoluteJoint);
-$('#dof6Button').on('click', clickAddDof6Joint);
+$('#floatingButton').on('click', clickAddFloatingJoint);
+$('#fixedButton').on('click', clickAddFixedJoint);
 
 
 
@@ -606,7 +609,7 @@ function addJointRevoluteInputs() {
 
 }
 
-function addJointDof6Inputs() {
+function addJointFloatingInputs() {
     $('#jointTable tbody').append("<tr class = 'joint-input'> \
             <td><label class='form-font'>quaternion:</label><br></td> \
             <td><input id='newJointQuat' class='form-input' type='text' placeholder='[0,0,0,1]'><br></td>\
@@ -629,6 +632,18 @@ function addJointDof6Inputs() {
 
 }
 
+function addJointFixedInputs() {
+    $('#jointTable tbody').append("<tr class = 'joint-input'> \
+            <td><label class='form-font'>quaternion:</label><br></td> \
+            <td><input id='newJointQuat' class='form-input' type='text' placeholder='[0,0,0,1]'><br></td>\
+        </tr>");
+
+    $('#jointTable tbody').append("<tr class = 'joint-input'> \
+            <td><label class='form-font'>position:</label><br></td> \
+            <td><input id='newJointPosition' class='form-input' type='text' placeholder='zeros(3)'><br></td>\
+        </tr>");
+
+}
 
 function clickAddRevoluteJoint() {
     //remove all old inputs
@@ -642,14 +657,26 @@ function clickAddRevoluteJoint() {
     $('#addJointDiv').show();
 }
 
-function clickAddDof6Joint() {
+function clickAddFloatingJoint() {
     //remove all old inputs
     $('.joint-input').remove();
     //add revolute specific inputs
-    addJointDof6Inputs();
+    addJointFloatingInputs();
     // bind revolute to save event, mark as new 
     $("#addJointSaveButton").off()
-    $("#addJointSaveButton").on("click", { new: true, type: 'dof6', name: '' }, saveJoint)
+    $("#addJointSaveButton").on("click", { new: true, type: 'floating', name: '' }, saveJoint)
+    //show the details div
+    $('#addJointDiv').show();
+}
+
+function clickAddFixedJoint() {
+    //remove all old inputs
+    $('.joint-input').remove();
+    //add fixed joint specific inputs
+    addJointFixedInputs() 
+    // bind revolute to save event, mark as new 
+    $("#addJointSaveButton").off()
+    $("#addJointSaveButton").on("click", { new: true, type: 'fixed', name: '' }, saveJoint)
     //show the details div
     $('#addJointDiv').show();
 }
@@ -690,7 +717,7 @@ function saveJoint(event) {
         if (joint.omega === "") { joint.omega = "0" }
     }
 
-    if (event.data.type === 'dof6') {
+    if (event.data.type === 'floating') {
         joint['q'] = $("#newJointQuat").val();
         joint['omega'] = $("#newJointOmega").val();
         joint['position'] = $("#newJointPosition").val();
@@ -703,6 +730,14 @@ function saveJoint(event) {
         if (joint.velocity === "") { joint.velocity = "zeros(3)" }
     }
 
+    if (event.data.type === 'fixed') {
+        joint['q'] = $("#newJointQuat").val();        
+        joint['position'] = $("#newJointPosition").val();        
+
+        //defaults
+        if (joint.q === "") { joint.q = "[0,0,0,1]" }        
+        if (joint.position === "") { joint.position = "zeros(3)" }        
+    }
 
     if (event.data.new) {
         cy.add({
@@ -718,7 +753,7 @@ function saveJoint(event) {
             },
         });
     } else {
-        cy.$(`#joint${event.data.name}`).data('id', `body${name}`)
+        cy.$(`#joint${event.data.name}`).data('id', `joint${name}`)
         cy.$(`#joint${event.data.name}`).data('label', name)
         delete JSAT.joints[event.data.name]
     }
@@ -747,12 +782,18 @@ function editJoint() {
         $("#newJointOmega").val(joint.omega);
     }
 
-    if (joint.type === 'dof6') {
-        addJointDof6Inputs();
+    if (joint.type === 'floating') {
+        addJointFloatingInputs();
         $("#newJointQuat").val(joint.q);
         $("#newJointOmega").val(joint.omega);
         $("#newJointPosition").val(joint.position);
         $("#newJointVelocity").val(joint.velocity);
+    }
+
+    if (joint.type === 'fixed') {
+        addJointFixedInputs();
+        $("#newJointQuat").val(joint.q);        
+        $("#newJointPosition").val(joint.position);        
     }
 
     $("#addJointSaveButton").off();
@@ -1310,14 +1351,14 @@ function deleteElements() {
     console.log(JSAT)
 }
 function clickCreateModel() {
-    $('#newElementName').val("");
-    $('#nameOnlyDiv').show();
-    // bind box to save event, mark as new 
-    $("#addElementSaveButton").off()
-    $("#addElementSaveButton").on("click", { new: true, name: "" }, createModel)
+    $('#createModelName').val("");
+    $('#createModelDiv').show();
+
+    $("#createModelSaveButton").off()
+    $("#createModelSaveButton").on("click", { new: true, name: "" }, createModel)
 }
 function createModel(event) {
-    const name = $('#newElementName').val();
+    const name = $('#createModelName').val();
     const elements = cy.nodes();
     elements.forEach((ele) => {
         if (ele.hasClass('body')) {
@@ -1351,5 +1392,5 @@ function createModel(event) {
     let modelData = { name: name, model: JSAT }
     xhr.send(JSON.stringify(modelData));
 
-    $('#nameOnlyDiv').hide()
+    $('#createModelDiv').hide()
 }

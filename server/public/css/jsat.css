@@ -632,6 +632,31 @@ button:focus {
     overflow:auto;    
 }
 
+.model-element-table-div {
+    background-color: rgba(35, 36, 35, 1);
+    box-sizing: border-box;
+    border: solid thin black;
+    position:absolute;
+    left:0%;
+    width:100%;
+    top:15%;
+    height:75%;   
+    overflow:auto;    
+}
+
+.add-model-param-button {
+    background-color: rgba(35, 36, 35, 1);
+    box-sizing: border-box;
+    border: solid thin black;
+    position:absolute;
+    left:0%;
+    width:100%;
+    top:10%;
+    height:5%;   
+    color: aquamarine;
+    text-align: center;
+    font-family: 'Courier New', monospace;  
+}
 .add-body-buttons-div {    
     box-sizing: border-box;
     position:absolute;

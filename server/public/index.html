@@ -106,11 +106,13 @@
             <button id="bodyBackButton" class="model-button model-loader-back-btn">back</button>
           </div>
 
-          <div id="jointsLoaderDiv" class="model-loader-div hidden-loader-div">
+          <div id="jointsLoaderDiv" class="model-loader-div hidden-loader-div">            
+            <button id="fixedButton" class="model-button">+fixed</button>
+            <button id="floatingButton" class="model-button">+floating</button>
             <button id="prismaticButton" class="model-button not-avail">+prismatic</button>
             <button id="revoluteButton" class="model-button">+revolute</button>
             <button id="sphericalButton" class="model-button not-avail">+spherical</button>
-            <button id="dof6Button" class="model-button">+6DOF</button>
+            
             <button id="jointBackButton" class="model-button model-loader-back-btn">back</button>
           </div>
 
@@ -143,6 +145,23 @@
             <div class="add-body-buttons-div">
               <button id="addElementSaveButton" class="add-body-save-button">save</button>
               <button id="addElementCancelButton" class="add-body-cancel-button">cancel</button>
+            </div>
+          </div>
+          <div id="createModelDiv" class="element-details-div">
+            <div class="element-title-div">enter info to create model</div>
+            <button id="addModelParamBtn" class="add-model-param-button">+ parameter</button>
+            <div class="model-element-table-div">
+              <table class="table">
+                <tr>
+                  <td><label class='form-font'>name:</label><br></td>
+                  <td><input id="createModelName" class='form-input' type='text' placeholder="name"><br>
+                  </td>
+                </tr>
+              </table>
+            </div>
+            <div class="add-body-buttons-div">
+              <button id="createModelSaveButton" class="add-body-save-button">save</button>
+              <button id="createModelCancelButton" class="add-body-cancel-button">cancel</button>
             </div>
           </div>
           <div id="addBodyDiv" class="element-details-div">
