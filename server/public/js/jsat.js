@@ -494,7 +494,7 @@ function saveBody(event) {
     if (body.ixz === "") { body.ixz = "0" }
     if (body.iyz === "") { body.iyz = "0" }
     if (body.material === "") { body.material = "basic" }
-    if (body.color === "") { body.color = "green" }
+    if (body.color === "") { body.color = "aquamarine" }
 
     if (event.data.geometry === 'box') {
         body['xlength'] = $("#newBodyXLength").val();

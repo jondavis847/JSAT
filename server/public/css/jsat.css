@@ -61,6 +61,15 @@ button:focus {
     align-items: middle;
 }
 
+.meatball-div {
+    position: absolute;
+    right: 0%;
+    top: 0%;
+    width: 5%;
+    height: 100%;
+    text-align: center;
+}
+
 .tab button {
     cursor: pointer;
     /*transition: 0.3s;*/
