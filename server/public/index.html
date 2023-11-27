@@ -25,9 +25,10 @@
     <div class="top-bar" id="topBar">
       <button id="jsatTitle" class="jsat-title top-bar-button"> jsat v0.1 </button>
       <div class="tab">
-        <button id="simTabButton" class="sim-tab top-bar-button tab-link">sim</button>
+        <button id="simTabButton" class="sim-tab top-bar-button tab-link active-border">sim</button>
         <button id="plotTabButton" class="plot-tab top-bar-button tab-link">plot</button>
         <button id="animTabButton" class="animation-tab top-bar-button tab-link">animation</button>
+        <div class="meatball-div"><img src="./images/nasa_aquamarine.png" alt="nasa.gov" width="50" height ="50"></div>
       </div>
     </div>
     <!-- main area -->
@@ -89,6 +90,8 @@
             <button id="basesButton" class="model-button">bases</button>
             <button id="bodiesButton" class="model-button">bodies</button>
             <button id="jointsButton" class="model-button">joints</button>
+            <button id="modelsButton" class="model-button">models</button>
+            <button id="portsButton" class="model-button">ports</button>
           </div>
 
           <div id="basesLoaderDiv" class="model-loader-div hidden-loader-div">
@@ -104,16 +107,64 @@
             <button id="bodyBackButton" class="model-button model-loader-back-btn">back</button>
           </div>
 
-          <div id="jointsLoaderDiv" class="model-loader-div hidden-loader-div">
+          <div id="jointsLoaderDiv" class="model-loader-div hidden-loader-div">            
+            <button id="fixedButton" class="model-button">+fixed</button>
+            <button id="floatingButton" class="model-button">+floating</button>
             <button id="prismaticButton" class="model-button not-avail">+prismatic</button>
             <button id="revoluteButton" class="model-button">+revolute</button>
             <button id="sphericalButton" class="model-button not-avail">+spherical</button>
+            
             <button id="jointBackButton" class="model-button model-loader-back-btn">back</button>
           </div>
+
+          <div id="modelsLoaderDiv" class="model-loader-div hidden-loader-div">
+            <button id="modelsBackButton" class="model-button model-loader-back-btn">back</button>
+          </div>
+          <div id="portsLoaderDiv" class="model-loader-div hidden-loader-div">
+            <button id="addInportButton" class="model-button">+in port</button>
+            <button id="addOutportButton" class="model-button">+out port</button>
+            <button id="portsBackButton" class="model-button model-loader-back-btn">back</button>
+          </div>
+
           <div id='cyToolbar' class='cy-toolbar'>
             <button id='drawModeBtn' class='draw-mode-btn not-active-border'>connect</button>
+            <button id='deleteBtn' class='delete-btn not-active-border'>delete</button>
+            <button id='createModelBtn' class='create-model-btn not-active-border'>create model</button>
           </div>
           <div id="cyCanvasDiv" class="cy-canvas-div"></div>
+          <div id="nameOnlyDiv" class="element-details-div">
+            <div class="element-title-div">enter name to add</div>
+            <div class="element-table-div">
+              <table class="table">
+                <tr>
+                  <td><label class='form-font'>name:</label><br></td>
+                  <td><input id="newElementName" class='form-input' type='text' placeholder="name"><br>
+                  </td>
+                </tr>
+              </table>
+            </div>
+            <div class="add-body-buttons-div">
+              <button id="addElementSaveButton" class="add-body-save-button">save</button>
+              <button id="addElementCancelButton" class="add-body-cancel-button">cancel</button>
+            </div>
+          </div>
+          <div id="createModelDiv" class="element-details-div">
+            <div class="element-title-div">enter info to create model</div>
+            <button id="addModelParamBtn" class="add-model-param-button">+ parameter</button>
+            <div class="model-element-table-div">
+              <table class="table">
+                <tr>
+                  <td><label class='form-font'>name:</label><br></td>
+                  <td><input id="createModelName" class='form-input' type='text' placeholder="name"><br>
+                  </td>
+                </tr>
+              </table>
+            </div>
+            <div class="add-body-buttons-div">
+              <button id="createModelSaveButton" class="add-body-save-button">save</button>
+              <button id="createModelCancelButton" class="add-body-cancel-button">cancel</button>
+            </div>
+          </div>
           <div id="addBodyDiv" class="element-details-div">
             <div class="element-title-div">
               enter info to add a new body
@@ -228,11 +279,11 @@
             <button id="loadFileStates" class="load-from-file-btn"> load states from file </button>
           </div>
           <!-- states -->
-          <div class='states' id='states'>            
+          <div class='states' id='states'>
             <div class='x-states' id='xStates'>
               <button class='x-axis-title-button'>x axis</button>
               <select id="xStateSelect" class="x-state-select"></select>
-            </div>            
+            </div>
             <div class="y-states" id="yStates">
               <button class="title-button">y axis</button>
               <select id="yStateSelect" class="state-select" multiple></select>

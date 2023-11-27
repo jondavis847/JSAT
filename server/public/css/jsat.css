@@ -61,6 +61,15 @@ button:focus {
     align-items: middle;
 }
 
+.meatball-div {
+    position: absolute;
+    right: 0%;
+    top: 0%;
+    width: 5%;
+    height: 100%;
+    text-align: center;
+}
+
 .tab button {
     cursor: pointer;
     /*transition: 0.3s;*/
@@ -405,7 +414,7 @@ button:focus {
     top: 0%;
     left: 40%;
     height: 100%;
-    width: 55%;
+    width: 60%;
     background-color: rgba(35, 36, 36, 1);
     box-sizing: border-box;
     border: solid thin black;
@@ -632,6 +641,31 @@ button:focus {
     overflow:auto;    
 }
 
+.model-element-table-div {
+    background-color: rgba(35, 36, 35, 1);
+    box-sizing: border-box;
+    border: solid thin black;
+    position:absolute;
+    left:0%;
+    width:100%;
+    top:15%;
+    height:75%;   
+    overflow:auto;    
+}
+
+.add-model-param-button {
+    background-color: rgba(35, 36, 35, 1);
+    box-sizing: border-box;
+    border: solid thin black;
+    position:absolute;
+    left:0%;
+    width:100%;
+    top:10%;
+    height:5%;   
+    color: aquamarine;
+    text-align: center;
+    font-family: 'Courier New', monospace;  
+}
 .add-body-buttons-div {    
     box-sizing: border-box;
     position:absolute;
@@ -682,4 +716,33 @@ button:focus {
     text-align: center;
     font-family: 'Courier New', monospace; 
     z-index: 10;      
+}
+
+.delete-btn {
+    background-color: rgba(25, 25, 25, 1);
+    box-sizing: border-box;    
+    position:absolute;
+    left:10%;
+    width:10%;
+    top:0%;
+    height:100%;   
+    color: aquamarine;
+    text-align: center;
+    font-family: 'Courier New', monospace; 
+    z-index: 10;      
+}
+
+.create-model-btn {
+    background-color: rgba(25, 25, 25, 1);
+    box-sizing: border-box;    
+    position:absolute;
+    left:20%;
+    width:20%;
+    top:0%;
+    height:100%;   
+    color: aquamarine;
+    text-align: center;
+    font-family: 'Courier New', monospace; 
+    z-index: 10;      
+
 }

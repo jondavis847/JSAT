@@ -1,18 +1,17 @@
-using HTTP, Sockets, JSON3
+using HTTP, Sockets, JSON3, JLD2
 includet("..\\src\\blue42.jl")
 function jsat_server()
     ROUTER = HTTP.Router()
 
-    routerIndex(req::HTTP.Request) = HTTP.Response(200,read("server\\public\\index.html"))
+    routerIndex(req::HTTP.Request) = HTTP.Response(200, read("server\\public\\index.html"))
     routerCss(req::HTTP.Request) = HTTP.Response(200, read("server\\public\\css\\jsat.css"))
-    routerJs(req::HTTP.Request) = HTTP.Response(200, ["Content-Type" => "application/javascript"],read("server\\public\\js\\jsat.js"))
-    #routerJs(req::HTTP.Request) = HTTP.Response(200, ["Content-Type" => "application/javascript"],read("server\\public\\dist\\bundle.js"))
-    routerLoadModels(req::HTTP.Request) = HTTP.Response(200, string(JSON3.read("server\\models.json")))
-
+    routerJs(req::HTTP.Request) = HTTP.Response(200, ["Content-Type" => "application/javascript"], read("server\\public\\js\\jsat.js"))
+    routerMeatball(req::HTTP.Request) = HTTP.Response(200, ["Content-Type" => "image/png"], read("server\\public\\images\\nasa_aquamarine.png"))
+    
     HTTP.register!(ROUTER, "GET", "/", routerIndex)
     HTTP.register!(ROUTER, "GET", "/css/jsat.css", routerCss)
     HTTP.register!(ROUTER, "GET", "/js/jsat.js", routerJs)
-    #HTTP.register!(ROUTER, "GET", "/dist/bundle.js", routerJs)
+    HTTP.register!(ROUTER, "GET", "/images/nasa_aquamarine.png", routerMeatball)
 
     HTTP.register!(ROUTER, "POST", "/simulate", routerSimulate)
     HTTP.register!(ROUTER, "GET", "/simfiles", routerSimFiles)
@@ -20,6 +19,7 @@ function jsat_server()
     HTTP.register!(ROUTER, "POST", "/loadstates", routerLoadStates)
     HTTP.register!(ROUTER, "POST", "/plotstates", routerPlot)
     HTTP.register!(ROUTER, "POST", "/animation", routerAnimate)
+    HTTP.register!(ROUTER, "POST", "/createmodel", routerCreateModel)
 
     server = HTTP.serve!(ROUTER, ip"127.0.0.1", 80)
     printstyled("servers up! ctrl+click url to go : http://127.0.0.1:80 \n", color=:light_yellow)
@@ -43,6 +43,7 @@ end
 
 function routerSimulate(req::HTTP.Request)
     message = JSON3.read(req.body)
+    println(message)
     sim = message[:sim]
     bodies = message[:bodies]
     joints = message[:joints]
@@ -86,6 +87,16 @@ function routerSimulate(req::HTTP.Request)
             θ = eval(Meta.parse(joint[:theta]))
             ω = eval(Meta.parse(joint[:omega]))
             J = Revolute(Symbol(joint[:name]), θ, ω)
+        elseif type == "fixed"
+            q = eval(Meta.parse(joint[:q]))            
+            r = eval(Meta.parse(joint[:position]))
+            J = FixedJoint(Symbol(joint[:name]),q,r)
+        elseif type == "floating"            
+            q = eval(Meta.parse(joint[:q]))
+            ω = eval(Meta.parse(joint[:omega]))
+            r = eval(Meta.parse(joint[:position]))
+            v = eval(Meta.parse(joint[:velocity]))
+            J = FloatingJoint(Symbol(joint[:name]),q,ω,r,v)
         else
             error("bad joint type provided")
             return
@@ -136,7 +147,7 @@ function routerSimulate(req::HTTP.Request)
         JSON3.pretty(io, message)
     end
 
-    println(message)
+   
     HTTP.Response(200, "$(dt)")
 end
 
@@ -183,18 +194,49 @@ function routerAnimate(req::HTTP.Request)
     for body in sys.bodies
         body_name = body[2].name
         states = [
-        "$(body_name)_q_base[1]"
-        "$(body_name)_q_base[2]"
-        "$(body_name)_q_base[3]"
-        "$(body_name)_q_base[4]"
-        "$(body_name)_r_base[1]"
-        "$(body_name)_r_base[2]"
-        "$(body_name)_r_base[3]"
+            "$(body_name)_q_base[1]"
+            "$(body_name)_q_base[2]"
+            "$(body_name)_q_base[3]"
+            "$(body_name)_q_base[4]"
+            "$(body_name)_r_base[1]"
+            "$(body_name)_r_base[2]"
+            "$(body_name)_r_base[3]"
         ]
-        this_rd = CSV.read("$(loc)\\$(run).csv", DataFrame, select=[states...])        
-        rd = hcat(rd,this_rd)        
-    end    
-    
-    D = Dict("sys"=> sys, "data"=>rd)
+        this_rd = CSV.read("$(loc)\\$(run).csv", DataFrame, select=[states...])
+        rd = hcat(rd, this_rd)
+    end
+
+    D = Dict("sys" => sys, "data" => rd)
     HTTP.Response(200, JSON3.write(D))#JSON3.write(simdata))
+end
+
+function routerCreateModel(req::HTTP.Request)    
+    file = "server//models.jld2"
+
+    data = JSON3.read(req.body, Dict)
+    name = data["name"]
+    model = data["model"]
+
+    if isfile(file)
+        model_dict = load(file)
+        rm(file)
+    else
+        model_dict = Dict()
+    end
+    model_dict[name] = model
+
+    save(file, model_dict)
+    
+    HTTP.Response(200, "success")    
+end
+
+function routerLoadModels(req::HTTP.Request) 
+    file = "server//models.jld2"
+    
+    if !isfile(file)
+        models = Dict()
+    else
+        models = load("server//models.jld2")        
+    end
+    HTTP.Response(200, JSON3.write(models))
 end

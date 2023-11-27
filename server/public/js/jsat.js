@@ -12,9 +12,12 @@ import { TrackballControls } from 'three/addons/controls/TrackballControls.js';
 
 
 
-export let JSAT = {
+let JSAT = {
     bodies: {},
     joints: {},
+    forces: {},
+    inports: {}, //only useful for defining models
+    outports: {}, //only useful for defining models
     sim: {
         name: "",
         nruns: 0,
@@ -23,8 +26,10 @@ export let JSAT = {
     },
 };
 
+let ANIMATION_ID = null; //used to cancel animations
+
 function jsatConsole(msg) {
-    $("#consoleLog").val($("#consoleLog").val() + msg);
+    $("#consoleLog").val($("#consoleLog").val() + `\n${msg}`);
 }
 
 function jsatError(msg) {
@@ -56,7 +61,7 @@ $("#animTabButton").on("click", changeTab);
 $("#simButton").on("click", sendSimulationData);
 $("#addBodyCancelButton").on("click", () => { $("#addBodyDiv").hide() });
 $("#addJointCancelButton").on("click", () => { $("#addJointDiv").hide() });
-$("#loadModelButton").on("click", loadModel);
+$("#createModelCancelButton").on("click", () => { $("#createModelDiv").hide() });
 $("#loadSimStates").on("click", getSimStates);
 $("#plotState").on("click", plotStateData);
 $("#animateBtn").on("click", makeAnimation);
@@ -66,12 +71,26 @@ $("#bodiesButton").on("click", () => { $("#bodiesLoaderDiv").show() });
 $("#bodyBackButton").on("click", () => { $("#bodiesLoaderDiv").hide() });
 $("#jointsButton").on("click", () => { $("#jointsLoaderDiv").show() });
 $("#jointBackButton").on("click", () => { $("#jointsLoaderDiv").hide() });
+$("#modelsButton").on("click", () => { $("#modelsLoaderDiv").show() });
+$("#modelsBackButton").on("click", () => { $("#modelsLoaderDiv").hide() });
+$("#portsButton").on("click", () => { $("#portsLoaderDiv").show() });
+$("#portsBackButton").on("click", () => { $("#portsLoaderDiv").hide() });
 $("#boxButton").on('click', clickAddBoxBody);
 $("#cylinderButton").on('click', clickAddCylinderBody);
 $('#baseButton').on('click', addBase);
 $('#revoluteButton').on('click', clickAddRevoluteJoint);
+$('#floatingButton').on('click', clickAddFloatingJoint);
+$('#fixedButton').on('click', clickAddFixedJoint);
+
+
+
 $('#drawModeBtn').on('click', toggleDrawMode);
 $('#chooseFileButton').on('click', () => { $('#loadFileInput').click() });
+$('#deleteBtn').on('click', deleteElements);
+$('#createModelBtn').on('click', clickCreateModel);
+$('#addInportButton').on('click', clickAddInport);
+$('#addOutportButton').on('click', clickAddOutport);
+$('#addElementCancelButton').on('click', () => { $('#nameOnlyDiv').hide() })
 
 $('#loadFileInput').on('change', function (e) {
     console.log(e)
@@ -104,6 +123,13 @@ getSimFileNames();
 loadModels();
 
 let rp;
+
+function cy_autosize(node) {
+    let label_length = node.data('label').length * 7;
+    let final_length = (label_length > 50) ? label_length : 50;
+    return final_length
+}
+
 var cy = cytoscape({
     container: $("#cyCanvasDiv"),
     style: [
@@ -113,13 +139,14 @@ var cy = cytoscape({
                 'font-size': 12,
                 'text-valign': 'center',
                 'text-halign': 'center',
-                'label': 'data(label)'
+                'label': 'data(label)',
+                'border-width': 3
             }
         },
         {
             selector: '.base',
             style: {
-                'shape': 'round-triangle',
+                'shape': 'round-rectangle',
                 'background-color': 'whitesmoke',
                 'width': 50,
                 'height': 50,
@@ -130,7 +157,7 @@ var cy = cytoscape({
             style: {
                 'shape': 'round-rectangle',
                 'background-color': 'aquamarine',
-                'width': 50,
+                'width': cy_autosize,
                 'height': 50,
             }
         },
@@ -139,7 +166,7 @@ var cy = cytoscape({
             style: {
                 'shape': 'ellipse',
                 'background-color': 'aqua',
-                'width': 50,
+                'width': cy_autosize,
                 'height': 50,
             }
         },
@@ -148,14 +175,39 @@ var cy = cytoscape({
             style: {
                 'width': 3,
                 'line-color': '#ccc',
-                'target-arrow-color': '#ccc',
+                'target-arrow-color': 'whitesmoke',
                 'target-arrow-shape': 'triangle',
-                'curve-style': 'bezier'
+                'curve-style': 'bezier',
+            }
+        },
+        {
+            selector: '.model',
+            style: {
+                'shape': 'round-rectangle',
+                'background-color': '#966FD6',
+                'width': cy_autosize,
+                'height': 50,
+            }
+        },
+        {
+            selector: '.port',
+            style: {
+                'shape': 'ellipse',
+                'background-color': '#eeeeee',
+                'width': 50,
+                'height': 25,
             }
         },
         { // just to suppress a warning with edgehandles https://github.com/cytoscape/cytoscape.js-edgehandles/issues/119
             //didnt work
             selector: '.eh-ghost-node',
+            style: {
+                'label': ''
+            }
+        },
+        { // just to suppress a warning with edgehandles https://github.com/cytoscape/cytoscape.js-edgehandles/issues/119
+            //didnt work
+            selector: '.eh-handle-node',
             style: {
                 'label': ''
             }
@@ -197,8 +249,28 @@ $(document).on("keyup", (event) => {
     }
 });
 */
+
+cy.on('select', (evt) => {
+    evt.target.style({ 'border-color': 'yellow' });
+});
+
+cy.on('unselect', (evt) => {
+    evt.target.style({ 'border-color': 'black' });
+});
+
 cy.on('ehcomplete', (evt, src, tar, edge) => {
-    console.log(JSAT)
+    //error handling
+    if (src.data().type === "out") {
+        jsatConsole("outport cannot be arrow base, must be arrow head")
+        edge.remove();
+        return;
+    }
+
+    if (tar.data().type === "in") {
+        jsatConsole("inport cannot be arrow head, must be arrow base")
+        edge.remove();
+        return;
+    }
 
     //set if predecessor
     if (src.classes().includes("body")) {
@@ -206,6 +278,25 @@ cy.on('ehcomplete', (evt, src, tar, edge) => {
             const source_id = src.data().label;
             const target_id = tar.data().label;
             JSAT.joints[target_id]["predecessor"] = source_id;
+        }
+
+        if (tar.classes().includes("port")) {
+            const source_id = src.data().label;
+            const target_id = tar.data().label;
+            JSAT.outports[target_id]["predecessor"] = source_id;
+        }
+    }
+
+    //set if predecessor
+    if (src.classes().includes("port")) {
+        const source_id = src.data().label;
+        const target_id = tar.data().label;
+        JSAT.inports[source_id].successor = target_id;
+        if (tar.classes().includes("joint")) {
+            JSAT.joints[target_id]["predecessor"] = source_id;
+        }
+        if (tar.classes().includes("port")) {
+            JSAT.outports[target_id]["predecessor"] = source_id;
         }
     }
 
@@ -227,16 +318,13 @@ cy.on('ehcomplete', (evt, src, tar, edge) => {
         }
     }
     console.log(JSAT)
-    cy.nodes().forEach(function (ele) {
-        ele.grabify();
-        console.log(ele.grabbable());
-    })
-    //cy.$('node').grabify(true); //for some reason nodes become ungrabbable after connecting an edgehandle
+
 });
 
 
 cy.on('dbltap', '.body', editBody)
 cy.on('dbltap', '.joint', editJoint)
+cy.on('dbltap', '.port', editPort)
 
 /*
 cy.on('tap', 'node', function (evt) {
@@ -259,7 +347,7 @@ function toggleDrawMode() {
 
 function addBase() {
     if (cy.$('.base').length > 0) {
-        jsatConsole('\ncant have more than 1 base!')
+        jsatConsole('cant have more than 1 base!')
     } else {
         cy.add({
             group: 'nodes',
@@ -364,6 +452,22 @@ function clickAddCylinderBody() {
     $('#addBodyDiv').show();
 }
 
+function clickAddInport() {
+    $('#newElementName').val("");
+    $('#nameOnlyDiv').show();
+    // bind box to save event, mark as new 
+    $("#addElementSaveButton").off()
+    $("#addElementSaveButton").on("click", { new: true, name: "", type: "in" }, savePort)
+}
+
+function clickAddOutport() {
+    $('#newElementName').val("");
+    $('#nameOnlyDiv').show();
+    // bind box to save event, mark as new 
+    $("#addElementSaveButton").off()
+    $("#addElementSaveButton").on("click", { new: true, name: "", type: "out" }, savePort)
+}
+
 function saveBody(event) {
     let body = {
         name: $("#newBodyName").val(),
@@ -390,7 +494,7 @@ function saveBody(event) {
     if (body.ixz === "") { body.ixz = "0" }
     if (body.iyz === "") { body.iyz = "0" }
     if (body.material === "") { body.material = "basic" }
-    if (body.color === "") { body.color = "green" }
+    if (body.color === "") { body.color = "aquamarine" }
 
     if (event.data.geometry === 'box') {
         body['xlength'] = $("#newBodyXLength").val();
@@ -425,9 +529,8 @@ function saveBody(event) {
     }
 
     // create button if this is a new body        
+    const name = $("#newBodyName").val();
     if (event.data.new) {
-        const name = $("#newBodyName").val();
-
         cy.add({
             group: 'nodes',
             data: {
@@ -441,7 +544,11 @@ function saveBody(event) {
             },
         });
     } else {
+        //update node data
+        cy.$(`#body${event.data.name}`).data('id', `body${name}`)
+        cy.$(`#body${event.data.name}`).data('label', name)
         delete JSAT.bodies[event.data.name]
+
     }
 
     JSAT.bodies[body.name] = body;
@@ -504,6 +611,42 @@ function addJointRevoluteInputs() {
 
 }
 
+function addJointFloatingInputs() {
+    $('#jointTable tbody').append("<tr class = 'joint-input'> \
+            <td><label class='form-font'>quaternion:</label><br></td> \
+            <td><input id='newJointQuat' class='form-input' type='text' placeholder='[0,0,0,1]'><br></td>\
+        </tr>");
+
+    $('#jointTable tbody').append("<tr class = 'joint-input'> \
+            <td><label class='form-font'>&omega;:</label><br></td> \
+            <td><input id='newJointOmega' class='form-input' type='text' placeholder='zeros(3)'><br></td>\
+        </tr>");
+
+    $('#jointTable tbody').append("<tr class = 'joint-input'> \
+            <td><label class='form-font'>position:</label><br></td> \
+            <td><input id='newJointPosition' class='form-input' type='text' placeholder='zeros(3)'><br></td>\
+        </tr>");
+
+    $('#jointTable tbody').append("<tr class = 'joint-input'> \
+            <td><label class='form-font'>velocity:</label><br></td> \
+            <td><input id='newJointVelocity' class='form-input' type='text' placeholder='zeros(3)'><br></td>\
+        </tr>");
+
+}
+
+function addJointFixedInputs() {
+    $('#jointTable tbody').append("<tr class = 'joint-input'> \
+            <td><label class='form-font'>quaternion:</label><br></td> \
+            <td><input id='newJointQuat' class='form-input' type='text' placeholder='[0,0,0,1]'><br></td>\
+        </tr>");
+
+    $('#jointTable tbody').append("<tr class = 'joint-input'> \
+            <td><label class='form-font'>position:</label><br></td> \
+            <td><input id='newJointPosition' class='form-input' type='text' placeholder='zeros(3)'><br></td>\
+        </tr>");
+
+}
+
 function clickAddRevoluteJoint() {
     //remove all old inputs
     $('.joint-input').remove();
@@ -512,6 +655,30 @@ function clickAddRevoluteJoint() {
     // bind revolute to save event, mark as new 
     $("#addJointSaveButton").off()
     $("#addJointSaveButton").on("click", { new: true, type: 'revolute', name: '' }, saveJoint)
+    //show the details div
+    $('#addJointDiv').show();
+}
+
+function clickAddFloatingJoint() {
+    //remove all old inputs
+    $('.joint-input').remove();
+    //add revolute specific inputs
+    addJointFloatingInputs();
+    // bind revolute to save event, mark as new 
+    $("#addJointSaveButton").off()
+    $("#addJointSaveButton").on("click", { new: true, type: 'floating', name: '' }, saveJoint)
+    //show the details div
+    $('#addJointDiv').show();
+}
+
+function clickAddFixedJoint() {
+    //remove all old inputs
+    $('.joint-input').remove();
+    //add fixed joint specific inputs
+    addJointFixedInputs() 
+    // bind revolute to save event, mark as new 
+    $("#addJointSaveButton").off()
+    $("#addJointSaveButton").on("click", { new: true, type: 'fixed', name: '' }, saveJoint)
     //show the details div
     $('#addJointDiv').show();
 }
@@ -525,7 +692,7 @@ function saveJoint(event) {
         FpRho: $("#newJointFpRho").val(),
         FpPhi: $("#newJointFpPhi").val(),
         FsRho: $("#newJointFsRho").val(),
-        FsPhi: $("#newJointFsPhi").val(),        
+        FsPhi: $("#newJointFsPhi").val(),
     };
 
     if (event.data.new) {
@@ -552,6 +719,28 @@ function saveJoint(event) {
         if (joint.omega === "") { joint.omega = "0" }
     }
 
+    if (event.data.type === 'floating') {
+        joint['q'] = $("#newJointQuat").val();
+        joint['omega'] = $("#newJointOmega").val();
+        joint['position'] = $("#newJointPosition").val();
+        joint['velocity'] = $("#newJointVelocity").val();
+
+        //defaults
+        if (joint.q === "") { joint.q = "[0,0,0,1]" }
+        if (joint.omega === "") { joint.omega = "zeros(3)" }
+        if (joint.position === "") { joint.position = "zeros(3)" }
+        if (joint.velocity === "") { joint.velocity = "zeros(3)" }
+    }
+
+    if (event.data.type === 'fixed') {
+        joint['q'] = $("#newJointQuat").val();        
+        joint['position'] = $("#newJointPosition").val();        
+
+        //defaults
+        if (joint.q === "") { joint.q = "[0,0,0,1]" }        
+        if (joint.position === "") { joint.position = "zeros(3)" }        
+    }
+
     if (event.data.new) {
         cy.add({
             group: 'nodes',
@@ -566,6 +755,8 @@ function saveJoint(event) {
             },
         });
     } else {
+        cy.$(`#joint${event.data.name}`).data('id', `joint${name}`)
+        cy.$(`#joint${event.data.name}`).data('label', name)
         delete JSAT.joints[event.data.name]
     }
 
@@ -592,12 +783,93 @@ function editJoint() {
         $("#newJointTheta").val(joint.theta);
         $("#newJointOmega").val(joint.omega);
     }
-    
+
+    if (joint.type === 'floating') {
+        addJointFloatingInputs();
+        $("#newJointQuat").val(joint.q);
+        $("#newJointOmega").val(joint.omega);
+        $("#newJointPosition").val(joint.position);
+        $("#newJointVelocity").val(joint.velocity);
+    }
+
+    if (joint.type === 'fixed') {
+        addJointFixedInputs();
+        $("#newJointQuat").val(joint.q);        
+        $("#newJointPosition").val(joint.position);        
+    }
+
     $("#addJointSaveButton").off();
-    $("#addJointSaveButton").on("click", { new: false, type: joint.type, name: name , predecessor: joint.predecessor, successor:joint.successor}, saveJoint)
+    $("#addJointSaveButton").on("click", { new: false, type: joint.type, name: name, predecessor: joint.predecessor, successor: joint.successor }, saveJoint)
     $("#addJointDiv").show();
-    
+
 };
+
+function savePort(event) {
+    const name = $("#newElementName").val();
+
+    let port = {
+        name: name,
+    };
+
+    if (event.data.new) {
+        if (event.data.type === "in") {
+            port.successor = "undef";  //defined after connection
+        }
+        if (event.data.type === "out") {
+            port.predecessor = "undef";  //defined after connection
+        }
+        cy.add({
+            group: 'nodes',
+            data: {
+                id: `${name}`,
+                label: name,
+                type: event.data.type
+            },
+            classes: 'port',
+            renderedPosition: {
+                x: 300,
+                y: 300,
+            },
+        });
+    } else {
+        if (event.data.type === "in") {
+            port.successor = event.data.successor;
+            delete JSAT.inports[event.data.name]
+        }
+        if (event.data.type === "out") {
+            port.predecessor = event.data.predecessor;
+            delete JSAT.outports[event.data.name]
+        }
+
+    }
+    if (event.data.type === "in") {
+        JSAT.inports[name] = port;
+    }
+    if (event.data.type === "out") {
+        JSAT.outports[name] = port;
+    }
+    $('#nameOnlyDiv').hide();
+    console.log(JSAT)
+}
+
+function editPort() {
+
+    const name = this.data().label;
+    const type = this.data().type;
+    let port;
+    if (type === "in") {
+        port = JSAT.inports[name];
+    }
+    if (type === "out") {
+        port = JSAT.outports[name];
+    }
+
+    $("#newElementName").val(port.name);
+
+    $("#addElementSaveButton").off();
+    $("#addElementSaveButton").on("click", { new: false, name: name, type: type, successor: port.successor }, savePort)
+    $("#addElementDiv").show();
+}
 
 function sendSimulationData() {
     const xhr = new XMLHttpRequest();
@@ -606,7 +878,7 @@ function sendSimulationData() {
     xhr.onreadystatechange = () => {
         // Call a function when the state changes.
         if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
-            jsatConsole(`\nsimulation completed in ${xhr.responseText} seconds!`)
+            jsatConsole(`simulation completed in ${xhr.responseText} seconds!`)
             getSimFileNames()
         }
     };
@@ -643,36 +915,45 @@ function getSimFileNames() {
 }
 
 function loadModels() {
-    /*
     const xhr = new XMLHttpRequest();
     xhr.addEventListener("load", function () {
-        MODELS = JSON.parse(this.responseText)
+        let models = JSON.parse(this.responseText)
+
+        //remove old buttons
+        $('.loaded-model-button').remove();
 
         //make model buttons for each model
-        let keys = Object.keys(MODELS)
+        let keys = Object.keys(models)
         for (let i = 0; i < keys.length; i++) {
+            let name = keys[i];
             let btn = $('<button/>', {
-                id: `${keys[i]}ModelButton`,
-                html: keys[i]
+                id: `${name}ModelButton`,
+                html: name
             });
-            btn.addClass("model-buttons");
+            btn.addClass('model-button');
+            btn.addClass('loaded-model-button');
             //place button in div            
-            $("#modelLoaderDiv").append(btn);
+            $('#modelsLoaderDiv').append(btn);
 
             btn.on("click", function () {
-                $(".model-buttons").removeClass("active-border")
-                btn.toggleClass("active-border")
-                console.log(keys[i])
-                console.log(MODELS)
-                console.log(MODELS[keys[i]])
-                CURRENTMODEL = MODELS[keys[i]]
+                cy.add({
+                    group: 'nodes',
+                    data: {
+                        id: name,
+                        label: name
+                    },
+                    classes: 'model',
+                    renderedPosition: {
+                        x: 300,
+                        y: 300,
+                    },
+                });
             });
         };
-        
+
     });
     xhr.open("GET", "/loadmodels", true);
     xhr.send();
-    */
 }
 
 function getSimStates() {
@@ -823,111 +1104,12 @@ function changeTab(evt) {
     }
 }
 
-function loadModel() {
-
-    let nbodies = CURRENTMODEL.bodies.length
-
-    for (let b = 0; b < nbodies; b++) {
-        NEWBODY = true;
-        CURRENTBODY = CURRENTMODEL.bodies[b];
-        $(".model-buttons").removeClass("active-border");
-        saveBody(CURRENTBODY);
-    }
-    console.log(CURRENTMODEL)
-    let njoints = (CURRENTMODEL.joints).length
-
-    for (let j = 0; j < njoints; j++) {
-        NEWJOINT = true;
-        CURRENTJOINT = CURRENTMODEL.joints[j];
-        $(".model-buttons").removeClass("active-border");
-        saveJoint(CURRENTJOINT);
-    }
-
-    CURRENTMODEL = {};
-}
-
-
-
-
-
-const savedSpacecraft = [
-    {
-        name: "fake_pace",
-        sc: {
-            body: {
-                name: "body",
-                ixx: "1000",
-                iyy: "1000",
-                izz: "1000",
-                ixy: "0",
-                ixz: "0",
-                iyz: "0",
-                q: "[0, 0, 0, 1]",
-                w: "zeros(3)",
-                r: "[-3.9292738554734, 5.71264013167723, 1.31199443874228]*1e6",
-                v: "[84.5551344721184, 1749.4937756303016, -7311.912202797997]",
-            },
-            reactionwheels: [
-                {
-                    name: "rw1",
-                    J: "0.25",
-                    kt: "0.075",
-                    a: "[1, 0, 0]",
-                    w: "0",
-                },
-                {
-                    name: "rw2",
-                    J: "0.25",
-                    kt: "0.075",
-                    a: "[0, 1, 0]",
-                    w: "0",
-                },
-                {
-                    name: "rw3",
-                    J: "0.25",
-                    kt: "0.075",
-                    a: "[0, 0, 1]",
-                    w: "0",
-                },
-            ],
-            thrusters: [
-                {
-                    name: "thr1",
-                    F: "1",
-                    r: "[1, 0, -1]",
-                    R: "[0 1 0; 1 0 0; 0 0 1]"
-                },
-                {
-                    name: "thr2",
-                    F: "1",
-                    r: "[-1, 0, 1]",
-                    R: "[0 1 0; 1 0 0; 0 0 1]"
-                },
-                {
-                    name: "thr3",
-                    F: "1",
-                    r: "[0, 1, -1]",
-                    R: "[0 1 0; 1 0 0; 0 0 1]"
-                },
-                {
-                    name: "thr4",
-                    F: "1",
-                    r: "[0, -1, -1]",
-                    R: "[0 1 0; 1 0 0; 0 0 1]"
-                },
-            ],
-            iru: {
-                name: "iru",
-                sigma: "0.01",
-            },
-            controller: {
-                name: "controller"
-            },
-        }
-    }
-]
-
 function makeAnimation() {
+    // cancel any ongoing animation
+    if (ANIMATION_ID !== null) {
+        cancelAnimationFrame(ANIMATION_ID)
+    }
+
     let selectedSims = []
     $("#sim2Select").find(":selected").each(function () { selectedSims.push($(this).val()) });
     if (selectedSims.length === 0) {
@@ -951,19 +1133,21 @@ function makeAnimation() {
         animationDiv.appendChild(renderer.domElement);
 
         const scene = new THREE.Scene();
+        scene.background = new THREE.Color("rgb(30,30,30)")
         const axesHelper = new THREE.AxesHelper(1);
         scene.add(axesHelper);
         const camera = new THREE.PerspectiveCamera(300, w / h, 1, 100);
         camera.position.set(0, 0, 10);
         //camera.rotation.set(0,0,Math.PI);
-        
+
         const controls = new TrackballControls(camera, renderer.domElement);
         controls.rotateSpeed = 10.0
-        camera.up.set(0,1,0);
+        //camera.up.set(0, 1, 0);
+        camera.up = new THREE.Vector3(0, -1, 0)
         //camera.rotation.set(0, 0, Math.PI)
         controls.update()
-        
-        
+
+
         const light = new THREE.AmbientLight('white', 1); // soft white light
         scene.add(light);
 
@@ -1032,7 +1216,8 @@ function makeAnimation() {
         let t0 = time_data[0];
 
         function animate() {
-            requestAnimationFrame(animate);            
+
+            ANIMATION_ID = requestAnimationFrame(animate);
 
             if (clock.running) {
                 sim_elapsed_time = clock.getElapsedTime() - start_time;
@@ -1138,3 +1323,76 @@ function makeAnimation() {
 
 }
 
+function deleteElements() {
+    //get selected cy elements
+    let elements = cy.elements()
+    //remove bodies and joints from JSAT
+    elements.forEach((ele) => {
+        if (ele.selected()) {
+            if (ele.group() === "nodes") {
+                if (ele.hasClass('body')) {
+                    delete JSAT.bodies[ele.data().label];
+                }
+                if (ele.hasClass("joint")) {
+                    delete JSAT.joints[ele.data().label];
+                }
+                if (ele.hasClass("port")) {
+                    if (ele.data().type === "in") {
+                        delete JSAT.inports[ele.data().label];
+                    }
+                    if (ele.data().type === "out") {
+                        delete JSAT.outports[ele.data().label];
+                    }
+                }
+            }
+            //remove from canvas
+            ele.remove();
+        }
+    })
+
+    console.log(JSAT)
+}
+function clickCreateModel() {
+    $('#createModelName').val("");
+    $('#createModelDiv').show();
+
+    $("#createModelSaveButton").off()
+    $("#createModelSaveButton").on("click", { new: true, name: "" }, createModel)
+}
+function createModel(event) {
+    const name = $('#createModelName').val();
+    const elements = cy.nodes();
+    elements.forEach((ele) => {
+        if (ele.hasClass('body')) {
+            JSAT.bodies[ele.data().label].nodeRenderedPosition = ele.renderedPosition;
+            console.log(JSAT)
+        }
+        if (ele.hasClass('joint')) {
+            JSAT.joints[ele.data().label].nodeRenderedPosition = ele.renderedPosition;
+        }
+        if (ele.hasClass('port')) {
+            if (ele.data.type === "in") {
+                JSAT.inports[ele.data().label].nodeRenderedPosition = ele.renderedPosition;
+            }
+            if (ele.data.type === "out") {
+                JSAT.outports[ele.data().label].nodeRenderedPosition = ele.renderedPosition;
+            }
+        }
+
+    });
+
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", "/createmodel");
+    xhr.setRequestHeader("Content-Type", "application/json; charset=UTF-8");
+    xhr.onreadystatechange = () => {
+        // Call a function when the state changes.
+        if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
+            loadModels();
+            jsatConsole(`added ${name} to models.jld2 on jsat server. check model library`)
+        }
+    };
+    let modelData = { name: name, model: JSAT }
+    xhr.send(JSON.stringify(modelData));
+
+    $('#createModelDiv').hide()
+}
