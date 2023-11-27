@@ -406,6 +406,7 @@ function saveBody(event) {
     if (event.data.geometry === 'cylinder') {
         body['radiusTop'] = $('#newBodyRadiusTop').val();
         body['radiusBottom'] = $('#newBodyRadiusBottom').val();
+        body['height'] = $('#newBodyHeight').val();
         body['radialSegments'] = $('#newBodyRadialSegments').val();
         body['heightSegments'] = $('#newBodyHeightSegments').val();
         body['openEnded'] = $('#newBodyOpenEnded').val();
@@ -477,6 +478,7 @@ function editBody() {
         addBodyCylinderInputs();
         $('#newBodyRadiusTop').val(body.radiusTop);
         $('#newBodyRadiusBottom').val(body.radiusBottom);
+        $('#newBodyHeight').val(body.height);
         $('#newBodyRadialSegments').val(body.radialSegments);
         $('#newBodyHeightSegments').val(body.heightSegments);
         $('#newBodyOpenEnded').val(body.openEnded);
