@@ -33,6 +33,7 @@ end
 mcI(b::Body) = mcI(b.m, b.cm, b.I)
 
 includet("joints.jl")
+includet("software//software.jl")
 includet("utils//pathutils.jl")
 
 struct Force
@@ -49,6 +50,7 @@ end
     name
     bodies
     joints
+    software
     p       # joint predecessor body array
     s       # joint successor body array
     λ       # body parent array
@@ -89,7 +91,7 @@ end
 
 
 #MultibodySystem constructor
-function MultibodySystem(name, bodies, joints)
+function MultibodySystem(name, bodies, joints, software=AbstractSoftware[])
     # preallocate vectors/matrices at MultibodySystem definition, mutate in place during sim
     # map the bodies and joints 
     p, s, λ, κ, μ, γ = map_tree!(bodies, joints)
@@ -102,7 +104,7 @@ function MultibodySystem(name, bodies, joints)
 
 
     #grab q,q̇ initial conditions
-    q, q̇, q̈, x = initialize_state_vectors(joints)
+    q, q̇, q̈, x = initialize_state_vectors(joints, software)
 
     nb = length(bodies)
 
@@ -145,7 +147,13 @@ function MultibodySystem(name, bodies, joints)
     ⁱXₒᵐ = OffsetVector(fill(identity_X, nb), 0:nb-1)
     ⁱXₒᶠ = OffsetVector(fill(identity_X, nb), 0:nb-1)
 
-    sys = MultibodySystem(name, bodies, joints, p, s, λ, κ, μ, γ, U, D, u, c, pᴬ, ᵖXᵢᵐ, ᵖXᵢᶠ, ⁱXₚᵐ, ⁱXₚᶠ, ᵒXᵢᵐ, ᵒXᵢᶠ, ⁱXₒᵐ, ⁱXₒᶠ, q, q̇, q̈, x, H, C, τ, fˣ, fᵇ, f_gyro, Iᵇ, Iᴬ, r, v, a, r_base, q_base)
+
+    # make the software callbacks
+    for i in eachindex(software)
+        create_callbacks!(software[i], i)
+    end
+
+    sys = MultibodySystem(name, bodies, joints, software, p, s, λ, κ, μ, γ, U, D, u, c, pᴬ, ᵖXᵢᵐ, ᵖXᵢᶠ, ⁱXₚᵐ, ⁱXₚᶠ, ᵒXᵢᵐ, ᵒXᵢᶠ, ⁱXₒᵐ, ⁱXₒᶠ, q, q̇, q̈, x, H, C, τ, fˣ, fᵇ, f_gyro, Iᵇ, Iᴬ, r, v, a, r_base, q_base)
 
     #initialize FixedJoints X so we don't have to calculate again
     calculate_X_FixedJoints!(sys)
@@ -301,7 +309,7 @@ function articulated_body_algorithm!(sys)
     nothing
 end
 
-function initialize_state_vectors(joints)
+function initialize_state_vectors(joints, softwares)
     q = []
     q̇ = []
     x = []
@@ -319,6 +327,12 @@ function initialize_state_vectors(joints)
             append!(q̇, this_q̇)
         end
     end
+
+    for software in softwares
+        append!(x, software.initial_value)
+        software.u_index = length(x)
+    end
+
     q = MVector{length(q),Float64}(q)
     q̇ = MVector{length(q̇),Float64}(q̇)
     q̈ = MVector{length(q̇),Float64}(zeros(length(q̇)))
@@ -414,7 +428,7 @@ function configure_saving(sys::MultibodySystem)
                     save_config,
                     "$(sys.joints[i].meta.name)_$(string(state))",
                     typeof(getfield(sys.joints[i].state, state)),
-                    sys -> getfield(sys.joints[i].state, state)
+                    integrator -> getfield(integrator.p.sys.joints[i].state, state)
                 )
             end
 
@@ -423,7 +437,7 @@ function configure_saving(sys::MultibodySystem)
                 save_config,
                 "$(sys.joints[i].meta.name)_q̈",
                 typeof(sys.q̈[sys.joints[i].meta.q̇index]),
-                sys -> sys.q̈[sys.joints[i].meta.q̇index]
+                integrator -> integrator.p.sys.q̈[sys.joints[i].meta.q̇index]
             )
         end
     end
@@ -432,28 +446,28 @@ function configure_saving(sys::MultibodySystem)
             save_config,
             "$(sys.bodies[i].name)_r",
             typeof(sys.r[i]),
-            sys -> sys.r[i]
+            integrator -> integrator.p.sys.r[i]
         )
 
         save_dict!(
             save_config,
             "$(sys.bodies[i].name)_v",
             typeof(sys.v[i]),
-            sys -> sys.v[i]
+            integrator -> integrator.p.sys.v[i]
         )
 
         save_dict!(
             save_config,
             "$(sys.bodies[i].name)_a",
             typeof(sys.a[i]),
-            sys -> sys.a[i]
+            integrator -> integrator.p.sys.a[i]
         )
 
         save_dict!(
             save_config,
             "$(sys.bodies[i].name)_fᵇ",
             typeof(sys.fᵇ[i]),
-            sys -> sys.fᵇ[i]
+            integrator -> integrator.p.sys.fᵇ[i]
         )
 
         # get base frame position vars for animation        
@@ -462,19 +476,28 @@ function configure_saving(sys::MultibodySystem)
             save_config,
             "$(sys.bodies[i].name)_q_base",
             typeof(sys.q_base[i]),
-            sys -> (sys.q_base[i])
+            integrator -> (integrator.p.sys.q_base[i])
         )
 
         save_dict!(
             save_config,
             "$(sys.bodies[i].name)_r_base",
             typeof(sys.r_base[i]),
-            sys -> (sys.r_base[i])
+            integrator -> (integrator.p.sys.r_base[i])
         )
+
+        for i in eachindex(sys.software)
+            save_dict!(
+                save_config,
+                "$(sys.software[i].name)_u",
+                typeof(sys.software[i].initial_value),
+                integrator -> integrator.u[integrator.p.sys.software[i].u_index]
+            )
+        end
     end
 
     save_values = SavedValues(Float64, Tuple{getindex.(save_config, "type")...})
-    save_function(u, t, integrator) = Tuple([f(integrator.p.sys) for f in getindex.(integrator.p.save_config, "func")])
+    save_function(u, t, integrator) = Tuple([f(integrator) for f in getindex.(integrator.p.save_config, "func")])
     save_cb = SavingCallback(save_function, save_values)
     return save_config, save_values, save_cb
 end
@@ -483,8 +506,13 @@ function simulate(orig_sys::MultibodySystem, tspan; output_type=nothing)
     sys = deepcopy(orig_sys)# make a copy so we can rerun orig sys without mutating it during previous sim    
     save_config, save_values, save_cb = configure_saving(sys)
     p = (sys=sys, save_config=save_config)
+
+    #get callbacks
+    callbacks = [save_cb; getfield.(sys.software,:callback)...;]
+    cb = CallbackSet(callbacks...)
+
     prob = ODEProblem(ode_func!, sys.x, tspan, p)
-    sol = solve(prob, callback=save_cb, adaptive=false, dt=0.01) # higher sample rate until three animation keyframetracks are better understood for interpolation
+    sol = solve(prob, callback=cb, adaptive=false, dt=0.01) # higher sample rate until three animation keyframetracks are better understood for interpolation
 
     if output_type == DataFrame
         simout = df_save_values(save_values, save_config)
@@ -557,3 +585,7 @@ function Plots.plot(t::Vector{T}, x::Vector{SVector{S,T}}) where {S,T<:AbstractF
     return p
 end
 
+function plot(sol::DataFrame,col)
+    p = plot(sol[!,"t"], sol[!,col])
+    return p
+end
