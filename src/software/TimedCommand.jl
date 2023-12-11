@@ -5,7 +5,8 @@ mutable struct TimedCommand{T<:AbstractFloat} <: AbstractSoftware
     t_starts::Vector{T}
     t_stops::Vector{T}
     callback::Vector{DiscreteCallback}
-    u_index::Int16    
+    u_index::Int16   
+    current_value::Bool 
     TimedCommand(name,val,t_starts,t_stops) = new{Float64}(name,val,t_starts,t_stops)
 end
 
@@ -19,5 +20,10 @@ function create_callbacks!(tc::TimedCommand, i)
     stop_cb = PresetTimeCallback(tc.t_stops,stop_affect!)
 
     tc.callback = [start_cb,stop_cb]
+    return nothing
+end
+
+function run_software!(tc::TimedCommand,sys)
+    tc.current_value = sys.x[tc.u_index]
     return nothing
 end

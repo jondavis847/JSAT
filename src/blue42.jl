@@ -6,8 +6,7 @@ theme(:juno)
 
 includet("utils//quaternion.jl")
 includet("spatial.jl")
-
-abstract type AbstractBody end
+include("abstract.jl")
 
 Base.@kwdef struct WorldFrame <: AbstractBody
     name::Symbol = :N
@@ -21,12 +20,16 @@ mutable struct Body <: AbstractBody
     I::SMatrix{3,3,Float64} # inertia tensor
     cm::SVector{3,Float64} # center of mass    
     id::Int64 # body number for table designation (applied automatically by sys)
-    function Body(name, m, I, cm)
+    actuators::Vector{AbstractActuator}
+    external_force::SVector{6,Float64}
+    function Body(name, m, cm, I)
         x = new()
         x.name = Symbol(name)
         x.m = Float64(m)
-        x.I = SMatrix{3,3,Float64}(I)
         x.cm = SVector{3,Float64}(cm)
+        x.I = SMatrix{3,3,Float64}(I)        
+        x.actuators = AbstractActuator[]
+        x.external_force = @SVector zeros(6)
         return x
     end
 end
@@ -34,6 +37,7 @@ mcI(b::Body) = mcI(b.m, b.cm, b.I)
 
 includet("joints.jl")
 includet("software//software.jl")
+includet("actuators//actuators.jl")
 includet("utils//pathutils.jl")
 
 struct Force
@@ -51,6 +55,7 @@ end
     bodies
     joints
     software
+    actuators
     p       # joint predecessor body array
     s       # joint successor body array
     λ       # body parent array
@@ -91,7 +96,7 @@ end
 
 
 #MultibodySystem constructor
-function MultibodySystem(name, bodies, joints, software=AbstractSoftware[])
+function MultibodySystem(name, bodies, joints, actuators=AbstractActuator[],software=AbstractSoftware[])
     # preallocate vectors/matrices at MultibodySystem definition, mutate in place during sim
     # map the bodies and joints 
     p, s, λ, κ, μ, γ = map_tree!(bodies, joints)
@@ -104,7 +109,7 @@ function MultibodySystem(name, bodies, joints, software=AbstractSoftware[])
 
 
     #grab q,q̇ initial conditions
-    q, q̇, q̈, x = initialize_state_vectors(joints, software)
+    q, q̇, q̈, x = initialize_state_vectors(joints, software,actuators)
 
     nb = length(bodies)
 
@@ -153,7 +158,7 @@ function MultibodySystem(name, bodies, joints, software=AbstractSoftware[])
         create_callbacks!(software[i], i)
     end
 
-    sys = MultibodySystem(name, bodies, joints, software, p, s, λ, κ, μ, γ, U, D, u, c, pᴬ, ᵖXᵢᵐ, ᵖXᵢᶠ, ⁱXₚᵐ, ⁱXₚᶠ, ᵒXᵢᵐ, ᵒXᵢᶠ, ⁱXₒᵐ, ⁱXₒᶠ, q, q̇, q̈, x, H, C, τ, fˣ, fᵇ, f_gyro, Iᵇ, Iᴬ, r, v, a, r_base, q_base)
+    sys = MultibodySystem(name, bodies, joints, software, actuators, p, s, λ, κ, μ, γ, U, D, u, c, pᴬ, ᵖXᵢᵐ, ᵖXᵢᶠ, ⁱXₚᵐ, ⁱXₚᶠ, ᵒXᵢᵐ, ᵒXᵢᶠ, ⁱXₒᵐ, ⁱXₒᶠ, q, q̇, q̈, x, H, C, τ, fˣ, fᵇ, f_gyro, Iᵇ, Iᴬ, r, v, a, r_base, q_base)
 
     #initialize FixedJoints X so we don't have to calculate again
     calculate_X_FixedJoints!(sys)
@@ -162,18 +167,30 @@ end
 
 function model!(sys)
     #sensors!(sys)
-    #software!(sys)
-    #actuators!(sys)
+    software!(sys)
+    actuators!(sys)
     environments!(sys)
     dynamics!(sys)
-    nothing
+    return nothing
 end
+
+function software!(sys)
+    run_software!.(sys.software,Ref(sys))
+    return nothing
+end
+
+function actuators!(sys)
+    get_actuator_force!.(sys.actuators)
+    return nothing
+end
+
 
 # uses Featherstone notation
 function dynamics!(sys)
     calculate_τ!(sys)  # generalized actuator forces    
+    calculate_fˣ!(sys) # body external forces
     articulated_body_algorithm!(sys)
-    nothing
+    return nothing
 end
 
 
@@ -187,7 +204,16 @@ function calculate_τ!(τ)
 end
 calculate_τ!(sys::MultibodySystem) = calculate_τ!(sys.τ)
 
-calculate_X!(sys::MultibodySystem) = calculate_X!(sys.ᵖXᵢᵐ, sys.ᵖXᵢᶠ, sys.ⁱXₚᵐ, sys.ⁱXₚᶠ, sys.ᵒXᵢᵐ, sys.ᵒXᵢᶠ, sys.ⁱXₒᵐ, sys.ⁱXₒᶠ, sys.λ, sys.joints)
+function calculate_fˣ!(body::Body)  
+    body.external_force *= 0.0 # reset on each interation 
+    for actuator in body.actuators
+        body.external_force += actuator.current_force #converted to body frame in actuator get_actuator_force
+    end
+    #add environments
+    return nothing
+end
+calculate_fˣ!(body::WorldFrame) = return nothing #lets just get worlds out of the bodies please
+calculate_fˣ!(sys::MultibodySystem) = calculate_fˣ!.(sys.bodies); return nothing
 
 function calculate_X!(ᵖXᵢᵐ, ᵖXᵢᶠ, ⁱXₚᵐ, ⁱXₚᶠ, ᵒXᵢᵐ, ᵒXᵢᶠ, ⁱXₒᵐ, ⁱXₒᶠ, λ, joints)
     for i in eachindex(joints)
@@ -210,6 +236,7 @@ function calculate_X!(ᵖXᵢᵐ, ᵖXᵢᶠ, ⁱXₚᵐ, ⁱXₚᶠ, ᵒXᵢᵐ
     end
     nothing
 end
+calculate_X!(sys::MultibodySystem) = calculate_X!(sys.ᵖXᵢᵐ, sys.ᵖXᵢᶠ, sys.ⁱXₚᵐ, sys.ⁱXₚᶠ, sys.ᵒXᵢᵐ, sys.ᵒXᵢᶠ, sys.ⁱXₒᵐ, sys.ⁱXₒᶠ, sys.λ, sys.joints)
 
 # only have to do this once at initialization
 function calculate_X_FixedJoints!(ᵖXᵢᵐ, ᵖXᵢᶠ, ⁱXₚᵐ, ⁱXₚᶠ, λ, joints)
@@ -267,7 +294,8 @@ function articulated_body_algorithm!(sys)
         end
 
         Iᴬ[i] = Iᵇ[i]
-        fᵇ[i] = fˣ[i]
+        #fᵇ[i] = fˣ[i]
+        fᵇ[i] = sys.bodies[i].external_force
         f_gyro[i] = v[i] ×ᶠ (Iᵇ[i] * v[i])
         pᴬ[i] = f_gyro[i] - fᵇ[i]
     end
@@ -309,7 +337,7 @@ function articulated_body_algorithm!(sys)
     nothing
 end
 
-function initialize_state_vectors(joints, softwares)
+function initialize_state_vectors(joints, softwares, actuators)
     q = []
     q̇ = []
     x = []
@@ -331,6 +359,11 @@ function initialize_state_vectors(joints, softwares)
     for software in softwares
         append!(x, software.initial_value)
         software.u_index = length(x)
+    end
+
+    for actuator in actuators
+        actuator.u_index = SVector{6,Int16}(length(x)+1:length(x)+6) # body frame spatial force
+        append!(x, SVector{6,Float64}(zeros(6))) # TODO: may need to make this the initial value of actuator instead of assuming its 0        
     end
 
     q = MVector{length(q),Float64}(q)
@@ -491,13 +524,29 @@ function configure_saving(sys::MultibodySystem)
                 save_config,
                 "$(sys.software[i].name)_u",
                 typeof(sys.software[i].initial_value),
-                integrator -> integrator.u[integrator.p.sys.software[i].u_index]
+                #integrator -> integrator.u[integrator.p.sys.software[i].u_index]
+                integrator -> integrator.p.sys.software[i].current_value
             )
+        end
+
+        for i in eachindex(sys.actuators)
+            save_dict!(
+                save_config,
+                "$(sys.actuators[i].name)_f",
+                typeof(sys.actuators[i].current_force),
+                integrator -> integrator.u[integrator.p.sys.actuators[i].u_index]
+            )
+
         end
     end
 
     save_values = SavedValues(Float64, Tuple{getindex.(save_config, "type")...})
-    save_function(u, t, integrator) = Tuple([f(integrator) for f in getindex.(integrator.p.save_config, "func")])
+    function save_function(u, t, integrator) 
+        #update after integration complete so values aren't based on RK4 steps
+        update_model!(integrator.p.sys, u)
+        model!(integrator.p.sys)
+        Tuple([f(integrator) for f in getindex.(integrator.p.save_config, "func")])
+    end
     save_cb = SavingCallback(save_function, save_values)
     return save_config, save_values, save_cb
 end

@@ -1,8 +1,4 @@
 ##NOTE we may need to add S∘ for joint space derivatives if translations looks really bad for the base 6dof joint!!!!
-
-abstract type AbstractJoint end
-abstract type AbstractJointState end
-
 mutable struct JointMeta
     name::Symbol
     nq::Int64
