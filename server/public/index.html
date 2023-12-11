@@ -90,6 +90,8 @@
             <button id="basesButton" class="model-button">bases</button>
             <button id="bodiesButton" class="model-button">bodies</button>
             <button id="jointsButton" class="model-button">joints</button>
+            <button id="actuatorsButton" class="model-button">actuators</button>
+            <button id="softwareButton" class="model-button">software</button>
             <button id="modelsButton" class="model-button">models</button>
             <button id="portsButton" class="model-button">ports</button>
           </div>
@@ -115,6 +117,16 @@
             <button id="sphericalButton" class="model-button not-avail">+spherical</button>
             
             <button id="jointBackButton" class="model-button model-loader-back-btn">back</button>
+          </div>
+
+          <div id="actuatorLoaderDiv" class="model-loader-div hidden-loader-div">
+            <button id="thrusterButton" class="model-button">+thruster</button>            
+            <button id="actuatorBackButton" class="model-button model-loader-back-btn">back</button>
+          </div>
+
+          <div id="softwareLoaderDiv" class="model-loader-div hidden-loader-div">
+            <button id="timedCommandButton" class="model-button">+timed command</button>            
+            <button id="softwareBackButton" class="model-button model-loader-back-btn">back</button>
           </div>
 
           <div id="modelsLoaderDiv" class="model-loader-div hidden-loader-div">
@@ -267,6 +279,51 @@
             </div>
           </div>
         </div>
+
+        <div id='addActuatorDiv' class='element-details-div'>
+          <div class="element-title-div">
+            enter info to add a new actuator
+          </div>
+          <div class='element-table-div'>
+            <table id='actuatorTable' class='table'>
+              <tr>
+                <td><label class='form-font'>name:</label><br></td>
+                <td><input id='newActuatorName' class='form-input' type='text' placeholder='name'><br></td>
+              </tr>
+              <tr>
+                <td><label class='form-font'>rotation:</label><br></td>
+                <td><input id='newActuatorRotation' class='form-input' type='text' placeholder='I(3)'><br></td>
+              </tr>
+              <tr>
+                <td><label class='form-font'>translation:</label><br></td>
+                <td><input id='newActuatorTranslation' class='form-input' type='text' placeholder='zeros(3)'><br></td>
+              </tr>              
+            </table>
+          </div>
+          <div class="add-body-buttons-div">
+            <button id="addActuatorSaveButton" class="add-body-save-button">save</button>
+            <button id="addActuatorCancelButton" class="add-body-cancel-button">cancel</button>
+          </div>
+        </div>
+
+        <div id='addSoftwareDiv' class='element-details-div'>
+          <div class="element-title-div">
+            enter info to add software
+          </div>
+          <div class='element-table-div'>
+            <table id='softwareTable' class='table'>
+              <tr>
+                <td><label class='form-font'>name:</label><br></td>
+                <td><input id='newSoftwareName' class='form-input' type='text' placeholder='name'><br></td>
+              </tr>              
+            </table>
+          </div>
+          <div class="add-body-buttons-div">
+            <button id="addSoftwareSaveButton" class="add-body-save-button">save</button>
+            <button id="addSoftwareCancelButton" class="add-body-cancel-button">cancel</button>
+          </div>
+        </div>
+      </div>
         <!-- plotting tab -->
         <div id="plotTab" class="plot-tab tab-content">
           <!-- sims -->

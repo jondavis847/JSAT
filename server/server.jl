@@ -47,6 +47,42 @@ function routerSimulate(req::HTTP.Request)
     sim = message[:sim]
     bodies = message[:bodies]
     joints = message[:joints]
+    actuators = message[:actuators]
+    software = message[:software]
+    #need to make these things in this order to make children first before connecting
+    Software = []    
+    for k in keys(software)
+        software = software[k]
+        type = software[:type]
+        if type == "timedCommand"
+            init = eval(Meta.parse(software[:init]))
+            tstarts = eval(Meta.parse(software[:tstarts]))
+            if !(typeof(tstarts) <: Vector) tstarts = [tstarts] end
+            tstops = eval(Meta.parse(software[:tstops]))
+            if !(typeof(tstops) <: Vector) tstops = [tstops] end
+            S = TimedCommand(Symbol(software[:name]),init,tstarts,tstops,)
+        else
+            error("bad software type provided")
+            return
+        end
+        push!(Software, S)
+    end
+
+    Actuators = []
+    for k in keys(actuators)
+        actuator = actuators[k]
+        type = actuator[:type]        
+        if type == "thruster"
+            force = eval(Meta.parse(actuator[:thrust]))            
+            A = SimpleThruster(Symbol(actuator[:name]),force)
+        else
+            error("bad actuator type provided")
+            return
+        end 
+        command = Software[getfield.(Software, :name).==Symbol(actuator[:command])]
+        connect!(A,command...)
+        push!(Actuators,A)
+    end
 
     N = WorldFrame()
     Bodies = AbstractBody[N]
@@ -62,6 +98,8 @@ function routerSimulate(req::HTTP.Request)
         ixz = Float64(eval(Meta.parse(body[:ixz])))
         iyz = Float64(eval(Meta.parse(body[:iyz])))
 
+        connected_actuators = eval(Meta.parse.(body[:actuators]))
+
         inertia = [
             ixx ixy ixz
             ixy iyy iyz
@@ -70,10 +108,20 @@ function routerSimulate(req::HTTP.Request)
 
         B = Body(
             body[:name],
-            mass,
-            inertia,
-            cm
+            mass,            
+            cm,
+            inertia
         )
+
+        for actuator_name in connected_actuators
+            actuator = actuators[actuator_name]
+            rotation = inv(eval(Meta.parse(actuator[:rotation]))) #inv because server gives rotation from body to act, need act to body
+            translation = -eval(Meta.parse(actuator[:translation])) #inv because server gives translation from body to act, need act to body
+            frame = Cartesian(rotation,translation)
+            A = Actuators[getfield.(Actuators, :name).==Symbol(actuator_name)]
+            connect!(B,A...,frame)
+        end
+
         push!(Bodies, B)
     end
 
@@ -123,7 +171,9 @@ function routerSimulate(req::HTTP.Request)
         push!(Joints, J)
     end
 
-    sys = MultibodySystem(Symbol(sim[:name]), Bodies, Joints)
+    
+
+    sys = MultibodySystem(Symbol(sim[:name]), Bodies, Joints, Actuators, Software)
 
     t = time()
     sol = simulate(sys, eval(Meta.parse(sim[:tspan])); output_type=DataFrame)

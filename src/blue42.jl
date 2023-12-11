@@ -406,7 +406,7 @@ end
 
 function gravity!(sys::MultibodySystem)
     for i in 1:length(sys.bodies)-1
-        sys.fˣ[i] = sys.fˣ[i] .+ sys.Iᵇ[i] * sys.ⁱXₒᵐ[i] * SVector{6,Float64}(0, 0, 0, 0, -9.8, 0)
+        sys.fˣ[i] = sys.fˣ[i] .+ sys.Iᵇ[i] * sys.ⁱXₒᵐ[i] * SVector{6,Float64}(0, 0, 0, 0, 0, 0)
     end
     nothing
 end
@@ -535,6 +535,13 @@ function configure_saving(sys::MultibodySystem)
                 "$(sys.actuators[i].name)_f",
                 typeof(sys.actuators[i].current_force),
                 integrator -> integrator.u[integrator.p.sys.actuators[i].u_index]
+            )
+
+            save_dict!(
+                save_config,
+                "$(sys.actuators[i].name)_u",
+                typeof(sys.actuators[i].command.current_value),
+                integrator -> integrator.p.sys.actuators[i].command.current_value
             )
 
         end
