@@ -7,7 +7,7 @@ function jsat_server()
     routerCss(req::HTTP.Request) = HTTP.Response(200, read("server\\public\\css\\jsat.css"))
     routerJs(req::HTTP.Request) = HTTP.Response(200, ["Content-Type" => "application/javascript"], read("server\\public\\js\\jsat.js"))
     routerMeatball(req::HTTP.Request) = HTTP.Response(200, ["Content-Type" => "image/png"], read("server\\public\\images\\nasa_aquamarine.png"))
-    
+
     HTTP.register!(ROUTER, "GET", "/", routerIndex)
     HTTP.register!(ROUTER, "GET", "/css/jsat.css", routerCss)
     HTTP.register!(ROUTER, "GET", "/js/jsat.js", routerJs)
@@ -32,10 +32,11 @@ function routerSimFiles(req::HTTP.Request)
     files = readdir("sim")
     for file in files
         simfilename = replace(file, ".csv" => "")
-        simfiledate = Dates.unix2datetime(mtime("sim\\$(file)"))
+        simfiledate = Dates.unix2datetime(mtime("sim\\$(file)"))        
         D = Dict("fileName" => simfilename, "fileDate" => simfiledate)
         push!(tmp, D)
     end
+    sort!(tmp,by=x->x["fileDate"], rev=true)
     msg = JSON3.write(tmp)
 
     HTTP.Response(200, JSON3.write(tmp))
@@ -45,22 +46,29 @@ function routerSimulate(req::HTTP.Request)
     message = JSON3.read(req.body)
     println(message)
     sim = message[:sim]
+    base = message[:base]
     bodies = message[:bodies]
     joints = message[:joints]
     actuators = message[:actuators]
-    software = message[:software]
+    softwares = message[:software]
+    gravitys = message[:gravity]
     #need to make these things in this order to make children first before connecting
-    Software = []    
-    for k in keys(software)
+
+    Software = []
+    for k in keys(softwares)
         software = software[k]
         type = software[:type]
         if type == "timedCommand"
             init = eval(Meta.parse(software[:init]))
             tstarts = eval(Meta.parse(software[:tstarts]))
-            if !(typeof(tstarts) <: Vector) tstarts = [tstarts] end
+            if !(typeof(tstarts) <: Vector)
+                tstarts = [tstarts]
+            end
             tstops = eval(Meta.parse(software[:tstops]))
-            if !(typeof(tstops) <: Vector) tstops = [tstops] end
-            S = TimedCommand(Symbol(software[:name]),init,tstarts,tstops,)
+            if !(typeof(tstops) <: Vector)
+                tstops = [tstops]
+            end
+            S = TimedCommand(Symbol(software[:name]), init, tstarts, tstops,)
         else
             error("bad software type provided")
             return
@@ -68,24 +76,46 @@ function routerSimulate(req::HTTP.Request)
         push!(Software, S)
     end
 
-    Actuators = []
+    Actuators = AbstractActuator[]
     for k in keys(actuators)
         actuator = actuators[k]
-        type = actuator[:type]        
+        type = actuator[:type]
         if type == "thruster"
-            force = eval(Meta.parse(actuator[:thrust]))            
-            A = SimpleThruster(Symbol(actuator[:name]),force)
+            force = eval(Meta.parse(actuator[:thrust]))
+            A = SimpleThruster(Symbol(actuator[:name]), force)
         else
             error("bad actuator type provided")
             return
-        end 
+        end
         command = Software[getfield.(Software, :name).==Symbol(actuator[:command])]
-        connect!(A,command...)
-        push!(Actuators,A)
+        connect!(A, command...)
+        push!(Actuators, A)
     end
 
-    N = WorldFrame()
-    Bodies = AbstractBody[N]
+    Gravitys = AbstractGravity[]
+    for k in keys(gravitys)
+        gravity = gravitys[k]
+        if gravity[:type] == "constant"
+            value = eval(Meta.parse(gravity[:value]))
+            G = GravityConstant(Symbol(gravity[:name]), value)
+        else
+            error("bad gravity type provided")
+            return
+        end
+        push!(Gravitys, G)
+    end
+
+
+    base_gravity = base[:gravity]
+    BG = AbstractGravity[]
+    if !isempty(base_gravity)
+        for bg in base_gravity            
+            append!(BG, Gravitys[getfield.(Gravitys, :name) .== Symbol(bg)])            
+        end
+    end
+    base = WorldFrame(:base, BG)
+    dump(base)
+    Bodies = AbstractBody[]
     for k in keys(bodies)
         body = bodies[k]
 
@@ -108,7 +138,7 @@ function routerSimulate(req::HTTP.Request)
 
         B = Body(
             body[:name],
-            mass,            
+            mass,
             cm,
             inertia
         )
@@ -117,15 +147,20 @@ function routerSimulate(req::HTTP.Request)
             actuator = actuators[actuator_name]
             rotation = inv(eval(Meta.parse(actuator[:rotation]))) #inv because server gives rotation from body to act, need act to body
             translation = -eval(Meta.parse(actuator[:translation])) #inv because server gives translation from body to act, need act to body
-            frame = Cartesian(rotation,translation)
+            frame = Cartesian(rotation, translation)
             A = Actuators[getfield.(Actuators, :name).==Symbol(actuator_name)]
-            connect!(B,A...,frame)
+            connect!(B, A..., frame)
         end
 
-        push!(Bodies, B)
-    end
+        connected_gravity = body[:gravity]
+        for gravity_name in connected_gravity
+            G = Gravitys[getfield.(Gravitys, :name).==Symbol(gravity_name)]
+            connect!(B, G)
+        end
 
-    Bodies = OffsetArray(Bodies, 0:length(Bodies)-1)
+
+        push!(Bodies, B)
+    end    
 
     Joints = []
     for k in keys(joints)
@@ -136,15 +171,15 @@ function routerSimulate(req::HTTP.Request)
             ω = eval(Meta.parse(joint[:omega]))
             J = Revolute(Symbol(joint[:name]), θ, ω)
         elseif type == "fixed"
-            q = eval(Meta.parse(joint[:q]))            
+            q = eval(Meta.parse(joint[:q]))
             r = eval(Meta.parse(joint[:position]))
-            J = FixedJoint(Symbol(joint[:name]),q,r)
-        elseif type == "floating"            
+            J = FixedJoint(Symbol(joint[:name]), q, r)
+        elseif type == "floating"
             q = eval(Meta.parse(joint[:q]))
             ω = eval(Meta.parse(joint[:omega]))
             r = eval(Meta.parse(joint[:position]))
             v = eval(Meta.parse(joint[:velocity]))
-            J = FloatingJoint(Symbol(joint[:name]),q,ω,r,v)
+            J = FloatingJoint(Symbol(joint[:name]), q, ω, r, v)
         else
             error("bad joint type provided")
             return
@@ -154,7 +189,7 @@ function routerSimulate(req::HTTP.Request)
         successor_name = joint[:successor]
 
         if predecessor_name == "base"
-            predecessor = [N]
+            predecessor = [base]
         else
             predecessor = Bodies[getfield.(Bodies, :name).==Symbol(predecessor_name)]
         end
@@ -171,9 +206,9 @@ function routerSimulate(req::HTTP.Request)
         push!(Joints, J)
     end
 
-    
 
-    sys = MultibodySystem(Symbol(sim[:name]), Bodies, Joints, Actuators, Software)
+
+    sys = MultibodySystem(Symbol(sim[:name]), base,  Bodies, Joints, Actuators, Software)
 
     t = time()
     sol = simulate(sys, eval(Meta.parse(sim[:tspan])); output_type=DataFrame)
@@ -197,7 +232,7 @@ function routerSimulate(req::HTTP.Request)
         JSON3.pretty(io, message)
     end
 
-   
+
     HTTP.Response(200, "$(dt)")
 end
 
@@ -260,7 +295,7 @@ function routerAnimate(req::HTTP.Request)
     HTTP.Response(200, JSON3.write(D))#JSON3.write(simdata))
 end
 
-function routerCreateModel(req::HTTP.Request)    
+function routerCreateModel(req::HTTP.Request)
     file = "server//models.jld2"
 
     data = JSON3.read(req.body, Dict)
@@ -276,17 +311,17 @@ function routerCreateModel(req::HTTP.Request)
     model_dict[name] = model
 
     save(file, model_dict)
-    
-    HTTP.Response(200, "success")    
+
+    HTTP.Response(200, "success")
 end
 
-function routerLoadModels(req::HTTP.Request) 
+function routerLoadModels(req::HTTP.Request)
     file = "server//models.jld2"
-    
+
     if !isfile(file)
         models = Dict()
     else
-        models = load("server//models.jld2")        
+        models = load("server//models.jld2")
     end
     HTTP.Response(200, JSON3.write(models))
 end
