@@ -48,8 +48,7 @@ function connect!(
     nothing
 end
 
-
-include(joinpath("joints","FixedJoint.jl"))
-include(joinpath("joints","FloatingJoint.jl"))
-include(joinpath("joints","Revolute.jl"))
-include(joinpath("joints","Spherical.jl"))
+include("FixedJoint.jl")
+include("FloatingJoint.jl")
+include("Revolute.jl")
+include("Spherical.jl")

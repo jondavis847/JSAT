@@ -1,54 +1,34 @@
-using LinearAlgebra, DifferentialEquations, StaticArrays, Plots, UnPack, OffsetArrays, PlotThemes, DataFrames, CSV, Dates, ConcreteStructs
+using ConcreteStructs
+using CSV
+using DataFrames
+using Dates
+using DifferentialEquations
+using LinearAlgebra
+using OffsetArrays
+using Plots
+using PlotThemes
+using StaticArrays
+using UnPack
+
 import Base: show
 import Plots: plot, plot!
 
 theme(:juno)
 
-includet("utils//quaternion.jl")
-includet("spatial.jl")
-include("abstract.jl")
+includet(joinpath("math", "quaternion.jl"))
+includet(joinpath("math", "spatial.jl"))
 
-Base.@kwdef struct WorldFrame <: AbstractBody
-    name::Symbol = :N
-    id::Int64 = 0
-end
 
-mutable struct Body <: AbstractBody
-    name::Symbol
-    #parameters
-    m::Float64 # mass
-    I::SMatrix{3,3,Float64} # inertia tensor
-    cm::SVector{3,Float64} # center of mass    
-    id::Int64 # body number for table designation (applied automatically by sys)
-    actuators::Vector{AbstractActuator}
-    external_force::SVector{6,Float64}
-    function Body(name, m, cm, I)
-        x = new()
-        x.name = Symbol(name)
-        x.m = Float64(m)
-        x.cm = SVector{3,Float64}(cm)
-        x.I = SMatrix{3,3,Float64}(I)        
-        x.actuators = AbstractActuator[]
-        x.external_force = @SVector zeros(6)
-        return x
-    end
-end
-mcI(b::Body) = mcI(b.m, b.cm, b.I)
+includet("abstract.jl")
 
-includet("joints.jl")
-includet("software//software.jl")
-includet("actuators//actuators.jl")
-includet("utils//pathutils.jl")
+includet(joinpath("bodies", "bodies.jl"))
+includet(joinpath("joints", "joints.jl"))
+includet(joinpath("software", "software.jl"))
+includet(joinpath("actuators", "actuators.jl"))
+includet(joinpath("gravity", "gravity.jl"))
+includet(joinpath("bases", "base.jl"))
+includet(joinpath("utils", "pathutils.jl"))
 
-struct Force
-    magnitude::Float64
-    direction::SVector{3,Float64}
-end
-
-struct Torque
-    magnitude::Float64
-    direction::SVector{3,Float64}
-end
 
 @concrete struct MultibodySystem
     name
@@ -94,9 +74,17 @@ end
     q_base
 end
 
-
 #MultibodySystem constructor
-function MultibodySystem(name, bodies, joints, actuators=AbstractActuator[],software=AbstractSoftware[])
+function MultibodySystem(name, base, bodies, joints, actuators=AbstractActuator[], software=AbstractSoftware[])
+
+    bodies = isa(bodies, Vector) ? bodies : [bodies]
+    joints = isa(joints, Vector) ? joints : [joints]
+    actuators = isa(actuators, Vector) ? actuators : [actuators]
+    software = isa(software, Vector) ? software : [software]
+
+    # convert bodies to an offsetarray with the base as index 0
+    bodies = OffsetArray([base; bodies], 0:length(bodies))
+
     # preallocate vectors/matrices at MultibodySystem definition, mutate in place during sim
     # map the bodies and joints 
     p, s, λ, κ, μ, γ = map_tree!(bodies, joints)
@@ -107,9 +95,17 @@ function MultibodySystem(name, bodies, joints, actuators=AbstractActuator[],soft
 
     Iᵇ, Iᴬ = initialize_inertias(bodies, joints) # Iᵇ for now to not conflict with LinearAlgebra: I
 
+    # copy base gravity into bodies
+    if !isempty(base.gravity)
+        for body in bodies
+            if !isa(body,WorldFrame)
+                append!(body.models.gravity, deepcopy(base.gravity))
+            end
+        end
+    end
 
     #grab q,q̇ initial conditions
-    q, q̇, q̈, x = initialize_state_vectors(joints, software,actuators)
+    q, q̇, q̈, x = initialize_state_vectors(joints, software, actuators)
 
     nb = length(bodies)
 
@@ -168,14 +164,14 @@ end
 function model!(sys)
     #sensors!(sys)
     software!(sys)
-    actuators!(sys)
+    actuators!(sys)    
     environments!(sys)
     dynamics!(sys)
     return nothing
 end
 
 function software!(sys)
-    run_software!.(sys.software,Ref(sys))
+    run_software!.(sys.software, Ref(sys))
     return nothing
 end
 
@@ -204,18 +200,21 @@ function calculate_τ!(τ)
 end
 calculate_τ!(sys::MultibodySystem) = calculate_τ!(sys.τ)
 
-function calculate_fˣ!(body::Body)  
-    body.external_force *= 0.0 # reset on each interation 
-    for actuator in body.actuators
+function calculate_fˣ!(body::Body)
+    body.external_force = body.gravity
+
+    for actuator in body.models.actuators
         body.external_force += actuator.current_force #converted to body frame in actuator get_actuator_force
     end
+    
     #add environments
     return nothing
 end
-calculate_fˣ!(body::WorldFrame) = return nothing #lets just get worlds out of the bodies please
-calculate_fˣ!(sys::MultibodySystem) = calculate_fˣ!.(sys.bodies); return nothing
 
-function calculate_X!(ᵖXᵢᵐ, ᵖXᵢᶠ, ⁱXₚᵐ, ⁱXₚᶠ, ᵒXᵢᵐ, ᵒXᵢᶠ, ⁱXₒᵐ, ⁱXₒᶠ, λ, joints)
+calculate_fˣ!(sys::MultibodySystem) = calculate_fˣ!.(sys.bodies);
+return nothing;
+
+function calculate_X!(ᵖXᵢᵐ, ᵖXᵢᶠ, ⁱXₚᵐ, ⁱXₚᶠ, ᵒXᵢᵐ, ᵒXᵢᶠ, ⁱXₒᵐ, ⁱXₒᶠ, λ, joints, bodies)
     for i in eachindex(joints)
         if !isa(joints[i], FixedJoint)
             joint = joints[i]
@@ -226,6 +225,11 @@ function calculate_X!(ᵖXᵢᵐ, ᵖXᵢᶠ, ⁱXₚᵐ, ⁱXₚᶠ, ᵒXᵢᵐ
             ᵖXᵢᶠ[i] = ℱ(i_to_p)
             ⁱXₚᵐ[i] = ℳ(p_to_i)
             ⁱXₚᶠ[i] = ℱ(p_to_i)
+
+            bodies[i].transforms.body_to_parent_force = ᵖXᵢᶠ[i]
+            bodies[i].transforms.body_to_parent_motion = ᵖXᵢᵐ[i]
+            bodies[i].transforms.parent_to_body_force = ⁱXₚᶠ[i]
+            bodies[i].transforms.parent_to_body_motion = ⁱXₚᵐ[i]
         end
 
         ᵒXᵢᵐ[i] = ᵒXᵢᵐ[λ[i]] * ᵖXᵢᵐ[i]
@@ -233,10 +237,15 @@ function calculate_X!(ᵖXᵢᵐ, ᵖXᵢᶠ, ⁱXₚᵐ, ⁱXₚᶠ, ᵒXᵢᵐ
         ⁱXₒᵐ[i] = ⁱXₚᵐ[i] * ⁱXₒᵐ[λ[i]]
         ⁱXₒᶠ[i] = ⁱXₚᶠ[i] * ⁱXₒᶠ[λ[i]]
 
+        bodies[i].transforms.body_to_base_force = ᵒXᵢᶠ[i]
+        bodies[i].transforms.body_to_base_motion = ᵒXᵢᵐ[i]
+        bodies[i].transforms.base_to_body_force = ⁱXₒᶠ[i]
+        bodies[i].transforms.base_to_body_motion = ⁱXₒᵐ[i]
+
     end
     nothing
 end
-calculate_X!(sys::MultibodySystem) = calculate_X!(sys.ᵖXᵢᵐ, sys.ᵖXᵢᶠ, sys.ⁱXₚᵐ, sys.ⁱXₚᶠ, sys.ᵒXᵢᵐ, sys.ᵒXᵢᶠ, sys.ⁱXₒᵐ, sys.ⁱXₒᶠ, sys.λ, sys.joints)
+calculate_X!(sys::MultibodySystem) = calculate_X!(sys.ᵖXᵢᵐ, sys.ᵖXᵢᶠ, sys.ⁱXₚᵐ, sys.ⁱXₚᶠ, sys.ᵒXᵢᵐ, sys.ᵒXᵢᶠ, sys.ⁱXₒᵐ, sys.ⁱXₒᶠ, sys.λ, sys.joints, sys.bodies)
 
 # only have to do this once at initialization
 function calculate_X_FixedJoints!(ᵖXᵢᵐ, ᵖXᵢᶠ, ⁱXₚᵐ, ⁱXₚᶠ, λ, joints)
@@ -323,8 +332,8 @@ function articulated_body_algorithm!(sys)
     end
 
     # pass 3   
-
     for i in 1:length(sys.bodies)-1
+        body = sys.bodies[i]
         if isa(joints[i], FixedJoint)
             a[i] = ⁱXₚᵐ[i] * a[λ[i]]
         else
@@ -387,28 +396,28 @@ function initialize_inertias(bodies, joints)
             ʲXᵦᶠ = ℱ(Fs) # need force transformation from body to joint
             Iʲ = ʲXᵦᶠ * Iᵇ[i] * ᵇXⱼᵐ # Featherstone equations 2.66 for transform of spatial inertia
             Iᵇ[i] = Iʲ
+            body.inertia_joint = Iᵇ[i]
         end
 
         # make the assumption for FloatingJoints that the body frame is coincident with the com
         # shift mass properties to the com
         if typeof(joints[i]) == FloatingJoint
             Iᵇ[i] = mcI(body.m, SVector{3,Float64}(zeros(3)), body.I)
+            body.inertia_joint = Iᵇ[i]
         end
     end
     Iᴬ = copy(Iᵇ)
     return Iᵇ, Iᴬ
 end
 
-function environments!(sys)
+function environments!(sys)    
     gravity!(sys)
 end
 
 
 function gravity!(sys::MultibodySystem)
-    for i in 1:length(sys.bodies)-1
-        sys.fˣ[i] = sys.fˣ[i] .+ sys.Iᵇ[i] * sys.ⁱXₒᵐ[i] * SVector{6,Float64}(0, 0, 0, 0, 0, 0)
-    end
-    nothing
+    calculate_gravity!.(sys.bodies)
+    return nothing
 end
 
 function reset_forces!(sys)
@@ -548,7 +557,7 @@ function configure_saving(sys::MultibodySystem)
     end
 
     save_values = SavedValues(Float64, Tuple{getindex.(save_config, "type")...})
-    function save_function(u, t, integrator) 
+    function save_function(u, t, integrator)
         #update after integration complete so values aren't based on RK4 steps
         update_model!(integrator.p.sys, u)
         model!(integrator.p.sys)
@@ -564,7 +573,7 @@ function simulate(orig_sys::MultibodySystem, tspan; output_type=nothing)
     p = (sys=sys, save_config=save_config)
 
     #get callbacks
-    callbacks = [save_cb; getfield.(sys.software,:callback)...;]
+    callbacks = [save_cb; getfield.(sys.software, :callback)...]
     cb = CallbackSet(callbacks...)
 
     prob = ODEProblem(ode_func!, sys.x, tspan, p)
@@ -641,7 +650,7 @@ function Plots.plot(t::Vector{T}, x::Vector{SVector{S,T}}) where {S,T<:AbstractF
     return p
 end
 
-function plot(sol::DataFrame,col)
-    p = plot(sol[!,"t"], sol[!,col])
+function plot(sol::DataFrame, col)
+    p = plot(sol[!, "t"], sol[!, col])
     return p
 end
