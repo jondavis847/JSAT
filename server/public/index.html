@@ -28,7 +28,7 @@
         <button id="simTabButton" class="sim-tab top-bar-button tab-link active-border">sim</button>
         <button id="plotTabButton" class="plot-tab top-bar-button tab-link">plot</button>
         <button id="animTabButton" class="animation-tab top-bar-button tab-link">animation</button>
-        <div class="meatball-div"><img src="./images/nasa_aquamarine.png" alt="nasa.gov" width="50" height ="50"></div>
+        <div class="meatball-div"><img src="./images/nasa_aquamarine.png" alt="nasa.gov" width="50" height="50"></div>
       </div>
     </div>
     <!-- main area -->
@@ -90,10 +90,12 @@
             <button id="basesButton" class="model-button">bases</button>
             <button id="bodiesButton" class="model-button">bodies</button>
             <button id="jointsButton" class="model-button">joints</button>
+            <button id="gravityButton" class="model-button">gravity</button>
+            <button id="environmentsButton" class="model-button">environments</button>
             <button id="actuatorsButton" class="model-button">actuators</button>
             <button id="softwareButton" class="model-button">software</button>
             <button id="modelsButton" class="model-button">models</button>
-            <button id="portsButton" class="model-button">ports</button>
+            <button id="portsButton" class="model-button not-avail">ports</button>
           </div>
 
           <div id="basesLoaderDiv" class="model-loader-div hidden-loader-div">
@@ -102,6 +104,7 @@
             <button id="solarButton" class="model-button not-avail">+solar system</button>
             <button id="basesBackButton" class="model-button model-loader-back-btn">back</button>
           </div>
+
           <div id="bodiesLoaderDiv" class="model-loader-div hidden-loader-div">
             <button id="boxButton" class="model-button">+box</button>
             <button id="sphereButton" class="model-button not-avail">+sphere</button>
@@ -109,23 +112,36 @@
             <button id="bodyBackButton" class="model-button model-loader-back-btn">back</button>
           </div>
 
-          <div id="jointsLoaderDiv" class="model-loader-div hidden-loader-div">            
+          <div id="jointsLoaderDiv" class="model-loader-div hidden-loader-div">
             <button id="fixedButton" class="model-button">+fixed</button>
             <button id="floatingButton" class="model-button">+floating</button>
             <button id="prismaticButton" class="model-button not-avail">+prismatic</button>
             <button id="revoluteButton" class="model-button">+revolute</button>
             <button id="sphericalButton" class="model-button not-avail">+spherical</button>
-            
             <button id="jointBackButton" class="model-button model-loader-back-btn">back</button>
           </div>
 
+          <div id="gravityLoaderDiv" class="model-loader-div hidden-loader-div">
+            <button id="constantGravityButton" class="model-button">+constant</button>
+            <button id="twoBodyButton" class="model-button not-avail">+two body</button>
+            <button id="egm96Button" class="model-button not-avail">+egm96</button>
+            <button id="gravityBackButton" class="model-button model-loader-back-btn">back</button>
+          </div>
+
+          <div id="environmentsLoaderDiv" class="model-loader-div hidden-loader-div">
+            <button id="igrfButton" class="model-button not-avail">+igrf</button>
+            <button id="srpButton" class="model-button not-avail">+srp</button>
+            <button id="aerofButton" class="model-button not-avail">+aero</button>
+            <button id="environmentsBackButton" class="model-button model-loader-back-btn">back</button>
+          </div>
+
           <div id="actuatorLoaderDiv" class="model-loader-div hidden-loader-div">
-            <button id="thrusterButton" class="model-button">+thruster</button>            
+            <button id="thrusterButton" class="model-button">+thruster</button>
             <button id="actuatorBackButton" class="model-button model-loader-back-btn">back</button>
           </div>
 
           <div id="softwareLoaderDiv" class="model-loader-div hidden-loader-div">
-            <button id="timedCommandButton" class="model-button">+timed command</button>            
+            <button id="timedCommandButton" class="model-button">+timed command</button>
             <button id="softwareBackButton" class="model-button model-loader-back-btn">back</button>
           </div>
 
@@ -177,6 +193,7 @@
               <button id="createModelCancelButton" class="add-body-cancel-button">cancel</button>
             </div>
           </div>
+
           <div id="addBodyDiv" class="element-details-div">
             <div class="element-title-div">
               enter info to add a new body
@@ -245,6 +262,7 @@
               <button id="addBodyCancelButton" class="add-body-cancel-button">cancel</button>
             </div>
           </div>
+
           <div id='addJointDiv' class='element-details-div'>
             <div class="element-title-div">
               enter info to add a new joint
@@ -278,52 +296,69 @@
               <button id="addJointCancelButton" class="add-body-cancel-button">cancel</button>
             </div>
           </div>
-        </div>
 
-        <div id='addActuatorDiv' class='element-details-div'>
-          <div class="element-title-div">
-            enter info to add a new actuator
+          <div id='addActuatorDiv' class='element-details-div'>
+            <div class="element-title-div">
+              enter info to add a new actuator
+            </div>
+            <div class='element-table-div'>
+              <table id='actuatorTable' class='table'>
+                <tr>
+                  <td><label class='form-font'>name:</label><br></td>
+                  <td><input id='newActuatorName' class='form-input' type='text' placeholder='name'><br></td>
+                </tr>
+                <tr>
+                  <td><label class='form-font'>rotation:</label><br></td>
+                  <td><input id='newActuatorRotation' class='form-input' type='text' placeholder='I(3)'><br></td>
+                </tr>
+                <tr>
+                  <td><label class='form-font'>translation:</label><br></td>
+                  <td><input id='newActuatorTranslation' class='form-input' type='text' placeholder='zeros(3)'><br></td>
+                </tr>
+              </table>
+            </div>
+            <div class="add-body-buttons-div">
+              <button id="addActuatorSaveButton" class="add-body-save-button">save</button>
+              <button id="addActuatorCancelButton" class="add-body-cancel-button">cancel</button>
+            </div>
           </div>
-          <div class='element-table-div'>
-            <table id='actuatorTable' class='table'>
-              <tr>
-                <td><label class='form-font'>name:</label><br></td>
-                <td><input id='newActuatorName' class='form-input' type='text' placeholder='name'><br></td>
-              </tr>
-              <tr>
-                <td><label class='form-font'>rotation:</label><br></td>
-                <td><input id='newActuatorRotation' class='form-input' type='text' placeholder='I(3)'><br></td>
-              </tr>
-              <tr>
-                <td><label class='form-font'>translation:</label><br></td>
-                <td><input id='newActuatorTranslation' class='form-input' type='text' placeholder='zeros(3)'><br></td>
-              </tr>              
-            </table>
-          </div>
-          <div class="add-body-buttons-div">
-            <button id="addActuatorSaveButton" class="add-body-save-button">save</button>
-            <button id="addActuatorCancelButton" class="add-body-cancel-button">cancel</button>
-          </div>
-        </div>
 
-        <div id='addSoftwareDiv' class='element-details-div'>
-          <div class="element-title-div">
-            enter info to add software
+          <div id='addGravityDiv' class='element-details-div'>
+            <div class="element-title-div">
+              enter info to add a gravity model
+            </div>
+            <div class='element-table-div'>
+              <table id='gravityTable' class='table'>
+                <tr>
+                  <td><label class='form-font'>name:</label><br></td>
+                  <td><input id='newGravityName' class='form-input' type='text' placeholder='name'><br></td>
+                </tr>
+              </table>
+            </div>
+            <div class="add-body-buttons-div">
+              <button id="addGravitySaveButton" class="add-body-save-button">save</button>
+              <button id="addGravityCancelButton" class="add-body-cancel-button">cancel</button>
+            </div>
           </div>
-          <div class='element-table-div'>
-            <table id='softwareTable' class='table'>
-              <tr>
-                <td><label class='form-font'>name:</label><br></td>
-                <td><input id='newSoftwareName' class='form-input' type='text' placeholder='name'><br></td>
-              </tr>              
-            </table>
-          </div>
-          <div class="add-body-buttons-div">
-            <button id="addSoftwareSaveButton" class="add-body-save-button">save</button>
-            <button id="addSoftwareCancelButton" class="add-body-cancel-button">cancel</button>
+
+          <div id='addSoftwareDiv' class='element-details-div'>
+            <div class="element-title-div">
+              enter info to add software
+            </div>
+            <div class='element-table-div'>
+              <table id='softwareTable' class='table'>
+                <tr>
+                  <td><label class='form-font'>name:</label><br></td>
+                  <td><input id='newSoftwareName' class='form-input' type='text' placeholder='name'><br></td>
+                </tr>
+              </table>
+            </div>
+            <div class="add-body-buttons-div">
+              <button id="addSoftwareSaveButton" class="add-body-save-button">save</button>
+              <button id="addSoftwareCancelButton" class="add-body-cancel-button">cancel</button>
+            </div>
           </div>
         </div>
-      </div>
         <!-- plotting tab -->
         <div id="plotTab" class="plot-tab tab-content">
           <!-- sims -->

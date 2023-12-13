@@ -13,10 +13,12 @@ import { TrackballControls } from 'three/addons/controls/TrackballControls.js';
 
 
 let JSAT = {
+    base: { gravity: [] },
     bodies: {},
     joints: {},
     actuators: {},
     software: {},
+    gravity: {},
     inports: {}, //only useful for defining models
     outports: {}, //only useful for defining models
     sim: {
@@ -78,6 +80,8 @@ $("#actuatorsButton").on("click", () => { $("#actuatorLoaderDiv").show() });
 $("#actuatorBackButton").on("click", () => { $("#actuatorLoaderDiv").hide() });
 $("#softwareButton").on("click", () => { $("#softwareLoaderDiv").show() });
 $("#softwareBackButton").on("click", () => { $("#softwareLoaderDiv").hide() });
+$("#gravityButton").on("click", () => { $("#gravityLoaderDiv").show() });
+$("#gravityBackButton").on("click", () => { $("#gravityLoaderDiv").hide() });
 $("#modelsButton").on("click", () => { $("#modelsLoaderDiv").show() });
 $("#modelsBackButton").on("click", () => { $("#modelsLoaderDiv").hide() });
 $("#portsButton").on("click", () => { $("#portsLoaderDiv").show() });
@@ -90,7 +94,7 @@ $('#floatingButton').on('click', clickAddFloatingJoint);
 $('#fixedButton').on('click', clickAddFixedJoint);
 $('#thrusterButton').on('click', clickAddActuatorThruster);
 $('#timedCommandButton').on('click', clickAddSoftwareTimedCommand);
-
+$('#constantGravityButton').on('click', clickAddGravityConstant);
 $('#drawModeBtn').on('click', toggleDrawMode);
 $('#chooseFileButton').on('click', () => { $('#loadFileInput').click() });
 $('#deleteBtn').on('click', deleteElements);
@@ -192,6 +196,15 @@ var cy = cytoscape({
             style: {
                 'shape': 'round-rectangle',
                 'background-color': '#FDFD96',
+                'width': cy_autosize,
+                'height': 50,
+            }
+        },
+        {
+            selector: '.gravity',
+            style: {
+                'shape': 'round-rectangle',
+                'background-color': '#966FD6',
                 'width': cy_autosize,
                 'height': 50,
             }
@@ -316,6 +329,12 @@ cy.on('ehcomplete', (evt, src, tar, edge) => {
             edge.remove();
             return;
         }
+
+        if (tar.classes().includes("gravity")) {
+            jsatConsole("connect environments to bodies, not bodies to environments")
+            edge.remove();
+            return;
+        }
     }
 
     if (src.classes().includes("actuator")) {
@@ -325,6 +344,20 @@ cy.on('ehcomplete', (evt, src, tar, edge) => {
             JSAT.bodies[target_id]["actuators"].push(source_id);
         } else {
             jsatConsole("actuators can only connect to bodies")
+            edge.remove();
+            return;
+        }
+    }
+
+    if (src.classes().includes("gravity")) {
+        const source_id = src.data().label;
+        const target_id = tar.data().label;
+        if (tar.classes().includes("body")) {
+            JSAT.bodies[target_id]["gravity"].push(source_id);
+        } else if (tar.classes().includes("base")) {
+            JSAT.base.gravity.push(source_id)
+        } else {
+            jsatConsole("environments can only connect to bodies")
             edge.remove();
             return;
         }
@@ -537,7 +570,9 @@ function saveBody(event) {
         geometry: event.data.geometry,
         material: $("#newBodyMaterial").val(),
         color: $("#newBodyColor").val(),
-        actuators: []
+        actuators: [],
+        gravity: [],
+        environments: []
     };
 
     //defaults
@@ -986,9 +1021,9 @@ function saveSoftware(event) {
 
     let software = {
         name: name,
-        type: event.data.type,        
+        type: event.data.type,
     };
-    
+
     if (event.data.type === 'timedCommand') {
         software['init'] = $("#newSoftwareInit").val();
         software['tstarts'] = $("#newSoftwareStartTimes").val();
@@ -1031,7 +1066,7 @@ function editSoftware() {
     const name = this.data().label;
     const software = JSAT.software[name];
 
-    $("#newSoftwareName").val(software.name);    
+    $("#newSoftwareName").val(software.name);
 
     if (software.type === 'timedCommand') {
         addSoftwareTimedCommandInputs();
@@ -1046,7 +1081,84 @@ function editSoftware() {
 
 };
 
+function addGravityConstantInputs() {
+    $('#gravityTable tbody').append("<tr class = 'gravity-input'> \
+            <td><label class='form-font'>value:</label><br></td> \
+            <td><input id='newGravityValue' class='form-input' type='text' placeholder='-9.8'><br></td>\
+        </tr>");
+}
 
+function clickAddGravityConstant() {
+    //remove all old inputs
+    $('.gravity-input').remove();
+    //add software specific inputs
+    addGravityConstantInputs();
+    // bind actuator to save event, mark as new     
+    $("#addGravitySaveButton").off()
+    $("#addGravitySaveButton").on("click", { new: true, type: 'constant', name: '' }, saveGravity)
+    //show the details div
+    $('#addGravityDiv').show();
+}
+
+function saveGravity(event) {
+    console.log('test')
+    const name = $("#newGravityName").val();
+
+    let gravity = {
+        name: name,
+        type: event.data.type,
+    };
+
+    if (event.data.type === 'constant') {
+        gravity['value'] = $("#newGravityValue").val();
+
+        //defaults
+        if (gravity.value === "") { gravity.value = "-9.8" }
+    }
+
+    if (event.data.new) {
+        cy.add({
+            group: 'nodes',
+            data: {
+                id: `gravity${name}`,
+                label: name,
+            },
+            classes: 'gravity',
+            renderedPosition: {
+                x: 300,
+                y: 300,
+            },
+        });
+    } else {
+        cy.$(`#gravity${event.data.name}`).data('id', `gravity${name}`)
+        cy.$(`#gravity${event.data.name}`).data('label', name)
+        delete JSAT.gravity[event.data.name]
+    }
+
+    JSAT.gravity[name] = gravity;
+    console.log(JSAT);
+    $('#addGravityDiv').hide();
+}
+
+function editGravity() {
+    //remove all previously stored software specific inputs
+    $('.gravity-input').remove();
+
+    const name = this.data().label;
+    const gravity = JSAT.gravity[name];
+
+    $("#newGravityName").val(gravity.name);
+
+    if (software.type === 'constant') {
+        addGravityConstantInputs();
+        $("#newGravityValue").val(gravity.value);
+    }
+
+    $("#addGravitySaveButton").off();
+    $("#addGravitySaveButton").on("click", { new: false, type: gravity.type, name: name }, saveGravity)
+    $("#addGravityDiv").show();
+
+};
 
 function savePort(event) {
     const name = $("#newElementName").val();
@@ -1587,6 +1699,35 @@ function deleteElements() {
                     if (ele.data().type === "out") {
                         delete JSAT.outports[ele.data().label];
                     }
+                }
+                if (ele.hasClass("gravity")) {
+                    //delete from any bodies that have this gravity selected
+                    let deletedGravityName = ele.data().label;
+                    let bodyNames = Object.keys(JSAT.bodies);
+                    for (let i = 0; i < bodyNames.length; i++) {                        
+                        if (JSAT.bodies[bodyNames[i]].gravity.includes(deletedGravityName)) {
+                            JSAT.bodies[bodyNames[i]].gravity = JSAT.bodies[bodyNames[i]].gravity.filter(e => e !== deletedGravityName);
+                        }
+                    }
+
+                    if (JSAT.base.gravity.includes(deletedGravityName)) {
+                        JSAT.base.gravity = JSAT.base.gravity.filter(e => e !== deletedGravityName);
+                    }
+
+                    delete JSAT.gravity[deletedGravityName];
+                }
+
+                if (ele.hasClass("actuator")) {
+                    //delete from any bodies that have this actuator
+                    let deletedActuator = ele.data().label;
+                    let bodyNames = Object.keys(JSAT.bodies);
+                    for (let i = 0; i < bodyNames.length; i++) {                        
+                        if (JSAT.bodies[bodyNames[i]].actuators.includes(deletedActuator)) {
+                            JSAT.bodies[bodyNames[i]].actuators = JSAT.bodies[bodyNames[i]].actuators.filter(e => e !== deletedActuator);
+                        }
+                    }
+
+                    delete JSAT.actuators[deletedActuator];
                 }
             }
             //remove from canvas
