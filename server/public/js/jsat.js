@@ -455,17 +455,17 @@ function addBase() {
 function addBodyBoxInputs() {
     $('#bodyTable tbody').append('<tr class = "geometry-input"> \
             <td><label class="form-font " for="newBodyXLength">x length:</label><br></td> \
-            <td><input id="newBodyXLength" class="form-input" type="text" name="newXBodyLength" placeholder="x length"><br></td>\
+            <td><input id="newBodyXLength" class="form-input" type="text" name="newXBodyLength" placeholder="1"><br></td>\
         </tr>');
 
     $('#bodyTable tbody').append('<tr class = "geometry-input"> \
             <td><label class="form-font " for="newBodyYLength">y length:</label><br></td> \
-            <td><input id="newBodyYLength" class="form-input" type="text" name="newYBodyLength" placeholder="y length"><br></td>\
+            <td><input id="newBodyYLength" class="form-input" type="text" name="newYBodyLength" placeholder="1"><br></td>\
         </tr>');
 
     $('#bodyTable tbody').append('<tr class = "geometry-input"> \
             <td><label class="form-font " for="newBodyZLength">z length:</label><br></td> \
-            <td><input id="newBodyZLength" class="form-input" type="text" name="newZBodyLength" placeholder="z length"><br></td>\
+            <td><input id="newBodyZLength" class="form-input" type="text" name="newZBodyLength" placeholder="1"><br></td>\
         </tr>');
 }
 
@@ -486,42 +486,42 @@ function clickAddBoxBody() {
 function addBodyCylinderInputs() {
     $('#bodyTable tbody').append('<tr class = "geometry-input"> \
             <td><label class="form-font " for="newBodyRadiusTop">radius top:</label><br></td> \
-            <td><input id="newBodyRadiusTop" class="form-input" type="text" name="newBodyRadiusTop" placeholder="default 1"><br></td>\
+            <td><input id="newBodyRadiusTop" class="form-input" type="text" name="newBodyRadiusTop" placeholder="1"><br></td>\
         </tr>');
 
     $('#bodyTable tbody').append('<tr class = "geometry-input"> \
             <td><label class="form-font " for="newBodyRadiusBottom">radius bottom:</label><br></td> \
-            <td><input id="newBodyRadiusBottom" class="form-input" type="text" name="newBodyRadiusBottom" placeholder="default 1"><br></td>\
+            <td><input id="newBodyRadiusBottom" class="form-input" type="text" name="newBodyRadiusBottom" placeholder="1"><br></td>\
         </tr>');
 
     $('#bodyTable tbody').append('<tr class = "geometry-input"> \
             <td><label class="form-font " for="newBodyHeight">height:</label><br></td> \
-            <td><input id="newBodyHeight" class="form-input" type="text" name="newBodyHeight" placeholder="default 1"><br></td>\
+            <td><input id="newBodyHeight" class="form-input" type="text" name="newBodyHeight" placeholder="1"><br></td>\
         </tr>');
 
     $('#bodyTable tbody').append('<tr class = "geometry-input"> \
             <td><label class="form-font">radial segments:</label><br></td> \
-            <td><input id="newBodyRadialSegments" class="form-input" type="text" placeholder="default 32"><br></td>\
+            <td><input id="newBodyRadialSegments" class="form-input" type="text" placeholder="32"><br></td>\
         </tr>');
 
     $('#bodyTable tbody').append('<tr class = "geometry-input"> \
             <td><label class="form-font">height segments:</label><br></td> \
-            <td><input id="newBodyHeightSegments" class="form-input" type="text" placeholder="default 1"><br></td>\
+            <td><input id="newBodyHeightSegments" class="form-input" type="text" placeholder="1"><br></td>\
         </tr>');
 
     $('#bodyTable tbody').append('<tr class = "geometry-input"> \
             <td><label class="form-font">open ended:</label><br></td> \
-            <td><input id="newBodyOpenEnded" class="form-input" type="text" placeholder="default capped"><br></td>\
+            <td><input id="newBodyOpenEnded" class="form-input" type="text" placeholder="capped"><br></td>\
         </tr>');
 
     $('#bodyTable tbody').append('<tr class = "geometry-input"> \
             <td><label class="form-font">theta start:</label><br></td> \
-            <td><input id="newBodyThetaStart" class="form-input" type="text" placeholder="default 0"><br></td>\
+            <td><input id="newBodyThetaStart" class="form-input" type="text" placeholder="0"><br></td>\
         </tr>');
 
     $('#bodyTable tbody').append('<tr class = "geometry-input"> \
             <td><label class="form-font">theta length:</label><br></td> \
-            <td><input id="newBodyThetaLength" class="form-input" type="text" placeholder="default 2pi"><br></td>\
+            <td><input id="newBodyThetaLength" class="form-input" type="text" placeholder="2*pi"><br></td>\
         </tr>');
 }
 
@@ -638,10 +638,9 @@ function saveBody(event) {
         //update node data
         cy.$(`#body${event.data.name}`).data('id', `body${name}`)
         cy.$(`#body${event.data.name}`).data('label', name)
-        delete JSAT.bodies[event.data.name]
 
         body.actuators = JSAT.bodies[body.name].actuators
-
+        delete JSAT.bodies[event.data.name]
     }
 
     JSAT.bodies[body.name] = body;

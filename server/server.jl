@@ -56,7 +56,7 @@ function routerSimulate(req::HTTP.Request)
 
     Software = []
     for k in keys(softwares)
-        software = software[k]
+        software = softwares[k]
         type = software[:type]
         if type == "timedCommand"
             init = eval(Meta.parse(software[:init]))
