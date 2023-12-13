@@ -1,54 +1,41 @@
-using LinearAlgebra, DifferentialEquations, StaticArrays, Plots, UnPack, OffsetArrays, PlotThemes, DataFrames, CSV, Dates, ConcreteStructs
+using ConcreteStructs
+using CSV
+using DataFrames
+using Dates
+using DifferentialEquations
+using LinearAlgebra
+using OffsetArrays
+using Plots
+using PlotThemes
+using StaticArrays
+using UnPack
+
 import Base: show
 import Plots: plot, plot!
 
 theme(:juno)
 
-includet("utils//quaternion.jl")
-includet("spatial.jl")
+includet(joinpath("math", "quaternion.jl"))
+includet(joinpath("math", "spatial.jl"))
 
-abstract type AbstractBody end
 
-Base.@kwdef struct WorldFrame <: AbstractBody
-    name::Symbol = :N
-    id::Int64 = 0
-end
+includet("abstract.jl")
 
-mutable struct Body <: AbstractBody
-    name::Symbol
-    #parameters
-    m::Float64 # mass
-    I::SMatrix{3,3,Float64} # inertia tensor
-    cm::SVector{3,Float64} # center of mass    
-    id::Int64 # body number for table designation (applied automatically by sys)
-    function Body(name, m, I, cm)
-        x = new()
-        x.name = Symbol(name)
-        x.m = Float64(m)
-        x.I = SMatrix{3,3,Float64}(I)
-        x.cm = SVector{3,Float64}(cm)
-        return x
-    end
-end
-mcI(b::Body) = mcI(b.m, b.cm, b.I)
+includet(joinpath("bodies", "bodies.jl"))
+includet(joinpath("joints", "joints.jl"))
+includet(joinpath("software", "software.jl"))
+includet(joinpath("actuators", "actuators.jl"))
+includet(joinpath("gravity", "gravity.jl"))
+includet(joinpath("bases", "base.jl"))
+includet(joinpath("utils", "pathutils.jl"))
 
-includet("joints.jl")
-includet("utils//pathutils.jl")
-
-struct Force
-    magnitude::Float64
-    direction::SVector{3,Float64}
-end
-
-struct Torque
-    magnitude::Float64
-    direction::SVector{3,Float64}
-end
 
 @concrete struct MultibodySystem
     name
     bodies
     joints
+    software
+    actuators
     p       # joint predecessor body array
     s       # joint successor body array
     λ       # body parent array
@@ -87,9 +74,17 @@ end
     q_base
 end
 
-
 #MultibodySystem constructor
-function MultibodySystem(name, bodies, joints)
+function MultibodySystem(name, base, bodies, joints, actuators=AbstractActuator[], software=AbstractSoftware[])
+
+    bodies = isa(bodies, Vector) ? bodies : [bodies]
+    joints = isa(joints, Vector) ? joints : [joints]
+    actuators = isa(actuators, Vector) ? actuators : [actuators]
+    software = isa(software, Vector) ? software : [software]
+
+    # convert bodies to an offsetarray with the base as index 0
+    bodies = OffsetArray([base; bodies], 0:length(bodies))
+
     # preallocate vectors/matrices at MultibodySystem definition, mutate in place during sim
     # map the bodies and joints 
     p, s, λ, κ, μ, γ = map_tree!(bodies, joints)
@@ -100,9 +95,17 @@ function MultibodySystem(name, bodies, joints)
 
     Iᵇ, Iᴬ = initialize_inertias(bodies, joints) # Iᵇ for now to not conflict with LinearAlgebra: I
 
+    # copy base gravity into bodies
+    if !isempty(base.gravity)
+        for body in bodies
+            if !isa(body,WorldFrame)
+                append!(body.models.gravity, deepcopy(base.gravity))
+            end
+        end
+    end
 
     #grab q,q̇ initial conditions
-    q, q̇, q̈, x = initialize_state_vectors(joints)
+    q, q̇, q̈, x = initialize_state_vectors(joints, software, actuators)
 
     nb = length(bodies)
 
@@ -145,7 +148,13 @@ function MultibodySystem(name, bodies, joints)
     ⁱXₒᵐ = OffsetVector(fill(identity_X, nb), 0:nb-1)
     ⁱXₒᶠ = OffsetVector(fill(identity_X, nb), 0:nb-1)
 
-    sys = MultibodySystem(name, bodies, joints, p, s, λ, κ, μ, γ, U, D, u, c, pᴬ, ᵖXᵢᵐ, ᵖXᵢᶠ, ⁱXₚᵐ, ⁱXₚᶠ, ᵒXᵢᵐ, ᵒXᵢᶠ, ⁱXₒᵐ, ⁱXₒᶠ, q, q̇, q̈, x, H, C, τ, fˣ, fᵇ, f_gyro, Iᵇ, Iᴬ, r, v, a, r_base, q_base)
+
+    # make the software callbacks
+    for i in eachindex(software)
+        create_callbacks!(software[i], i)
+    end
+
+    sys = MultibodySystem(name, bodies, joints, software, actuators, p, s, λ, κ, μ, γ, U, D, u, c, pᴬ, ᵖXᵢᵐ, ᵖXᵢᶠ, ⁱXₚᵐ, ⁱXₚᶠ, ᵒXᵢᵐ, ᵒXᵢᶠ, ⁱXₒᵐ, ⁱXₒᶠ, q, q̇, q̈, x, H, C, τ, fˣ, fᵇ, f_gyro, Iᵇ, Iᴬ, r, v, a, r_base, q_base)
 
     #initialize FixedJoints X so we don't have to calculate again
     calculate_X_FixedJoints!(sys)
@@ -154,18 +163,30 @@ end
 
 function model!(sys)
     #sensors!(sys)
-    #software!(sys)
-    #actuators!(sys)
+    software!(sys)
+    actuators!(sys)    
     environments!(sys)
     dynamics!(sys)
-    nothing
+    return nothing
 end
+
+function software!(sys)
+    run_software!.(sys.software, Ref(sys))
+    return nothing
+end
+
+function actuators!(sys)
+    get_actuator_force!.(sys.actuators)
+    return nothing
+end
+
 
 # uses Featherstone notation
 function dynamics!(sys)
     calculate_τ!(sys)  # generalized actuator forces    
+    calculate_fˣ!(sys) # body external forces
     articulated_body_algorithm!(sys)
-    nothing
+    return nothing
 end
 
 
@@ -179,9 +200,21 @@ function calculate_τ!(τ)
 end
 calculate_τ!(sys::MultibodySystem) = calculate_τ!(sys.τ)
 
-calculate_X!(sys::MultibodySystem) = calculate_X!(sys.ᵖXᵢᵐ, sys.ᵖXᵢᶠ, sys.ⁱXₚᵐ, sys.ⁱXₚᶠ, sys.ᵒXᵢᵐ, sys.ᵒXᵢᶠ, sys.ⁱXₒᵐ, sys.ⁱXₒᶠ, sys.λ, sys.joints)
+function calculate_fˣ!(body::Body)
+    body.external_force = body.gravity
 
-function calculate_X!(ᵖXᵢᵐ, ᵖXᵢᶠ, ⁱXₚᵐ, ⁱXₚᶠ, ᵒXᵢᵐ, ᵒXᵢᶠ, ⁱXₒᵐ, ⁱXₒᶠ, λ, joints)
+    for actuator in body.models.actuators
+        body.external_force += actuator.current_force #converted to body frame in actuator get_actuator_force
+    end
+    
+    #add environments
+    return nothing
+end
+
+calculate_fˣ!(sys::MultibodySystem) = calculate_fˣ!.(sys.bodies);
+return nothing;
+
+function calculate_X!(ᵖXᵢᵐ, ᵖXᵢᶠ, ⁱXₚᵐ, ⁱXₚᶠ, ᵒXᵢᵐ, ᵒXᵢᶠ, ⁱXₒᵐ, ⁱXₒᶠ, λ, joints, bodies)
     for i in eachindex(joints)
         if !isa(joints[i], FixedJoint)
             joint = joints[i]
@@ -192,6 +225,11 @@ function calculate_X!(ᵖXᵢᵐ, ᵖXᵢᶠ, ⁱXₚᵐ, ⁱXₚᶠ, ᵒXᵢᵐ
             ᵖXᵢᶠ[i] = ℱ(i_to_p)
             ⁱXₚᵐ[i] = ℳ(p_to_i)
             ⁱXₚᶠ[i] = ℱ(p_to_i)
+
+            bodies[i].transforms.body_to_parent_force = ᵖXᵢᶠ[i]
+            bodies[i].transforms.body_to_parent_motion = ᵖXᵢᵐ[i]
+            bodies[i].transforms.parent_to_body_force = ⁱXₚᶠ[i]
+            bodies[i].transforms.parent_to_body_motion = ⁱXₚᵐ[i]
         end
 
         ᵒXᵢᵐ[i] = ᵒXᵢᵐ[λ[i]] * ᵖXᵢᵐ[i]
@@ -199,9 +237,15 @@ function calculate_X!(ᵖXᵢᵐ, ᵖXᵢᶠ, ⁱXₚᵐ, ⁱXₚᶠ, ᵒXᵢᵐ
         ⁱXₒᵐ[i] = ⁱXₚᵐ[i] * ⁱXₒᵐ[λ[i]]
         ⁱXₒᶠ[i] = ⁱXₚᶠ[i] * ⁱXₒᶠ[λ[i]]
 
+        bodies[i].transforms.body_to_base_force = ᵒXᵢᶠ[i]
+        bodies[i].transforms.body_to_base_motion = ᵒXᵢᵐ[i]
+        bodies[i].transforms.base_to_body_force = ⁱXₒᶠ[i]
+        bodies[i].transforms.base_to_body_motion = ⁱXₒᵐ[i]
+
     end
     nothing
 end
+calculate_X!(sys::MultibodySystem) = calculate_X!(sys.ᵖXᵢᵐ, sys.ᵖXᵢᶠ, sys.ⁱXₚᵐ, sys.ⁱXₚᶠ, sys.ᵒXᵢᵐ, sys.ᵒXᵢᶠ, sys.ⁱXₒᵐ, sys.ⁱXₒᶠ, sys.λ, sys.joints, sys.bodies)
 
 # only have to do this once at initialization
 function calculate_X_FixedJoints!(ᵖXᵢᵐ, ᵖXᵢᶠ, ⁱXₚᵐ, ⁱXₚᶠ, λ, joints)
@@ -259,7 +303,8 @@ function articulated_body_algorithm!(sys)
         end
 
         Iᴬ[i] = Iᵇ[i]
-        fᵇ[i] = fˣ[i]
+        #fᵇ[i] = fˣ[i]
+        fᵇ[i] = sys.bodies[i].external_force
         f_gyro[i] = v[i] ×ᶠ (Iᵇ[i] * v[i])
         pᴬ[i] = f_gyro[i] - fᵇ[i]
     end
@@ -287,8 +332,8 @@ function articulated_body_algorithm!(sys)
     end
 
     # pass 3   
-
     for i in 1:length(sys.bodies)-1
+        body = sys.bodies[i]
         if isa(joints[i], FixedJoint)
             a[i] = ⁱXₚᵐ[i] * a[λ[i]]
         else
@@ -301,7 +346,7 @@ function articulated_body_algorithm!(sys)
     nothing
 end
 
-function initialize_state_vectors(joints)
+function initialize_state_vectors(joints, softwares, actuators)
     q = []
     q̇ = []
     x = []
@@ -319,6 +364,17 @@ function initialize_state_vectors(joints)
             append!(q̇, this_q̇)
         end
     end
+
+    for software in softwares
+        append!(x, software.initial_value)
+        software.u_index = length(x)
+    end
+
+    for actuator in actuators
+        actuator.u_index = SVector{6,Int16}(length(x)+1:length(x)+6) # body frame spatial force
+        append!(x, SVector{6,Float64}(zeros(6))) # TODO: may need to make this the initial value of actuator instead of assuming its 0        
+    end
+
     q = MVector{length(q),Float64}(q)
     q̇ = MVector{length(q̇),Float64}(q̇)
     q̈ = MVector{length(q̇),Float64}(zeros(length(q̇)))
@@ -340,28 +396,28 @@ function initialize_inertias(bodies, joints)
             ʲXᵦᶠ = ℱ(Fs) # need force transformation from body to joint
             Iʲ = ʲXᵦᶠ * Iᵇ[i] * ᵇXⱼᵐ # Featherstone equations 2.66 for transform of spatial inertia
             Iᵇ[i] = Iʲ
+            body.inertia_joint = Iᵇ[i]
         end
 
         # make the assumption for FloatingJoints that the body frame is coincident with the com
         # shift mass properties to the com
         if typeof(joints[i]) == FloatingJoint
             Iᵇ[i] = mcI(body.m, SVector{3,Float64}(zeros(3)), body.I)
+            body.inertia_joint = Iᵇ[i]
         end
     end
     Iᴬ = copy(Iᵇ)
     return Iᵇ, Iᴬ
 end
 
-function environments!(sys)
+function environments!(sys)    
     gravity!(sys)
 end
 
 
 function gravity!(sys::MultibodySystem)
-    for i in 1:length(sys.bodies)-1
-        sys.fˣ[i] = sys.fˣ[i] .+ sys.Iᵇ[i] * sys.ⁱXₒᵐ[i] * SVector{6,Float64}(0, 0, 0, 0, -9.8, 0)
-    end
-    nothing
+    calculate_gravity!.(sys.bodies)
+    return nothing
 end
 
 function reset_forces!(sys)
@@ -414,7 +470,7 @@ function configure_saving(sys::MultibodySystem)
                     save_config,
                     "$(sys.joints[i].meta.name)_$(string(state))",
                     typeof(getfield(sys.joints[i].state, state)),
-                    sys -> getfield(sys.joints[i].state, state)
+                    integrator -> getfield(integrator.p.sys.joints[i].state, state)
                 )
             end
 
@@ -423,7 +479,7 @@ function configure_saving(sys::MultibodySystem)
                 save_config,
                 "$(sys.joints[i].meta.name)_q̈",
                 typeof(sys.q̈[sys.joints[i].meta.q̇index]),
-                sys -> sys.q̈[sys.joints[i].meta.q̇index]
+                integrator -> integrator.p.sys.q̈[sys.joints[i].meta.q̇index]
             )
         end
     end
@@ -432,28 +488,28 @@ function configure_saving(sys::MultibodySystem)
             save_config,
             "$(sys.bodies[i].name)_r",
             typeof(sys.r[i]),
-            sys -> sys.r[i]
+            integrator -> integrator.p.sys.r[i]
         )
 
         save_dict!(
             save_config,
             "$(sys.bodies[i].name)_v",
             typeof(sys.v[i]),
-            sys -> sys.v[i]
+            integrator -> integrator.p.sys.v[i]
         )
 
         save_dict!(
             save_config,
             "$(sys.bodies[i].name)_a",
             typeof(sys.a[i]),
-            sys -> sys.a[i]
+            integrator -> integrator.p.sys.a[i]
         )
 
         save_dict!(
             save_config,
             "$(sys.bodies[i].name)_fᵇ",
             typeof(sys.fᵇ[i]),
-            sys -> sys.fᵇ[i]
+            integrator -> integrator.p.sys.fᵇ[i]
         )
 
         # get base frame position vars for animation        
@@ -462,19 +518,51 @@ function configure_saving(sys::MultibodySystem)
             save_config,
             "$(sys.bodies[i].name)_q_base",
             typeof(sys.q_base[i]),
-            sys -> (sys.q_base[i])
+            integrator -> (integrator.p.sys.q_base[i])
         )
 
         save_dict!(
             save_config,
             "$(sys.bodies[i].name)_r_base",
             typeof(sys.r_base[i]),
-            sys -> (sys.r_base[i])
+            integrator -> (integrator.p.sys.r_base[i])
         )
+
+        for i in eachindex(sys.software)
+            save_dict!(
+                save_config,
+                "$(sys.software[i].name)_u",
+                typeof(sys.software[i].initial_value),
+                #integrator -> integrator.u[integrator.p.sys.software[i].u_index]
+                integrator -> integrator.p.sys.software[i].current_value
+            )
+        end
+
+        for i in eachindex(sys.actuators)
+            save_dict!(
+                save_config,
+                "$(sys.actuators[i].name)_f",
+                typeof(sys.actuators[i].current_force),
+                integrator -> integrator.u[integrator.p.sys.actuators[i].u_index]
+            )
+
+            save_dict!(
+                save_config,
+                "$(sys.actuators[i].name)_u",
+                typeof(sys.actuators[i].command.current_value),
+                integrator -> integrator.p.sys.actuators[i].command.current_value
+            )
+
+        end
     end
 
     save_values = SavedValues(Float64, Tuple{getindex.(save_config, "type")...})
-    save_function(u, t, integrator) = Tuple([f(integrator.p.sys) for f in getindex.(integrator.p.save_config, "func")])
+    function save_function(u, t, integrator)
+        #update after integration complete so values aren't based on RK4 steps
+        update_model!(integrator.p.sys, u)
+        model!(integrator.p.sys)
+        Tuple([f(integrator) for f in getindex.(integrator.p.save_config, "func")])
+    end
     save_cb = SavingCallback(save_function, save_values)
     return save_config, save_values, save_cb
 end
@@ -483,8 +571,13 @@ function simulate(orig_sys::MultibodySystem, tspan; output_type=nothing)
     sys = deepcopy(orig_sys)# make a copy so we can rerun orig sys without mutating it during previous sim    
     save_config, save_values, save_cb = configure_saving(sys)
     p = (sys=sys, save_config=save_config)
+
+    #get callbacks
+    callbacks = [save_cb; getfield.(sys.software, :callback)...]
+    cb = CallbackSet(callbacks...)
+
     prob = ODEProblem(ode_func!, sys.x, tspan, p)
-    sol = solve(prob, callback=save_cb, adaptive=false, dt=0.01) # higher sample rate until three animation keyframetracks are better understood for interpolation
+    sol = solve(prob, callback=cb, adaptive=false, dt=0.01) # higher sample rate until three animation keyframetracks are better understood for interpolation
 
     if output_type == DataFrame
         simout = df_save_values(save_values, save_config)
@@ -557,3 +650,7 @@ function Plots.plot(t::Vector{T}, x::Vector{SVector{S,T}}) where {S,T<:AbstractF
     return p
 end
 
+function plot(sol::DataFrame, col)
+    p = plot(sol[!, "t"], sol[!, col])
+    return p
+end

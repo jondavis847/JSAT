@@ -15,7 +15,8 @@ import { TrackballControls } from 'three/addons/controls/TrackballControls.js';
 let JSAT = {
     bodies: {},
     joints: {},
-    forces: {},
+    actuators: {},
+    software: {},
     inports: {}, //only useful for defining models
     outports: {}, //only useful for defining models
     sim: {
@@ -61,6 +62,8 @@ $("#animTabButton").on("click", changeTab);
 $("#simButton").on("click", sendSimulationData);
 $("#addBodyCancelButton").on("click", () => { $("#addBodyDiv").hide() });
 $("#addJointCancelButton").on("click", () => { $("#addJointDiv").hide() });
+$("#addActuatorCancelButton").on("click", () => { $("#addActuatorDiv").hide() });
+$("#addSoftwareCancelButton").on("click", () => { $("#addSoftwareDiv").hide() });
 $("#createModelCancelButton").on("click", () => { $("#createModelDiv").hide() });
 $("#loadSimStates").on("click", getSimStates);
 $("#plotState").on("click", plotStateData);
@@ -71,6 +74,10 @@ $("#bodiesButton").on("click", () => { $("#bodiesLoaderDiv").show() });
 $("#bodyBackButton").on("click", () => { $("#bodiesLoaderDiv").hide() });
 $("#jointsButton").on("click", () => { $("#jointsLoaderDiv").show() });
 $("#jointBackButton").on("click", () => { $("#jointsLoaderDiv").hide() });
+$("#actuatorsButton").on("click", () => { $("#actuatorLoaderDiv").show() });
+$("#actuatorBackButton").on("click", () => { $("#actuatorLoaderDiv").hide() });
+$("#softwareButton").on("click", () => { $("#softwareLoaderDiv").show() });
+$("#softwareBackButton").on("click", () => { $("#softwareLoaderDiv").hide() });
 $("#modelsButton").on("click", () => { $("#modelsLoaderDiv").show() });
 $("#modelsBackButton").on("click", () => { $("#modelsLoaderDiv").hide() });
 $("#portsButton").on("click", () => { $("#portsLoaderDiv").show() });
@@ -81,8 +88,8 @@ $('#baseButton').on('click', addBase);
 $('#revoluteButton').on('click', clickAddRevoluteJoint);
 $('#floatingButton').on('click', clickAddFloatingJoint);
 $('#fixedButton').on('click', clickAddFixedJoint);
-
-
+$('#thrusterButton').on('click', clickAddActuatorThruster);
+$('#timedCommandButton').on('click', clickAddSoftwareTimedCommand);
 
 $('#drawModeBtn').on('click', toggleDrawMode);
 $('#chooseFileButton').on('click', () => { $('#loadFileInput').click() });
@@ -178,6 +185,24 @@ var cy = cytoscape({
                 'target-arrow-color': 'whitesmoke',
                 'target-arrow-shape': 'triangle',
                 'curve-style': 'bezier',
+            }
+        },
+        {
+            selector: '.actuator',
+            style: {
+                'shape': 'round-rectangle',
+                'background-color': '#FDFD96',
+                'width': cy_autosize,
+                'height': 50,
+            }
+        },
+        {
+            selector: '.software',
+            style: {
+                'shape': 'round-rectangle',
+                'background-color': '#FFD1DC',
+                'width': cy_autosize,
+                'height': 50,
             }
         },
         {
@@ -285,6 +310,34 @@ cy.on('ehcomplete', (evt, src, tar, edge) => {
             const target_id = tar.data().label;
             JSAT.outports[target_id]["predecessor"] = source_id;
         }
+
+        if (tar.classes().includes("actuator")) {
+            jsatConsole("connect actuators to bodies, not bodys to actuators")
+            edge.remove();
+            return;
+        }
+    }
+
+    if (src.classes().includes("actuator")) {
+        if (tar.classes().includes("body")) {
+            const source_id = src.data().label;
+            const target_id = tar.data().label;
+            JSAT.bodies[target_id]["actuators"].push(source_id);
+        } else {
+            jsatConsole("actuators can only connect to bodies")
+            edge.remove();
+            return;
+        }
+    }
+
+    if (src.classes().includes("software")) {
+        if (tar.classes().includes("actuator")) {
+            const source_id = src.data().label;
+            const target_id = tar.data().label;
+            JSAT.actuators[target_id]["command"] = source_id;
+        } else {
+            jsatConsole("software can only connect to actuators")
+        }
     }
 
     //set if predecessor
@@ -325,6 +378,8 @@ cy.on('ehcomplete', (evt, src, tar, edge) => {
 cy.on('dbltap', '.body', editBody)
 cy.on('dbltap', '.joint', editJoint)
 cy.on('dbltap', '.port', editPort)
+cy.on('dbltap', '.actuator', editActuator)
+cy.on('dbltap', '.software', editSoftware)
 
 /*
 cy.on('tap', 'node', function (evt) {
@@ -482,6 +537,7 @@ function saveBody(event) {
         geometry: event.data.geometry,
         material: $("#newBodyMaterial").val(),
         color: $("#newBodyColor").val(),
+        actuators: []
     };
 
     //defaults
@@ -548,6 +604,8 @@ function saveBody(event) {
         cy.$(`#body${event.data.name}`).data('id', `body${name}`)
         cy.$(`#body${event.data.name}`).data('label', name)
         delete JSAT.bodies[event.data.name]
+
+        body.actuators = JSAT.bodies[body.name].actuators
 
     }
 
@@ -675,7 +733,7 @@ function clickAddFixedJoint() {
     //remove all old inputs
     $('.joint-input').remove();
     //add fixed joint specific inputs
-    addJointFixedInputs() 
+    addJointFixedInputs()
     // bind revolute to save event, mark as new 
     $("#addJointSaveButton").off()
     $("#addJointSaveButton").on("click", { new: true, type: 'fixed', name: '' }, saveJoint)
@@ -733,12 +791,12 @@ function saveJoint(event) {
     }
 
     if (event.data.type === 'fixed') {
-        joint['q'] = $("#newJointQuat").val();        
-        joint['position'] = $("#newJointPosition").val();        
+        joint['q'] = $("#newJointQuat").val();
+        joint['position'] = $("#newJointPosition").val();
 
         //defaults
-        if (joint.q === "") { joint.q = "[0,0,0,1]" }        
-        if (joint.position === "") { joint.position = "zeros(3)" }        
+        if (joint.q === "") { joint.q = "[0,0,0,1]" }
+        if (joint.position === "") { joint.position = "zeros(3)" }
     }
 
     if (event.data.new) {
@@ -794,8 +852,8 @@ function editJoint() {
 
     if (joint.type === 'fixed') {
         addJointFixedInputs();
-        $("#newJointQuat").val(joint.q);        
-        $("#newJointPosition").val(joint.position);        
+        $("#newJointQuat").val(joint.q);
+        $("#newJointPosition").val(joint.position);
     }
 
     $("#addJointSaveButton").off();
@@ -803,6 +861,192 @@ function editJoint() {
     $("#addJointDiv").show();
 
 };
+
+
+function addActuatorThrusterInputs() {
+    $('#actuatorTable tbody').append("<tr class = 'actuator-input'> \
+            <td><label class='form-font'>thrust magnitude:</label><br></td> \
+            <td><input id='newActuatorThrust' class='form-input' type='text' placeholder='1'><br></td>\
+        </tr>");
+}
+
+function clickAddActuatorThruster() {
+    //remove all old inputs
+    $('.actuator-input').remove();
+    //add actuator specific inputs
+    addActuatorThrusterInputs();
+    // bind actuator to save event, mark as new 
+    $("#addActuatorSaveButton").off()
+    $("#addActuatorSaveButton").on("click", { new: true, type: 'thruster', name: '' }, saveActuator)
+    //show the details div
+    $('#addActuatorDiv').show();
+}
+
+function saveActuator(event) {
+    const name = $("#newActuatorName").val();
+
+    let actuator = {
+        name: name,
+        type: event.data.type,
+        rotation: $("#newActuatorRotation").val(),
+        translation: $("#newActuatorTranslation").val(),
+        command: "undef"
+    };
+
+    //defaults
+    if (actuator.rotation === "") { actuator.rotation = "I(3)" }
+    if (actuator.translation === "") { actuator.translation = "zeros(3)" }
+
+    if (event.data.type === 'thruster') {
+        actuator['thrust'] = $("#newActuatorThrust").val();
+
+        //defaults
+        if (actuator.thrust === "") { actuator.thrust = "1" }
+    }
+
+    if (event.data.new) {
+        cy.add({
+            group: 'nodes',
+            data: {
+                id: `actuator${name}`,
+                label: name,
+            },
+            classes: 'actuator',
+            renderedPosition: {
+                x: 300,
+                y: 300,
+            },
+        });
+    } else {
+        cy.$(`#actuator${event.data.name}`).data('id', `actuator${name}`)
+        cy.$(`#actuator${event.data.name}`).data('label', name)
+
+        actuator.command = JSAT.actuators[event.data.name].command
+        delete JSAT.actuators[event.data.name]
+    }
+
+    JSAT.actuators[name] = actuator;
+    console.log(JSAT);
+    $('#addActuatorDiv').hide();
+}
+
+function editActuator() {
+    //remove all previously stored joint specific inputs
+    $('.actuator-input').remove();
+
+    const name = this.data().label;
+    const actuator = JSAT.actuators[name];
+
+    $("#newActuatorName").val(actuator.name);
+    $("#newActuatorRotation").val(actuator.rotation);
+    $("#newActuatorTranslation").val(actuator.FpRho);
+
+    if (actuator.type === 'thruster') {
+        addActuatorThrusterInputs();
+        $("#newActuatorThrust").val(actuator.thrust);
+    }
+
+    $("#addActuatorSaveButton").off();
+    $("#addActuatorSaveButton").on("click", { new: false, type: actuator.type, name: name }, saveActuator)
+    $("#addActuatorDiv").show();
+
+};
+
+function addSoftwareTimedCommandInputs() {
+    $('#softwareTable tbody').append("<tr class = 'software-input'> \
+            <td><label class='form-font'>initial value:</label><br></td> \
+            <td><input id='newSoftwareInit' class='form-input' type='text' placeholder='false'><br></td>\
+        </tr>");
+
+    $('#softwareTable tbody').append("<tr class = 'software-input'> \
+            <td><label class='form-font'>start times:</label><br></td> \
+            <td><input id='newSoftwareStartTimes' class='form-input' type='text' placeholder='[]'><br></td>\
+        </tr>");
+
+    $('#softwareTable tbody').append("<tr class = 'software-input'> \
+            <td><label class='form-font'>stop times:</label><br></td> \
+            <td><input id='newSoftwareStopTimes' class='form-input' type='text' placeholder='[]'><br></td>\
+        </tr>");
+}
+
+function clickAddSoftwareTimedCommand() {
+    //remove all old inputs
+    $('.software-input').remove();
+    //add software specific inputs
+    addSoftwareTimedCommandInputs();
+    // bind actuator to save event, mark as new 
+    $("#addSoftwareSaveButton").off()
+    $("#addSoftwareSaveButton").on("click", { new: true, type: 'timedCommand', name: '' }, saveSoftware)
+    //show the details div
+    $('#addSoftwareDiv').show();
+}
+
+function saveSoftware(event) {
+    const name = $("#newSoftwareName").val();
+
+    let software = {
+        name: name,
+        type: event.data.type,        
+    };
+    
+    if (event.data.type === 'timedCommand') {
+        software['init'] = $("#newSoftwareInit").val();
+        software['tstarts'] = $("#newSoftwareStartTimes").val();
+        software['tstops'] = $("#newSoftwareStopTimes").val();
+
+        //defaults
+        if (software.init === "") { software.init = "false" }
+        if (software.tstarts === "") { software.tstarts = "[]" }
+        if (software.tstops === "") { software.tstops = "[]" }
+    }
+
+    if (event.data.new) {
+        cy.add({
+            group: 'nodes',
+            data: {
+                id: `software${name}`,
+                label: name,
+            },
+            classes: 'software',
+            renderedPosition: {
+                x: 300,
+                y: 300,
+            },
+        });
+    } else {
+        cy.$(`#software${event.data.name}`).data('id', `software${name}`)
+        cy.$(`#software${event.data.name}`).data('label', name)
+        delete JSAT.software[event.data.name]
+    }
+
+    JSAT.software[name] = software;
+    console.log(JSAT);
+    $('#addSoftwareDiv').hide();
+}
+
+function editSoftware() {
+    //remove all previously stored software specific inputs
+    $('.software-input').remove();
+
+    const name = this.data().label;
+    const software = JSAT.software[name];
+
+    $("#newSoftwareName").val(software.name);    
+
+    if (software.type === 'timedCommand') {
+        addSoftwareTimedCommandInputs();
+        $("#newSoftwareInit").val(software.init);
+        $("#newSoftwareStartTimes").val(software.tstarts);
+        $("#newSoftwareStopTimes").val(software.tstops);
+    }
+
+    $("#addSoftwareSaveButton").off();
+    $("#addSoftwareSaveButton").on("click", { new: false, type: software.type, name: name }, saveSoftware)
+    $("#addSoftwareDiv").show();
+
+};
+
+
 
 function savePort(event) {
     const name = $("#newElementName").val();

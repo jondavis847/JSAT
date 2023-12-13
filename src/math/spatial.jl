@@ -1,4 +1,4 @@
-includet("frames.jl")
+includet("..//frames.jl")
 
 using StaticArrays, LinearAlgebra
 import Base: +, -, *, ∈
@@ -186,14 +186,14 @@ function skew(x::SVector{3,Float64})
         -x[2] x[1] 0
     ]
 end
-function mcI(m::Float64, cm::SVector{3,Float64}, inertia::SMatrix{3,3,Float64})
-    out = MMatrix{6,6,Float64}(undef)
+function mcI(m::Float64, cm::SVector{3,Float64}, inertia::SMatrix{3,3,Float64,9})
+    out = MMatrix{6,6,Float64,36}(undef)
     C = skew(cm)
     out[i3, i3] = inertia + m * C * C'
     out[i3, i6] = m * C
     out[i6, i3] = m * C'
-    out[i6, i6] = SMatrix{3,3,Float64}(m, 0, 0, 0, m, 0, 0, 0, m) #m*I(3)
-    SMatrix{6,6,Float64}(out)
+    out[i6, i6] = SMatrix{3,3,Float64,9}(m, 0, 0, 0, m, 0, 0, 0, m) #m*I(3)
+    SMatrix{6,6,Float64,36}(out)
 end
 
-
+mcI(m,cm,I) = mcI(Float64(m),SVector{3,Float64}(cm),SMatrix{3,3,Float64,9}(I))
