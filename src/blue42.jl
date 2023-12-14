@@ -98,7 +98,7 @@ function MultibodySystem(name, base, bodies, joints, actuators=AbstractActuator[
     # copy base gravity into bodies
     if !isempty(base.gravity)
         for body in bodies
-            if !isa(body,BaseFrame)
+            if !isa(body, BaseFrame)
                 append!(body.models.gravity, deepcopy(base.gravity))
             end
         end
@@ -164,7 +164,7 @@ end
 function model!(sys)
     #sensors!(sys)
     software!(sys)
-    actuators!(sys)    
+    actuators!(sys)
     environments!(sys)
     dynamics!(sys)
     return nothing
@@ -189,8 +189,6 @@ function dynamics!(sys)
     return nothing
 end
 
-
-
 function calculate_τ!(τ)
     #until we figure out how to do software
     for i in eachindex(τ)
@@ -206,7 +204,7 @@ function calculate_fˣ!(body::Body)
     for actuator in body.models.actuators
         body.external_force += actuator.current_force #converted to body frame in actuator get_actuator_force
     end
-    
+
     #add environments
     return nothing
 end
@@ -265,6 +263,7 @@ function calculate_X_FixedJoints!(ᵖXᵢᵐ, ᵖXᵢᶠ, ⁱXₚᵐ, ⁱXₚᶠ
 end
 calculate_X_FixedJoints!(sys::MultibodySystem) = calculate_X_FixedJoints!(sys.ᵖXᵢᵐ, sys.ᵖXᵢᶠ, sys.ⁱXₚᵐ, sys.ⁱXₚᶠ, sys.λ, sys.joints)
 
+#=
 calculate_r!(sys::MultibodySystem) = calculate_r!(sys.joints, sys.r_base, sys.q_base, sys.ᵒXᵢᵐ, sys.λ)
 function calculate_r!(joints, r_base, q_base, ᵒXᵢᵐ, λ)
     for i in eachindex(joints)
@@ -285,6 +284,36 @@ function calculate_r!(joints, r_base, q_base, ᵒXᵢᵐ, λ)
     end
     nothing
 end
+=#
+
+function calculate_r!(body::AbstractBody)
+    if !isa(body, BaseFrame)
+        joint = body.inner_joint
+
+        r_Fs_to_Bi_in_Fs_frame = (joint.connection.Fs.Φ.value)' * (-joint.connection.Fs.r)
+        r_Fs_to_Bi_in_Fs_frame = (joint.connection.Fs.Φ.value)' * (-joint.connection.Fs.r)
+        r_Fp_to_Fs_in_Fp_frame = joint.frame.Φ.value' * r_Fs_to_Bi_in_Fs_frame + joint.frame.r
+        r_Bλ_to_Fp_in_Bλ_frame = joint.connection.Fp.Φ.value' * r_Fp_to_Fs_in_Fp_frame + joint.connection.Fp.r
+
+        if !isa(joint.connection.predecessor, BaseFrame)
+
+            predecessor = joint.connection.predecessor
+
+            r_Bλ_to_Fp_in_base_frame = predecessor.transforms.body_to_base_motion[i3, i3] * r_Bλ_to_Fp_in_Bλ_frame
+            r_base_to_Fp_in_base_frame = r_Bλ_to_Fp_in_base_frame + predecessor.state.r_base
+            body.state.q_base = atoq(joint.connection.Fs.Φ.value' * joint.frame.Φ.value * joint.connection.Fp.Φ.value * qtoa(predecessor.state.q_base))
+        else
+            r_base_to_Fp_in_base_frame = r_Bλ_to_Fp_in_Bλ_frame
+            body.state.q_base = atoq(joint.connection.Fs.Φ.value' * joint.frame.Φ.value * joint.connection.Fp.Φ.value)
+        end
+        body.state.r_base = r_base_to_Fp_in_base_frame
+    end
+    return nothing
+end
+
+# this assumes that vector of bodies are ordered by id. that must be true or this wont work, since the calc is recursive
+calculate_r!(bodies::AbstractVector{AbstractBody}) = calculate_r!.(bodies) #TODO remove abstractvector when this is just a vector(no base)
+calculate_r!(sys::MultibodySystem) = calculate_r!(sys.bodies)
 
 function articulated_body_algorithm!(sys)
     @unpack v, a, c, D, U, u, ⁱXₚᵐ, Iᵇ, Iᴬ, pᴬ, ⁱXₒᶠ, ᵖXᵢᶠ, ⁱXₚᵐ, fᵇ, fˣ, f_gyro, τ, λ, q̈, q̇, joints = sys
@@ -410,7 +439,7 @@ function initialize_inertias(bodies, joints)
     return Iᵇ, Iᴬ
 end
 
-function environments!(sys)    
+function environments!(sys)
     gravity!(sys)
 end
 
@@ -509,7 +538,8 @@ function configure_saving(sys::MultibodySystem)
             save_config,
             "$(sys.bodies[i].name)_fᵇ",
             typeof(sys.fᵇ[i]),
-            integrator -> integrator.p.sys.fᵇ[i]
+            #integrator -> integrator.p.sys.fᵇ[i]
+            integrator -> integrator.p.sys.bodies[i].external_force
         )
 
         # get base frame position vars for animation        
@@ -518,14 +548,16 @@ function configure_saving(sys::MultibodySystem)
             save_config,
             "$(sys.bodies[i].name)_q_base",
             typeof(sys.q_base[i]),
-            integrator -> (integrator.p.sys.q_base[i])
+            #integrator -> (integrator.p.sys.q_base[i])
+            integrator -> (integrator.p.sys.bodies[i].state.q_base)
         )
 
         save_dict!(
             save_config,
             "$(sys.bodies[i].name)_r_base",
             typeof(sys.r_base[i]),
-            integrator -> (integrator.p.sys.r_base[i])
+            #integrator -> (integrator.p.sys.r_base[i])
+            integrator -> (integrator.p.sys.bodies[i].state.r_base)
         )
 
         for i in eachindex(sys.software)

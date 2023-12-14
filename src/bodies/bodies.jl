@@ -5,6 +5,14 @@ mutable struct BodyModels{A<:Vector{AbstractActuator},E<:Vector{AbstractEnvironm
     BodyModels() = new{Vector{AbstractActuator},Vector{AbstractEnvironment},Vector{AbstractGravity}}(AbstractActuator[],AbstractEnvironment[],AbstractGravity[])
 end
 
+mutable struct BodyState
+    q_base::SVector{4,Float64}
+    ω_base::SVector{3,Float64}
+    r_base::SVector{3,Float64}
+    v_base::SVector{3,Float64}    
+    BodyState() = new()
+end
+
 mutable struct BodyTransforms
     base_to_body_force::SMatrix{6,6,Float64,36}
     base_to_body_motion::SMatrix{6,6,Float64,36}
@@ -32,6 +40,7 @@ mutable struct Body{M<:BodyModels} <: AbstractBody
     inner_joint::AbstractJoint #need to make these parametric - dont use abstracts as fields
     outer_joints::Vector{AbstractJoint} #need to make these parametric  - dont use abstracts as fields
     transforms::BodyTransforms
+    state::BodyState
     
     function Body(name, m, cm, I)
         models = BodyModels()
@@ -44,7 +53,8 @@ mutable struct Body{M<:BodyModels} <: AbstractBody
         x.inertia_joint = x.inertia_body #remove this and do at initialization
         x.models = models
         x.transforms = BodyTransforms()
-        x.outer_joints = AbstractJoint[]        
+        x.outer_joints = AbstractJoint[]   
+        x.state = BodyState()     
         return x
     end
 end
