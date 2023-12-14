@@ -2,7 +2,7 @@ includet("..\\src\\blue42.jl")
 
 function timed_command_test()
 
-    N = WorldFrame()
+    N = BaseFrame()
     
     
     g1 = Revolute(:g1,0.,0.)        

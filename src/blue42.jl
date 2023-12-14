@@ -51,10 +51,10 @@ includet(joinpath("utils", "pathutils.jl"))
     ᵖXᵢᶠ        #spatial force transform from body i to predecessor of body i
     ⁱXₚᵐ        #spatial motion transform from predecessor of body i to body i
     ⁱXₚᶠ        #spatial force transform from predecessor of body i to body i       
-    ᵒXᵢᵐ        #spatial motion transform from body i to worldframe
-    ᵒXᵢᶠ        #spatial force transform from body i to worldframe
-    ⁱXₒᵐ        #spatial motion transform from worldframe to body i
-    ⁱXₒᶠ        #spatial force transform from worldframe to body i  
+    ᵒXᵢᵐ        #spatial motion transform from body i to BaseFrame
+    ᵒXᵢᶠ        #spatial force transform from body i to BaseFrame
+    ⁱXₒᵐ        #spatial motion transform from BaseFrame to body i
+    ⁱXₒᶠ        #spatial force transform from BaseFrame to body i  
     q
     q̇
     q̈
@@ -98,7 +98,7 @@ function MultibodySystem(name, base, bodies, joints, actuators=AbstractActuator[
     # copy base gravity into bodies
     if !isempty(base.gravity)
         for body in bodies
-            if !isa(body,WorldFrame)
+            if !isa(body,BaseFrame)
                 append!(body.models.gravity, deepcopy(base.gravity))
             end
         end
@@ -140,7 +140,7 @@ function MultibodySystem(name, base, bodies, joints, actuators=AbstractActuator[
     ⁱXₚᵐ = fill(identity_X, nb - 1)
     ⁱXₚᶠ = fill(identity_X, nb - 1)
 
-    # spatial transformations from body i to worldframe
+    # spatial transformations from body i to BaseFrame
     # superscript little o here since can't start with 0 to represent 0th body   
     # could use n but it looks wierd since superscript is capital and subscript is lower case    
     ᵒXᵢᵐ = OffsetVector(fill(identity_X, nb), 0:nb-1)

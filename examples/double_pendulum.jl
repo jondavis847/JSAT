@@ -1,6 +1,6 @@
 includet("..\\src\\blue42.jl")
 function double_pendulum()
-    N = WorldFrame()
+    N = BaseFrame()
     j1 = Revolute(:j1,pi/4,0.)
     p1 = Body(:p1,1,I(3),[0,-1,0])
     fp1 = eye(Cartesian)

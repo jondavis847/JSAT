@@ -1,7 +1,7 @@
 includet("..//src/blue42.jl")
 
 function simple_thruster_test()
-    N = WorldFrame()
+    N = BaseFrame()
     J = FloatingJoint(:J)
     b = Body(:B,1000,zeros(3),1000*I(3))
     connect!(J,N,b)

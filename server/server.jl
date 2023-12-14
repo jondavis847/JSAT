@@ -113,7 +113,7 @@ function routerSimulate(req::HTTP.Request)
             append!(BG, Gravitys[getfield.(Gravitys, :name) .== Symbol(bg)])            
         end
     end
-    base = WorldFrame(:base, BG)
+    base = BaseFrame(:base, BG)
     dump(base)
     Bodies = AbstractBody[]
     for k in keys(bodies)

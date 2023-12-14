@@ -1,6 +1,6 @@
 includet("..\\src\\blue42.jl")
 
-N = WorldFrame()
+N = BaseFrame()
 g = Revolute(:g,0.,0.)
 b = Body(:b,1,I(3),[0.,0.,0.])
 Fp = eye(Cartesian)

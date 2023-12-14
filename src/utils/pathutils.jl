@@ -1,4 +1,4 @@
-find_root_joints(joints) = joints[map(x -> isa(x.connection.predecessor, WorldFrame), joints)]
+find_root_joints(joints) = joints[map(x -> isa(x.connection.predecessor, BaseFrame), joints)]
 
 find_joints_by_predecessor(body, joints) = joints[map(x -> x.connection.predecessor == body, joints)]
 
@@ -14,7 +14,7 @@ end
 function map_tree!(bodies, joints)
     body_id = 0 
 
-    #length(bodies)-1 since most of these dont care about worldframe
+    #length(bodies)-1 since most of these dont care about BaseFrame
     p = zeros(Int16, length(joints)) # joint predecessor
     s = zeros(Int16, length(joints)) # joint successor
     λ = zeros(Int16, length(bodies)-1) # body parent array
@@ -43,18 +43,18 @@ function map_tree!(bodies, joints)
         s[joint.meta.id] = joint.connection.successor.id
     end
     for body in bodies
-        if !isa(body,WorldFrame)
+        if !isa(body,BaseFrame)
             #traverse body to base, updating κ and μ
             joint = find_joint_by_successor(body, joints)
             λ[body.id] = joint.connection.predecessor.id
             #update μ 1 time        
             push!(μ[joint.connection.predecessor.id], body.id)
             #update κ for all
-            while !isa(joint.connection.predecessor, WorldFrame)
+            while !isa(joint.connection.predecessor, BaseFrame)
                 push!(κ[body.id], joint.meta.id)
                 joint = find_joint_by_successor(joint.connection.predecessor, joints)
             end
-            #loop ended on worldframe, add its joint to κ            
+            #loop ended on BaseFrame, add its joint to κ            
             push!(κ[body.id], joint.meta.id)
         end
 

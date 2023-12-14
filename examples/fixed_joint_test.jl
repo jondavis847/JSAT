@@ -1,6 +1,6 @@
 includet("..\\src\\blue42.jl")
 function fixed_joint_test()
-    N = WorldFrame()
+    N = BaseFrame()
     j1 = Revolute(:j1,pi/4,0.)
     b1 = Body(:p1,1,I(3),zeros(3))
     fp1 = eye(Cartesian)

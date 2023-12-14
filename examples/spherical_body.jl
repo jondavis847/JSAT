@@ -1,6 +1,6 @@
 includet("..\\src\\blue42.jl")
 
-N = WorldFrame()
+N = BaseFrame()
 g = Spherical(:g,[0.,0.,0.,1.],zeros(3))
 b = Body(:b,1,I(3),[0.,0.,0.])
 Fp = eye(Cartesian)

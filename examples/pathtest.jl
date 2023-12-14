@@ -4,7 +4,7 @@ B = OffsetArray(Vector{AbstractBody}(undef,11),0:10)
 G = Vector{Joint}(undef,10)
 U = Vector{Connection}(undef,10)
 
-B[0] = N = WorldFrame()
+B[0] = N = BaseFrame()
 
 G[1] = DOF6(:G1)
 B[1] = Body(:B1,10,10*I(3),zeros(3))

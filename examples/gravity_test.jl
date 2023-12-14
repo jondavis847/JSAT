@@ -1,7 +1,7 @@
 includet("..//src//blue42.jl")
 
 function gravity_test()    
-    N = WorldFrame(:N,-9.8)
+    N = BaseFrame(:N,-9.8)
     B = Body(:B,1,zeros(3),I(3))
     Fs = Cartesian(I(3),[0,1,0])
     J = Revolute(:J,pi/4,0)

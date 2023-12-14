@@ -1,6 +1,6 @@
 includet("..\\src\\blue42.jl")
 
-N = WorldFrame()
+N = BaseFrame()
 hinge = Revolute(:hinge,pi/4,0.)
 #pendulum = Body(:pend,1,I(3),zeros(3))
 pendulum = Body(:pend,1,I(3),[0,-1,0])

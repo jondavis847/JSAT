@@ -2,7 +2,7 @@ includet("..\\src\\blue42.jl")
 
 function body_wheel()
 
-    N = WorldFrame()
+    N = BaseFrame()
     
     
     g1 = Revolute(:g1,0.,0.)        
