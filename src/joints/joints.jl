@@ -45,6 +45,9 @@ function connect!(
     G.connection.Fs = Fs
     G.connection.Fp = Fp
 
+    push!(p.outer_joints,G)
+    s.inner_joint = G
+
     nothing
 end
 

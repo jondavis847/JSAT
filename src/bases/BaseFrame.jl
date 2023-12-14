@@ -1,15 +1,16 @@
 mutable struct BaseFrame{G<:Vector{AbstractGravity}} <: AbstractBody
     name::Symbol    
     gravity::G
-    id::Int64    
+    id::Int64 
+    outer_joints::Vector{AbstractJoint} #need to make parametric - dont use abstracts as fields   
     function BaseFrame(name)         
-        return new{Vector{AbstractGravity}}(name,AbstractGravity[],0)
+        return new{Vector{AbstractGravity}}(name,AbstractGravity[],0,AbstractJoint[])
     end
-    BaseFrame(name,g::AbstractGravity) = new{Vector{AbstractGravity}}(name,[g],0)
-    BaseFrame(name,g::Vector{AbstractGravity}) = new{Vector{AbstractGravity}}(name,g,0)
+    BaseFrame(name,g::AbstractGravity) = new{Vector{AbstractGravity}}(name,[g],0,AbstractJoint[])
+    BaseFrame(name,g::Vector{AbstractGravity}) = new{Vector{AbstractGravity}}(name,g,0,AbstractJoint[])
     function BaseFrame(name,g::Real)        
         G = GravityConstant(:base_gravity,g)
-        return new{Vector{AbstractGravity}}(name,[G],0)
+        return new{Vector{AbstractGravity}}(name,[G],0,AbstractJoint[])
     end
 end
 

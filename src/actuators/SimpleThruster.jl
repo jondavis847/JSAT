@@ -6,6 +6,7 @@ mutable struct SimpleThruster <: AbstractActuator
     transform::SMatrix{6,6,Float64,36} # transform from actuator frame to body frame
     u_index::SVector{6,Int16}
     current_force::SVector{6,Float64}
+    body::AbstractBody #TODO need to make this parametric
     SimpleThruster(name,force) = new(name,SVector{6,Float64}(0,0,0,force,0,0))
 end
 

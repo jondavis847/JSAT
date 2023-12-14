@@ -29,6 +29,8 @@ mutable struct Body{M<:BodyModels} <: AbstractBody
     external_force::SVector{6,Float64}
     gravity::SVector{6,Float64}
     models::M
+    inner_joint::AbstractJoint #need to make these parametric - dont use abstracts as fields
+    outer_joints::Vector{AbstractJoint} #need to make these parametric  - dont use abstracts as fields
     transforms::BodyTransforms
     
     function Body(name, m, cm, I)
@@ -42,6 +44,7 @@ mutable struct Body{M<:BodyModels} <: AbstractBody
         x.inertia_joint = x.inertia_body #remove this and do at initialization
         x.models = models
         x.transforms = BodyTransforms()
+        x.outer_joints = AbstractJoint[]        
         return x
     end
 end
