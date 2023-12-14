@@ -13,7 +13,7 @@ import { TrackballControls } from 'three/addons/controls/TrackballControls.js';
 
 
 let JSAT = {
-    base: { gravity: [] },
+    base: {},
     bodies: {},
     joints: {},
     actuators: {},
@@ -89,6 +89,7 @@ $("#portsBackButton").on("click", () => { $("#portsLoaderDiv").hide() });
 $("#boxButton").on('click', clickAddBoxBody);
 $("#cylinderButton").on('click', clickAddCylinderBody);
 $('#baseButton').on('click', addBase);
+$('#earthButton').on('click', addBaseEarth);
 $('#revoluteButton').on('click', clickAddRevoluteJoint);
 $('#floatingButton').on('click', clickAddFloatingJoint);
 $('#fixedButton').on('click', clickAddFixedJoint);
@@ -449,6 +450,33 @@ function addBase() {
                 y: 300,
             },
         });
+    }
+    JSAT.base = {
+        type: "default",
+        gravity: []
+    }
+}
+
+function addBaseEarth() {
+    if (cy.$('.base').length > 0) {
+        jsatConsole('cant have more than 1 base!')
+    } else {
+        cy.add({
+            group: 'nodes',
+            data: {
+                id: 'earth',
+                label: 'earth'
+            },
+            classes: 'base',
+            renderedPosition: {
+                x: 300,
+                y: 300,
+            },
+        });
+    }
+    JSAT.base = {
+        type: "earth",
+        gravity: []
     }
 }
 
@@ -1505,6 +1533,19 @@ function makeAnimation() {
 
         const light = new THREE.AmbientLight('white', 1); // soft white light
         scene.add(light);
+        
+        if (sys.base.type == "earth") {                         
+
+            //const rEarth = 6.3781e6;
+            const rEarth = 1;
+            //const i_earth = new THREE.TextureLoader().load('../images/earth.jpeg');
+            const i_earth = new THREE.TextureLoader().load("./images/earth.jpeg");
+            const g_earth = new THREE.SphereGeometry(rEarth, 64, 64)
+            const m_earth = new THREE.MeshPhongMaterial({ map: i_earth });
+            const earth = new THREE.Mesh(g_earth, m_earth);
+            earth.position.set(0, 1, 0);
+            scene.add(earth);
+        }
 
         //create bodys
         const body_keys = Object.keys(sys.bodies);

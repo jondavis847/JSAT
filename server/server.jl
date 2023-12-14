@@ -7,11 +7,13 @@ function jsat_server()
     routerCss(req::HTTP.Request) = HTTP.Response(200, read("server\\public\\css\\jsat.css"))
     routerJs(req::HTTP.Request) = HTTP.Response(200, ["Content-Type" => "application/javascript"], read("server\\public\\js\\jsat.js"))
     routerMeatball(req::HTTP.Request) = HTTP.Response(200, ["Content-Type" => "image/png"], read("server\\public\\images\\nasa_aquamarine.png"))
+    routerEarth(req::HTTP.Request) = HTTP.Response(200, ["Content-Type" => "image/jpeg"], read("server\\public\\images\\earth.jpeg"))
 
     HTTP.register!(ROUTER, "GET", "/", routerIndex)
     HTTP.register!(ROUTER, "GET", "/css/jsat.css", routerCss)
     HTTP.register!(ROUTER, "GET", "/js/jsat.js", routerJs)
     HTTP.register!(ROUTER, "GET", "/images/nasa_aquamarine.png", routerMeatball)
+    HTTP.register!(ROUTER, "GET", "/images/earth.jpeg", routerEarth)
 
     HTTP.register!(ROUTER, "POST", "/simulate", routerSimulate)
     HTTP.register!(ROUTER, "GET", "/simfiles", routerSimFiles)
@@ -112,9 +114,10 @@ function routerSimulate(req::HTTP.Request)
         for bg in base_gravity            
             append!(BG, Gravitys[getfield.(Gravitys, :name) .== Symbol(bg)])            
         end
+    else
+        push!(BG,GravityNone())
     end
-    base = BaseFrame(:base, BG)
-    dump(base)
+    base = BaseFrame(:base, BG)    
     Bodies = AbstractBody[]
     for k in keys(bodies)
         body = bodies[k]
@@ -188,7 +191,7 @@ function routerSimulate(req::HTTP.Request)
         predecessor_name = joint[:predecessor]
         successor_name = joint[:successor]
 
-        if predecessor_name == "base"
+        if predecessor_name in ["base", "earth"]
             predecessor = [base]
         else
             predecessor = Bodies[getfield.(Bodies, :name).==Symbol(predecessor_name)]
