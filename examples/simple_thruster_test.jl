@@ -1,4 +1,4 @@
-includet("..//src/blue42.jl")
+includet("..//src/jsat.jl")
 
 function simple_thruster_test()
     N = BaseFrame(:N)

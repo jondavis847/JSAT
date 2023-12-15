@@ -19,7 +19,9 @@ mutable struct FloatingJointState <: AbstractJointState
     q::SVector{4,Float64}
     ω::SVector{3,Float64}
     r::SVector{3,Float64}
-    v::SVector{3,Float64}    
+    v::SVector{3,Float64} 
+    τ::SVector{6,Float64}  
+    q̈::SVector{6,Float64} 
 end
 mutable struct FloatingJoint <: AbstractJoint
     meta::JointMeta
@@ -36,7 +38,7 @@ function FloatingJoint(name,
     v::AbstractVector=SVector{3,Float64}(0, 0, 0),
 )
     jm = JointMeta(name,7,6)
-    js = FloatingJointState(q, ω, r, v)
+    js = FloatingJointState(q, ω, r, v, SVector{6,Float64}(zeros(6)),SVector{6,Float64}(zeros(6)))
     S = SMatrix{6,6,Float64,36}(I(6))
     joint = FloatingJoint(jm, js, JointConnection(),eye(Cartesian), S)
     update_joint_frame!(joint,q,r)
@@ -75,9 +77,10 @@ function quaternion_derivative(q, ω)
     return 0.5 * Q * ω
 end
 
-function set_state!(G::FloatingJoint, q, q̇)
-    # joint frame translation is in the inner joint frame, but q is expressed in outer joint frame
-    # rotate all translation to inner joint frame using q
+function set_state!(G::FloatingJoint, x)
+    q = @view x[G.meta.xindex]
+    q̇ = @view x[G.meta.ẋindex]
+    
     G.state.q = q[SVector{4,Int8}(1, 2, 3, 4)]    
     G.state.r = q[SVector{3,Int8}(5, 6, 7)]
     G.state.ω = q̇[SVector{3,Int8}(1, 2, 3)]
@@ -93,3 +96,6 @@ function update_joint_frame!(G::FloatingJoint,q = G.state.q, r = G.state.r)
     G.frame = Cartesian(R,r)
     nothing
 end
+
+#need to make this spring/dampener/loss forces at some point
+calculate_τ!(G::FloatingJoint) = nothing

@@ -13,6 +13,8 @@ Joint frame:
 mutable struct SphericalState <: AbstractJointState
     q::SVector{4,Float64}
     ω::SVector{3,Float64}
+    τ::SVector{3,Float64}
+    q̈::SVector{3,Float64}
 end
 mutable struct Spherical <: AbstractJoint
     meta::JointMeta
@@ -24,7 +26,7 @@ end
 
 function Spherical(name, q = [0.,0.,0.,1.], ω = zeros(3))
     jm = JointMeta(name, 4, 3)
-    js = SphericalState(q, ω)
+    js = SphericalState(q, ω, SVector{3,Float64}(zeros(3)),SVector{3,Float64}(zeros(3)))
     S = SMatrix{6,3,Float64}([
         1 0 0
         0 1 0
@@ -42,7 +44,13 @@ get_q(G::Spherical) = SVector{4,Float64}(G.state.q)
 get_q̇(G::Spherical) = SVector{3,Float64}(G.state.ω)
 get_dq(G::Spherical) = quaternion_derivative(G.state.q, G.state.ω)
 
-function set_state!(G::Spherical, q ,q̇)
+#need to make this spring/dampener/loss forces at some point
+calculate_τ!(G::Spherical) = nothing
+
+function set_state!(G::Spherical, x)
+    q = @view x[G.meta.xindex]
+    q̇ = @view x[G.meta.ẋindex]
+
     G.state.q = q
     G.state.ω = q̇
     update_joint_frame!(G::Spherical)

@@ -23,7 +23,11 @@ function create_callbacks!(tc::TimedCommand, i)
     return nothing
 end
 
-function run_software!(tc::TimedCommand,sys)
-    tc.current_value = sys.x[tc.u_index]
+function set_state!(tc::TimedCommand,x)
+    tc.current_value = x[tc.u_index]
+    return nothing
+end
+
+function run_software!(tc::TimedCommand)
     return nothing
 end

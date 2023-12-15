@@ -1,86 +1,36 @@
+using ConcreteStructs
+using CSV
+using DataFrames
+using Dates
+using DifferentialEquations
+using LinearAlgebra
+using OffsetArrays
+using Plots
+using PlotThemes
+using StaticArrays
 using UnPack
 
-abstract type AbstractBody end
-#abstract type AbstractJoint{T} end
+import Base: show
+import Plots: plot, plot!
+theme(:juno)
 
-includet("frames.jl")
-includet("joints.jl")
-
-
-# mutable interface while creating models
-mutable struct BodyConnection
-    inner_joint::AbstractJoint
-    outer_joints::Vector{AbstractJoint}
-    function BodyConnection() 
-        x = new()
-        x.outer_joints = AbstractJoint[]
-        return x
-    end
-end
-
-# immutable static version for run time
-struct BodyConnection🖖{N,J<:AbstractJoint,TJ<:NTuple{N,AbstractJoint}}
-    inner_joint::J
-    outer_joints::TJ
-    BodyConnection🖖(b::BodyConnection) = new{
-        length(b.outer_joints),
-        typeof(b.inner_joint),typeof(Tuple(b.outer_joints))
-    }(b.inner_joint, Tuple(b.outer_joints))
-end
-
-# mutable interface while creating models
-mutable struct BodyMeta
-    id::Int64
-    BodyMeta() = new()
-end
-
-# immutable static version for run time
-struct BodyMeta🖖{T<:Int64}
-    id::T
-    BodyMeta🖖(b::BodyMeta) = new{Int64}(b.id)
-end
-
-struct BaseFrame{M<:BodyMeta,C<:BodyConnection} <: AbstractBody
-    name::Symbol
-    meta::M
-    connection::C
-    BaseFrame{M,C}(name) where {M<:BodyMeta,C<:BodyConnection} = new(name, BodyMeta(), BodyConnection())
-    BaseFrame(name) = new{BodyMeta,BodyConnection}(name)
-end
-
-struct MassProperties{M,C,I}
-    mass::M
-    cm::C
-    inertia::I
-    MassProperties(mass, cm, inertia) = new{Float64,SVector{3,Float64},SMatrix{3,3,Float64}}(
-        Float64(mass),
-        SVector{3,Float64}(cm),
-        SMatrix{3,3,Float64}(inertia)
-    )
-end
-
-# mutable interface while creating models
-struct Body <: AbstractBody
-    name::Symbol
-    mass_props::MassProperties
-    meta::BodyMeta
-    connection::BodyConnection
-    function Body(name, mass, cm, inertia)
-        mp = MassProperties(mass, cm, inertia)
-        meta = BodyMeta()
-        connection = BodyConnection()
-        return new(name, mp, meta, connection)
-    end
-end
-
-struct Body🖖{S<:Symbol,MP<:MassProperties,M<:BodyMeta🖖,C<:BodyConnection🖖} <: AbstractBody
-    name::S
-    mass_props::MP
-    meta::M
-    connection::C
-    function Body🖖(b::Body)                
-        meta = BodyMeta🖖(b.meta)
-        connection = BodyConnection🖖(b.connection)
-        return new{Symbol,typeof(b.mass_props),typeof(meta),typeof(connection)}(b.name, b.mass_props, meta, connection)
-    end
-end
+includet(joinpath("math", "quaternion.jl"))
+includet(joinpath("math", "spatial.jl"))
+includet(joinpath("math", "rotations.jl"))
+includet(joinpath("types","abstract.jl"))
+includet(joinpath("bases", "base.jl"))
+includet(joinpath("bodies", "bodies.jl"))
+includet(joinpath("joints", "joints.jl"))
+includet(joinpath("software", "software.jl"))
+includet(joinpath("actuators", "actuators.jl"))
+includet(joinpath("types", "system.jl"))
+includet(joinpath("gravity", "gravity.jl"))
+includet(joinpath("environments", "environments.jl"))
+includet(joinpath("dynamics", "kinematics.jl"))
+includet(joinpath("dynamics", "dynamics.jl"))
+includet(joinpath("dynamics", "articulated_body_algorithm.jl"))
+includet(joinpath("utils", "treeutils.jl"))
+includet(joinpath("simulation","initialization.jl"))
+includet(joinpath("simulation","saving.jl"))
+includet(joinpath("simulation","simulate.jl"))
+includet(joinpath("simulation","plotting.jl"))
