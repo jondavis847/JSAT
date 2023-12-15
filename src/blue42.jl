@@ -32,6 +32,7 @@ includet(joinpath("utils", "pathutils.jl"))
 
 @concrete struct MultibodySystem
     name
+    base
     bodies
     joints
     software
@@ -154,7 +155,7 @@ function MultibodySystem(name, base, bodies, joints, actuators=AbstractActuator[
         create_callbacks!(software[i], i)
     end
 
-    sys = MultibodySystem(name, bodies, joints, software, actuators, p, s, λ, κ, μ, γ, U, D, u, c, pᴬ, ᵖXᵢᵐ, ᵖXᵢᶠ, ⁱXₚᵐ, ⁱXₚᶠ, ᵒXᵢᵐ, ᵒXᵢᶠ, ⁱXₒᵐ, ⁱXₒᶠ, q, q̇, q̈, x, H, C, τ, fˣ, fᵇ, f_gyro, Iᵇ, Iᴬ, r, v, a, r_base, q_base)
+    sys = MultibodySystem(name, base, bodies, joints, software, actuators, p, s, λ, κ, μ, γ, U, D, u, c, pᴬ, ᵖXᵢᵐ, ᵖXᵢᶠ, ⁱXₚᵐ, ⁱXₚᶠ, ᵒXᵢᵐ, ᵒXᵢᶠ, ⁱXₒᵐ, ⁱXₒᶠ, q, q̇, q̈, x, H, C, τ, fˣ, fᵇ, f_gyro, Iᵇ, Iᴬ, r, v, a, r_base, q_base)
 
     #initialize FixedJoints X so we don't have to calculate again
     calculate_X_FixedJoints!(sys)
@@ -316,63 +317,69 @@ calculate_r!(bodies::AbstractVector{AbstractBody}) = calculate_r!.(bodies) #TODO
 calculate_r!(sys::MultibodySystem) = calculate_r!(sys.bodies)
 
 function articulated_body_algorithm!(sys)
-    @unpack v, a, c, D, U, u, ⁱXₚᵐ, Iᵇ, Iᴬ, pᴬ, ⁱXₒᶠ, ᵖXᵢᶠ, ⁱXₚᵐ, fᵇ, fˣ, f_gyro, τ, λ, q̈, q̇, joints = sys
+    first_pass!.(sys.bodies,Ref(sys))
+    second_pass!.(Iterators.reverse(sys.bodies),Ref(sys))
+    third_pass!.(sys.bodies,Ref(sys))
+    return nothing
+end
 
-    # pass 1
-    for i in 1:length(sys.bodies)-1
+first_pass!(body::BaseFrame,sys) = nothing
+function first_pass!(body,sys)
+    joint = body.inner_joint
 
-        if isa(joints[i], FixedJoint)
-            v[i] = ⁱXₚᵐ[i] * v[λ[i]]
-            c[i] = @SVector zeros(6)
-        else
-            S = joints[i].S
-            vj = S * q̇[joints[i].meta.q̇index]
-            v[i] = ⁱXₚᵐ[i] * v[λ[i]] + vj
-            c[i] = v[i] ×ᵐ vj # + cj #commented until we need S∘                
-        end
-
-        Iᴬ[i] = Iᵇ[i]
-        #fᵇ[i] = fˣ[i]
-        fᵇ[i] = sys.bodies[i].external_force
-        f_gyro[i] = v[i] ×ᶠ (Iᵇ[i] * v[i])
-        pᴬ[i] = f_gyro[i] - fᵇ[i]
+    if isa(joint, FixedJoint)
+        body.state.v = body.transforms.parent_to_body_motion * joint.connection.predecessor.state.v
+        body.tmp.c = @SVector zeros(6)
+    else
+        vj = joint.S * sys.q̇[joint.meta.q̇index]
+        body.state.v = body.transforms.parent_to_body_motion * joint.connection.predecessor.state.v + vj
+        body.tmp.c = body.state.v ×ᵐ vj # + cj #commented until we need S∘                
     end
 
-    # pass 2
-    for i in reverse(1:length(sys.bodies)-1)
+    body.inertia_articulated = body.inertia_joint
+    body.tmp.pᴬ = body.state.v ×ᶠ (body.inertia_joint * body.state.v) - body.external_force
+    return nothing
+end
 
-        if isa(joints[i], FixedJoint)
-            if λ[i] != 0
-                Iᴬ[λ[i]] = Iᴬ[λ[i]] + ᵖXᵢᶠ[i] * Iᴬ[i] * ⁱXₚᵐ[i]
-                pᴬ[λ[i]] = pᴬ[λ[i]] + ᵖXᵢᶠ[i] * pᴬ[i]
-            end
-        else
-            S = joints[i].S
-            U[i] = Iᴬ[i] * S
-            D[i] = S' * U[i]
-            u[i] = τ[joints[i].meta.q̇index] - S' * pᴬ[i]
-            if λ[i] != 0
-                Ia = Iᴬ[i] - U[i] * inv(D[i]) * U[i]'
-                pa = pᴬ[i] + Ia * c[i] + U[i] * inv(D[i]) * u[i]
-                Iᴬ[λ[i]] = Iᴬ[λ[i]] + ᵖXᵢᶠ[i] * Ia * ⁱXₚᵐ[i]
-                pᴬ[λ[i]] = pᴬ[λ[i]] + ᵖXᵢᶠ[i] * pa
-            end
+second_pass!(body::BaseFrame,sys) = nothing
+function second_pass!(body,sys)
+    joint = body.inner_joint
+    parent = joint.connection.predecessor
+
+    if isa(joint, FixedJoint)
+        if !isa(parent, BaseFrame)
+            parent.inertia_articulated = parent.inertia_articulated +
+                                         body.transforms.body_to_parent_force * body.inertia_articulated * body.transforms.parent_to_body_motion
+            parent.tmp.pᴬ = parent.tmp.pᴬ + body.transforms.body_to_parent_force * body.tmp.pᴬ
+        end
+    else
+        S = joint.S
+        body.tmp.U = body.inertia_articulated * S
+        body.tmp.D = S' * body.tmp.U
+        body.tmp.u = sys.τ[joint.meta.q̇index] - S' * body.tmp.pᴬ
+        if !isa(parent, BaseFrame)
+            Ia = body.inertia_articulated - body.tmp.U * inv(body.tmp.D) * body.tmp.U'
+            pa = body.tmp.pᴬ + Ia * body.tmp.c + body.tmp.U * inv(body.tmp.D) * body.tmp.u
+            parent.inertia_articulated = parent.inertia_articulated + body.transforms.body_to_parent_force * Ia * body.transforms.parent_to_body_motion
+            parent.tmp.pᴬ = parent.tmp.pᴬ + body.transforms.body_to_parent_force * pa
         end
     end
+    return nothing
+end
 
-    # pass 3   
-    for i in 1:length(sys.bodies)-1
-        body = sys.bodies[i]
-        if isa(joints[i], FixedJoint)
-            a[i] = ⁱXₚᵐ[i] * a[λ[i]]
-        else
-            S = joints[i].S
-            a′ = ⁱXₚᵐ[i] * a[λ[i]] + c[i]
-            q̈[joints[i].meta.q̇index] = D[i] \ (u[i] - U[i]' * a′)
-            a[i] = a′ + S * q̈[joints[i].meta.q̇index]
-        end
+third_pass!(body::BaseFrame,sys) = nothing
+function third_pass!(body,sys)
+    joint = body.inner_joint
+    parent = joint.connection.predecessor
+    if isa(joint, FixedJoint)
+        body.state.a = body.transforms.parent_to_body_motion * parent.state.a
+    else
+        S = joint.S
+        a′ = body.transforms.parent_to_body_motion * parent.state.a + body.tmp.c
+        sys.q̈[joint.meta.q̇index] = body.tmp.D \ (body.tmp.u - body.tmp.U' * a′)
+        body.state.a = a′ + S * sys.q̈[joint.meta.q̇index]
     end
-    nothing
+    return nothing
 end
 
 function initialize_state_vectors(joints, softwares, actuators)
