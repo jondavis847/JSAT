@@ -8,6 +8,7 @@ end
 function update_model!(sys, x)    
     set_state!.(sys.joints,Ref(x))
     set_state!.(sys.software,Ref(x))
+    set_state!.(sys.actuators,Ref(x))
     calculate_transforms!(sys)  # spatial transforms
     calculate_r!(sys) # update generalized coords
     nothing
@@ -20,6 +21,9 @@ function pack_dq_in_dx!(dx, sys)
             dx[joint.meta.xindex] = get_dq(joint)
             dx[joint.meta.ẋindex] = joint.state.q̈
         end
+    end
+    for actuator in sys.actuators
+        dx[actuator.xindex] .= get_dq(actuator)
     end
     nothing
 end

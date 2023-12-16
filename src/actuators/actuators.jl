@@ -1,5 +1,5 @@
 include("SimpleThruster.jl")
-
+include("SimpleReactionWheel.jl")
 function actuators!(sys)
     get_actuator_force!.(sys.actuators)
     return nothing
