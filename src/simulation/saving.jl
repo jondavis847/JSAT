@@ -67,8 +67,7 @@ function configure_saving(sys::MultibodySystem)
             save_dict!(
                 save_config,
                 "$(sys.software[i].name)_u",
-                typeof(sys.software[i].initial_value),
-                #integrator -> integrator.u[integrator.p.sys.software[i].u_index]
+                typeof(sys.software[i].initial_value),                
                 integrator -> integrator.p.sys.software[i].current_value
             )
         end

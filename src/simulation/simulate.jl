@@ -28,16 +28,17 @@ function pack_dq_in_dx!(dx, sys)
     nothing
 end
 
+#only need stuff in model! that need to be integrated, all algeriac states are handled by callbacks
 function model!(sys)
-    #sensors!(sys)
-    software!(sys)
+    #sensors!(sys) #currently handled by callbacks
+    #software!(sys) #currently handled by callbacks
     actuators!(sys)
-    environments!(sys)
+    environments!(sys) # currently handled by callbacks
     dynamics!(sys)
     return nothing
 end
 
-function simulate(orig_sys::MultibodySystem, tspan; output_type=nothing)
+function simulate(orig_sys::MultibodySystem, tspan, dt = nothing; output_type=nothing)
     sys = deepcopy(orig_sys)# make a copy so we can rerun orig sys without mutating it during previous sim   
        
     u0 = initialize_state_vectors(sys)
@@ -45,12 +46,21 @@ function simulate(orig_sys::MultibodySystem, tspan; output_type=nothing)
     save_config, save_values, save_cb = configure_saving(sys)
     p = (sys=sys, save_config=save_config)
 
-    #get callbacks
-    callbacks = [save_cb; getfield.(sys.software, :callback)...]
-    cb = CallbackSet(callbacks...)
+    #get callbacks    
+    sensor_cb = [get_callback(sys.sensors[i],i) for i in eachindex(sys.sensors)]
+    software_cb = [get_callback(sys.software[i],i)... for i in eachindex(sys.software)]
+    
+    cb = CallbackSet(sensor_cb;software_cb;save_cb) #must follow order
 
     prob = ODEProblem(ode_func!,u0, tspan, p)
-    sol = solve(prob, callback=cb, adaptive=false, dt=0.01) # higher sample rate until three animation keyframetracks are better understood for interpolation
+    if isnothing(dt)
+        #variable step continuous
+        #note that callbacks will still stop, for example software with continuous dynamics
+        sol = solve(prob, callback=cb)
+    else
+        #fixed step discrete
+        sol = solve(prob, callback=cb, adaptive=false, dt=dt) 
+    end
 
     if output_type == DataFrame
         simout = df_save_values(save_values, save_config)

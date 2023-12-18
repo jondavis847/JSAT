@@ -31,5 +31,6 @@ abstract type AbstractJoint end
 abstract type AbstractJointState end
 abstract type AbstractActuator end
 abstract type AbstractSoftware end
+abstract type AbstractSensor end
 abstract type AbstractEnvironment end
 abstract type AbstractGravity end

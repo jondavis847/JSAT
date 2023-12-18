@@ -1,17 +1,19 @@
-struct MultibodySystem{J,A,S}
+struct MultibodySystem{J,A,SW,S}
     name::Symbol
     base::BaseFrame
     bodies::Vector{Body}
     joints::J    
     actuators::A
-    software::S
+    software::SW
+    sensors::S
 
-    function MultibodySystem(name, base, bodies, joints, actuators=AbstractActuator[], software=AbstractSoftware[])
+    function MultibodySystem(name, base, bodies, joints, actuators=AbstractActuator[], software=AbstractSoftware[], sensors = AbstractSensor[])
 
         bodies = isa(bodies, Vector) ? bodies : [bodies]
         joints = isa(joints, Vector) ? joints : [joints]
         actuators = isa(actuators, Vector) ? actuators : [actuators]
         software = isa(software, Vector) ? software : [software]
+        sensors = isa(sensors, Vector) ? sensors : [sensors]
     
         # id all the bodies and joints in the tree 
         map_tree!(base)
@@ -31,14 +33,19 @@ struct MultibodySystem{J,A,S}
             end
         end
     
+         # make the software callbacks
+         for i in eachindex(sensors)
+            create_callbacks!(sensors[i], i)
+        end
+
         # make the software callbacks
         for i in eachindex(software)
             create_callbacks!(software[i], i)
         end
+
+        sys = new{typeof(joints),typeof(actuators),typeof(software),typeof(sensors)}(name, base, bodies, joints, actuators, software, sensors)
     
-        sys = new{typeof(joints),typeof(actuators),typeof(software)}(name, base, bodies, joints, actuators, software)
-    
-        #initialize FixedJoints X so we don't have to calculate again
+        #initialize FixedJoints transforms so we don't have to calculate again
         calculate_transforms_FixedJoints!(sys)
         return sys
     end
