@@ -43,7 +43,7 @@ function configure_saving(sys::MultibodySystem)
         save_dict!(
             save_config,
             "$(sys.bodies[i].name)_external_force",
-            typeof(sys.bodies[i].external_force),            
+            typeof(sys.bodies[i].external_force),
             integrator -> integrator.p.sys.bodies[i].external_force
         )
 
@@ -52,14 +52,14 @@ function configure_saving(sys::MultibodySystem)
         save_dict!(
             save_config,
             "$(sys.bodies[i].name)_q_base",
-            typeof(sys.bodies[i].state.q_base),            
+            typeof(sys.bodies[i].state.q_base),
             integrator -> (integrator.p.sys.bodies[i].state.q_base)
         )
 
         save_dict!(
             save_config,
             "$(sys.bodies[i].name)_r_base",
-            typeof(sys.bodies[i].state.r_base),            
+            typeof(sys.bodies[i].state.r_base),
             integrator -> (integrator.p.sys.bodies[i].state.r_base)
         )
 
@@ -74,14 +74,37 @@ function configure_saving(sys::MultibodySystem)
         end
 
         for i in eachindex(sys.actuators)
-            save_dict!(
-                save_config,
-                "$(sys.actuators[i].name)_f",
-                typeof(sys.actuators[i].current_force),
-                #integrator -> integrator.u[integrator.p.sys.actuators[i].u_index]
-                integrator -> integrator.p.sys.actuators[i].current_force
-            )
+            if typeof(sys.actuators[i]) in [SimpleThruster]
+                save_dict!(
+                    save_config,
+                    "$(sys.actuators[i].name)_force",
+                    typeof(sys.actuators[i].current_force),
+                    integrator -> integrator.u[integrator.p.sys.actuators[i].xindex][1]
+                )
+            end
+            if typeof(sys.actuators[i]) in [SimpleReactionWheel]
+                save_dict!(
+                    save_config,
+                    "$(sys.actuators[i].name)_torque",
+                    typeof(sys.actuators[i].current_torque),
+                    integrator -> integrator.p.sys.actuators[i].current_torque
+                )
 
+                save_dict!(
+                    save_config,
+                    "$(sys.actuators[i].name)_momentum",
+                    typeof(sys.actuators[i].current_momentum),
+                    integrator -> integrator.p.sys.actuators[i].current_momentum
+                )
+
+                save_dict!(
+                    save_config,
+                    "$(sys.actuators[i].name)_speed",
+                    typeof(sys.actuators[i].current_speed),
+                    integrator -> integrator.p.sys.actuators[i].current_speed
+                )
+
+            end
             save_dict!(
                 save_config,
                 "$(sys.actuators[i].name)_u",

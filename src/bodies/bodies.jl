@@ -48,6 +48,7 @@ mutable struct Body{M<:BodyModels} <: AbstractBody
     inertia_joint::SMatrix{6,6,Float64,36}  
     inertia_articulated::SMatrix{6,6,Float64,36}  
     external_force::SVector{6,Float64}
+    internal_momentum::SVector{6,Float64} # used for like reaction wheels where we don't specify a new body for them
     gravity::SVector{6,Float64}
     models::M
     inner_joint::AbstractJoint #need to make these parametric - dont use abstracts as fields
@@ -71,16 +72,6 @@ mutable struct Body{M<:BodyModels} <: AbstractBody
         x.tmp = BodyTmp()    
         return x
     end
-end
-
-function calculate_gravity!(body::AbstractBody) 
-    #reset each step
-    body.gravity *= 0
-
-    for gravity in body.models.gravity        
-        body.gravity += body.inertia_joint * body.transforms.base_to_body_motion * calculate_gravity(gravity)
-    end
-    return nothing
 end
 
 mcI(body::T) where T<:Body = mcI(body.m,body.cm,body.I)

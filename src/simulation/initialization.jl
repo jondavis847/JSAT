@@ -17,8 +17,9 @@ function initialize_state_vectors(sys)
     end
 
     for actuator in sys.actuators
-        actuator.u_index = SVector{6,Int16}(length(x)+1:length(x)+6) # body frame spatial force
-        append!(x, SVector{6,Float64}(zeros(6))) # TODO: may need to make this the initial value of actuator instead of assuming its 0        
+        this_q = get_q(actuator)
+        actuator.xindex = SVector{length(this_q),Int16}(length(x)+1:(length(x)+length(this_q))) # body frame spatial force
+        append!(x, this_q) 
     end
     
     x = MVector{length(x),Float64}(x)
