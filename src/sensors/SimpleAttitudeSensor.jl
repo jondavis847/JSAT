@@ -9,3 +9,14 @@ function get_callback(S::SimpleAttitudeSensor4,i)
     affect! = (u,t,integrator) -> integrator.p.sys.sensors[i].attitude = integrator.p.sys.sensors[i].body.state.q_base
     return FunctionCallingCallback(affect!)    
 end
+
+function get_savedict(S::SimpleAttitudeSensor4,i)
+    save_config = Dict[]
+    save_dict!(
+        save_config,
+        "$(S.name)_quaternion",
+        typeof(S.attitude),
+        integrator -> integrator.p.sys.sensors[i].attitude
+    )
+    return save_config
+end

@@ -22,3 +22,14 @@ function get_callback(tc::TimedCommand, i)
 
     return [start_cb,stop_cb]    
 end
+
+function get_savedict(S::TimedCommand,i)
+    save_config = Dict[]
+    save_dict!(
+        save_config,
+        "$(S.name)_u",
+        typeof(S.initial_value),
+        integrator -> integrator.p.sys.software[i].current_value
+    )
+    return save_config
+end

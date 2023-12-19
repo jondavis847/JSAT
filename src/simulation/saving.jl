@@ -1,117 +1,26 @@
-function save_dict!(config, name, type, func)
-    d = Dict(
-        "name" => name,
-        "type" => type,
-        "func" => func
-    )
-    push!(config, d)
-    nothing
-end
+save_dict!(sv, name, type, func) = push!(sv,Dict("name" => name, "type" => type, "func" => func))
 
 function configure_saving(sys::MultibodySystem)
     save_config = []
+
+    for i in eachindex(sys.bodies)
+        append!(save_config,get_savedict(sys.bodies[i],i))
+    end    
+
     for i in eachindex(sys.joints)
-        if !isa(sys.joints[i], FixedJoint)
-            #save joint state info        
-            states = fieldnames(typeof(sys.joints[i].state))
-            for state in states
-                save_dict!(
-                    save_config,
-                    "$(sys.joints[i].meta.name)_$(string(state))",
-                    typeof(getfield(sys.joints[i].state, state)),
-                    integrator -> getfield(integrator.p.sys.joints[i].state, state)
-                )
-            end
-        end
+        append!(save_config,get_savedict(sys.joints[i],i))
     end
-    for i in 1:length(sys.bodies)
 
-        save_dict!(
-            save_config,
-            "$(sys.bodies[i].name)_v_body",
-            typeof(sys.bodies[i].state.v_body),
-            integrator -> integrator.p.sys.bodies[i].state.v_body
-        )
+    for i in eachindex(sys.sensors)
+        append!(save_config,get_savedict(sys.sensors[i],i))
+    end
 
-        save_dict!(
-            save_config,
-            "$(sys.bodies[i].name)_a_body",
-            typeof(sys.bodies[i].state.a_body),
-            integrator -> integrator.p.sys.bodies[i].state.a_body
-        )
+    for i in eachindex(sys.software)
+        append!(save_config,get_savedict(sys.software[i],i))
+    end
 
-        save_dict!(
-            save_config,
-            "$(sys.bodies[i].name)_external_force",
-            typeof(sys.bodies[i].external_force),
-            integrator -> integrator.p.sys.bodies[i].external_force
-        )
-
-        # get base frame position vars for animation        
-
-        save_dict!(
-            save_config,
-            "$(sys.bodies[i].name)_q_base",
-            typeof(sys.bodies[i].state.q_base),
-            integrator -> (integrator.p.sys.bodies[i].state.q_base)
-        )
-
-        save_dict!(
-            save_config,
-            "$(sys.bodies[i].name)_r_base",
-            typeof(sys.bodies[i].state.r_base),
-            integrator -> (integrator.p.sys.bodies[i].state.r_base)
-        )
-
-        for i in eachindex(sys.software)
-            save_dict!(
-                save_config,
-                "$(sys.software[i].name)_u",
-                typeof(sys.software[i].initial_value),                
-                integrator -> integrator.p.sys.software[i].current_value
-            )
-        end
-
-        for i in eachindex(sys.actuators)
-            if typeof(sys.actuators[i]) in [SimpleThruster]
-                save_dict!(
-                    save_config,
-                    "$(sys.actuators[i].name)_force",
-                    typeof(sys.actuators[i].current_force),
-                    integrator -> integrator.u[integrator.p.sys.actuators[i].xindex][1]
-                )
-            end
-            if typeof(sys.actuators[i]) in [SimpleReactionWheel]
-                save_dict!(
-                    save_config,
-                    "$(sys.actuators[i].name)_torque",
-                    typeof(sys.actuators[i].current_torque),
-                    integrator -> integrator.p.sys.actuators[i].current_torque
-                )
-
-                save_dict!(
-                    save_config,
-                    "$(sys.actuators[i].name)_momentum",
-                    typeof(sys.actuators[i].current_momentum),
-                    integrator -> integrator.p.sys.actuators[i].current_momentum
-                )
-
-                save_dict!(
-                    save_config,
-                    "$(sys.actuators[i].name)_speed",
-                    typeof(sys.actuators[i].current_speed),
-                    integrator -> integrator.p.sys.actuators[i].current_speed
-                )
-
-            end
-            save_dict!(
-                save_config,
-                "$(sys.actuators[i].name)_u",
-                typeof(sys.actuators[i].command.current_value),
-                integrator -> integrator.p.sys.actuators[i].command.current_value
-            )
-
-        end
+    for i in eachindex(sys.actuators)
+        append!(save_config,get_savedict(sys.actuators[i],i))
     end
 
     save_values = SavedValues(Float64, Tuple{getindex.(save_config, "type")...})

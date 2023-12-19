@@ -2,7 +2,7 @@ includet("..//src//jsat.jl")
 
 function sensor_test()
     N = BaseFrame(:N,0)
-    J1 = FloatingJoint(:J1)
+    J1 = FloatingJoint(:J1,[0,0,0,1],rand(3),zeros(3),zeros(3))
     B1 = Body(:B1,1,zeros(3),I(3))
     connect!(J1,N,B1)
 
@@ -13,6 +13,6 @@ function sensor_test()
     connect!(R,B1)
 
     sys = MultibodySystem(:sys,N,B1,J1,sensors = [A,R])
-    sol = simulate(sys,(0,10),dt = 0.1,output_type = DataFrame)
+    sol = simulate(sys,(0,10),output_type = NamedTuple)
     return (sys,sol)
 end

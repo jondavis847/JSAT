@@ -8,7 +8,7 @@ mutable struct JointMeta
     q̇index::Vector{Int16} # index for generalized speeds in sys.q
     xindex::Vector{Int16} # index for generalzied coords in sys.x
     ẋindex::Vector{Int16} # index for generalized speeds in sys.x    
-    function JointMeta(name,nq,nq̇)    
+    function JointMeta(name, nq, nq̇)
         x = new()
         x.name = name
         x.nq = nq
@@ -36,19 +36,34 @@ function connect!(
     G::AbstractJoint,
     p::AbstractBody, #predecessor
     s::AbstractBody, #successor
-    Fp::Cartesian = Cartesian(I(3),[0,0,0]), #transform from joint to predecessor
-    Fs::Cartesian = Cartesian(I(3),[0,0,0]) #transform from joint to successor
-    ) 
+    Fp::Cartesian=Cartesian(I(3), [0, 0, 0]), #transform from joint to predecessor
+    Fs::Cartesian=Cartesian(I(3), [0, 0, 0]) #transform from joint to successor
+)
 
     G.connection.predecessor = p
     G.connection.successor = s
     G.connection.Fs = Fs
     G.connection.Fp = Fp
 
-    push!(p.outer_joints,G)
+    push!(p.outer_joints, G)
     s.inner_joint = G
 
     nothing
+end
+
+function get_savedict(G::AbstractJoint, i)
+    save_config = Dict[]
+    #save joint state info        
+    states = fieldnames(typeof(G.state))
+    for state in states
+        save_dict!(
+            save_config,
+            "$(G.meta.name)_$(string(state))",
+            typeof(getfield(G.state, state)),
+            integrator -> getfield(integrator.p.sys.joints[i].state, state)
+        )
+    end
+    return save_config
 end
 
 include("FixedJoint.jl")

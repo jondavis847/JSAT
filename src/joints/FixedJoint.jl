@@ -49,3 +49,5 @@ set_state!(G::FixedJoint, x) = nothing
 
 #need to make this spring/dampener/loss forces at some point
 calculate_τ!(G::FixedJoint) = nothing
+
+get_savedict(G::FixedJoint) = []

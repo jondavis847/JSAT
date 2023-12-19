@@ -22,3 +22,14 @@ function get_callback(S::SimpleRateSensor3,i)
     affect! = (u,t,integrator) -> integrator.p.sys.sensors[i].rate = integrator.p.sys.sensors[i].body.state.v_body[SVector{3,Int16}(1,2,3)]
     return FunctionCallingCallback(affect!)    
 end
+
+function get_savedict(S::SimpleRateSensor3,i)
+    save_config = Dict[]
+    save_dict!(
+        save_config,
+        "$(S.name)_rate",
+        typeof(S.rate),
+        integrator -> integrator.p.sys.sensors[i].rate
+    )
+    return save_config
+end
