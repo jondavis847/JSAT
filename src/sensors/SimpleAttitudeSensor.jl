@@ -1,7 +1,8 @@
 mutable struct SimpleAttitudeSensor
+    name::Symbol
     attitude::SVector{4,Float64}    
     body::Body
-    SimpleAttitudeSensor() = new()
+    SimpleAttitudeSensor(name) = new(name)
 end
 
 function get_callback(S::SimpleAttitudeSensor,i)

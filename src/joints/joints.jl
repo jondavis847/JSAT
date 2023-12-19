@@ -53,5 +53,6 @@ end
 
 include("FixedJoint.jl")
 include("FloatingJoint.jl")
+include("Prismatic.jl")
 include("Revolute.jl")
 include("Spherical.jl")

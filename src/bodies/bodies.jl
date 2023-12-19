@@ -7,7 +7,7 @@ end
 
 mutable struct BodyState
     q_base::SVector{4,Float64}
-    ω_base::SVector{3,Float64}
+    ω_body::SVector{3,Float64}
     r_base::SVector{3,Float64}
     v_base::SVector{3,Float64} 
     a::SVector{6,Float64}   
