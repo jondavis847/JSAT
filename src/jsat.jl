@@ -4,7 +4,6 @@ using DataFrames
 using Dates
 using DifferentialEquations
 using LinearAlgebra
-using OffsetArrays
 using Plots
 using PlotThemes
 using StaticArrays
@@ -23,6 +22,7 @@ includet(joinpath("bodies", "bodies.jl"))
 includet(joinpath("joints", "joints.jl"))
 includet(joinpath("software", "software.jl"))
 includet(joinpath("actuators", "actuators.jl"))
+includet(joinpath("sensors", "sensors.jl"))
 includet(joinpath("types", "system.jl"))
 includet(joinpath("gravity", "gravity.jl"))
 includet(joinpath("environments", "environments.jl"))

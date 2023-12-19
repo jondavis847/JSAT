@@ -1,4 +1,4 @@
-mutable struct SimpleRateSensor
+mutable struct SimpleRateSensor <: AbstractSensor
     name::Symbol
     index::Int16 # 1 2 or 3 for x y or z
     rate::Float64
@@ -7,11 +7,11 @@ mutable struct SimpleRateSensor
 end
 
 function get_callback(S::SimpleRateSensor,i)
-    affect! = (integrator) -> integrator.p.sys.sensors[i].rate = body.state.ω_body[S.index]
+    affect! = (u,t,integrator) -> integrator.p.sys.sensors[i].rate = body.state.v_body[S.index]
     return FunctionCallingCallback(affect!)    
 end
 
-mutable struct SimpleRateSensor3
+mutable struct SimpleRateSensor3 <: AbstractSensor
     name::Symbol
     rate::SVector{3,Float64}    
     body::Body
@@ -19,6 +19,6 @@ mutable struct SimpleRateSensor3
 end
 
 function get_callback(S::SimpleRateSensor3,i)
-    affect! = (integrator) -> integrator.p.sys.sensors[i].rate = body.state.ω_body
+    affect! = (u,t,integrator) -> integrator.p.sys.sensors[i].rate = integrator.p.sys.sensors[i].body.state.v_body[SVector{3,Int16}(1,2,3)]
     return FunctionCallingCallback(affect!)    
 end

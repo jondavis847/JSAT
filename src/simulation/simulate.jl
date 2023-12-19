@@ -38,7 +38,7 @@ function model!(sys)
     return nothing
 end
 
-function simulate(orig_sys::MultibodySystem, tspan, dt = nothing; output_type=nothing)
+function simulate(orig_sys::MultibodySystem, tspan; dt = nothing, output_type=nothing)
     sys = deepcopy(orig_sys)# make a copy so we can rerun orig sys without mutating it during previous sim   
        
     u0 = initialize_state_vectors(sys)
@@ -48,9 +48,9 @@ function simulate(orig_sys::MultibodySystem, tspan, dt = nothing; output_type=no
 
     #get callbacks    
     sensor_cb = [get_callback(sys.sensors[i],i) for i in eachindex(sys.sensors)]
-    software_cb = [get_callback(sys.software[i],i)... for i in eachindex(sys.software)]
+    software_cb = [get_callback(sys.software[i],i) for i in eachindex(sys.software)]
     
-    cb = CallbackSet(sensor_cb;software_cb;save_cb) #must follow order
+    cb = CallbackSet(sensor_cb...,software_cb...,save_cb) #must follow order
 
     prob = ODEProblem(ode_func!,u0, tspan, p)
     if isnothing(dt)

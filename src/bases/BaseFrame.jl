@@ -1,6 +1,6 @@
 struct BaseState
-    v::SVector{6,Float64}
-    a::SVector{6,Float64}
+    v_body::SVector{6,Float64}
+    a_body::SVector{6,Float64}
     BaseState() = new(SVector{6,Float64}(zeros(6)),SVector{6,Float64}(zeros(6)))
 end
 

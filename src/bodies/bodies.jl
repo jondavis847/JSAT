@@ -1,17 +1,18 @@
-mutable struct BodyModels{A<:Vector{AbstractActuator},E<:Vector{AbstractEnvironment},G<:Vector{AbstractGravity}}
+mutable struct BodyModels{A<:Vector{AbstractActuator},S<:Vector{AbstractSensor},E<:Vector{AbstractEnvironment},G<:Vector{AbstractGravity}}
     actuators::A
+    sensors::S 
     environments::E
     gravity::G
-    BodyModels() = new{Vector{AbstractActuator},Vector{AbstractEnvironment},Vector{AbstractGravity}}(AbstractActuator[],AbstractEnvironment[],AbstractGravity[])
+    BodyModels() = new{Vector{AbstractActuator},Vector{AbstractSensor},Vector{AbstractEnvironment},Vector{AbstractGravity}}(AbstractActuator[],AbstractSensor[],AbstractEnvironment[],AbstractGravity[])
 end
 
 mutable struct BodyState
-    q_base::SVector{4,Float64}
-    ω_body::SVector{3,Float64}
+    q_base::SVector{4,Float64}    
     r_base::SVector{3,Float64}
     v_base::SVector{3,Float64} 
-    a::SVector{6,Float64}   
-    v::SVector{6,Float64}   
+    ω_base::SVector{3,Float64}
+    a_body::SVector{6,Float64} 
+    v_body::SVector{6,Float64} #spatial vector, ω_body = v[1:3]      
     BodyState() = new()
 end
 

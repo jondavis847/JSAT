@@ -10,16 +10,16 @@ function first_pass!(body)
     joint = body.inner_joint
 
     if isa(joint, FixedJoint)
-        body.state.v = body.transforms.parent_to_body_motion * joint.connection.predecessor.state.v
+        body.state.v_body = body.transforms.parent_to_body_motion * joint.connection.predecessor.state.v_body
         body.tmp.c = @SVector zeros(6)
     else
-        vj = joint.S * get_q̇(joint)
-        body.state.v = body.transforms.parent_to_body_motion * joint.connection.predecessor.state.v + vj
-        body.tmp.c = body.state.v ×ᵐ vj # + cj #commented until we need S∘                
+        v_joint = joint.S * get_q̇(joint)
+        body.state.v_body = body.transforms.parent_to_body_motion * joint.connection.predecessor.state.v_body + v_joint
+        body.tmp.c = body.state.v_body ×ᵐ v_joint # + cj #commented until we need S∘                
     end
 
     body.inertia_articulated = body.inertia_joint
-    body.tmp.pᴬ = body.state.v ×ᶠ (body.inertia_joint * body.state.v) - body.external_force
+    body.tmp.pᴬ = body.state.v_body ×ᶠ (body.inertia_joint * body.state.v_body + body.internal_momentum) - body.external_force
     return nothing
 end
 
@@ -58,12 +58,12 @@ function third_pass!(body)
     joint = body.inner_joint
     parent = joint.connection.predecessor
     if isa(joint, FixedJoint)
-        body.state.a = body.transforms.parent_to_body_motion * parent.state.a
+        body.state.a_body = body.transforms.parent_to_body_motion * parent.state.a_body
     else
         S = joint.S
-        a′ = body.transforms.parent_to_body_motion * parent.state.a + body.tmp.c
+        a′ = body.transforms.parent_to_body_motion * parent.state.a_body + body.tmp.c
         joint.state.q̈ = body.tmp.D \ (body.tmp.u - body.tmp.U' * a′)
-        body.state.a = a′ + S * joint.state.q̈
+        body.state.a_body = a′ + S * joint.state.q̈
     end
     return nothing
 end

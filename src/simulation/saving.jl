@@ -28,16 +28,16 @@ function configure_saving(sys::MultibodySystem)
 
         save_dict!(
             save_config,
-            "$(sys.bodies[i].name)_v",
-            typeof(sys.bodies[i].state.v),
-            integrator -> integrator.p.sys.bodies[i].state.v
+            "$(sys.bodies[i].name)_v_body",
+            typeof(sys.bodies[i].state.v_body),
+            integrator -> integrator.p.sys.bodies[i].state.v_body
         )
 
         save_dict!(
             save_config,
-            "$(sys.bodies[i].name)_a",
-            typeof(sys.bodies[i].state.a),
-            integrator -> integrator.p.sys.bodies[i].state.a
+            "$(sys.bodies[i].name)_a_body",
+            typeof(sys.bodies[i].state.a_body),
+            integrator -> integrator.p.sys.bodies[i].state.a_body
         )
 
         save_dict!(

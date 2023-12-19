@@ -3,7 +3,8 @@ includet("SimpleRateSensor.jl")
 
 
 function connect!(S::AbstractSensor,B::Body) 
-    S.body = B    
+    S.body = B 
+    push!(B.models.sensors, S)   
     return nothing
 end
 
