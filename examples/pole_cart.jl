@@ -1,6 +1,6 @@
 includet("..//src//jsat.jl")
 
-function pid_test()
+function pole_cart_test()
     N = BaseFrame(:N,-9.8)
     J1 = Prismatic(:J1)
     B1 = Body(:B1,10,zeros(3),10*I(3))
@@ -24,7 +24,7 @@ function pid_test()
 
     fsw_parameters = (kp = 1, kd = 0, ki = 0)
     fsw_variables = ComponentArray(attitude_error = 0.0, rate_error = 0.0, integral_error = 0.0, accel_cmd = 0.0)
-    SW = CustomSoftware(:fsw,pid_test_software,0.1,fsw_parameters,fsw_variables)
+    SW = CustomSoftware(:fsw,pole_cart_software,0.1,fsw_parameters,fsw_variables)
 
     connect!(A,SW)
     connect!(R,SW)
@@ -35,7 +35,7 @@ function pid_test()
     return sys
 end
 
-function pid_test_software(software)
+function  pole_cart_software(software)
     attitude_sensor = software.connections.sensors[getfield.(software.connections.sensors,:name) .== :A][1]
     rate_sensor = software.connections.sensors[getfield.(software.connections.sensors,:name) .== :R][1]
 
