@@ -33,3 +33,11 @@ function get_savedict(SW::CustomSoftware, i)
     return save_config
 end
 
+includet("custom//pole_cart_example.jl")
+
+function get_custom_software()
+    return Dict(
+        "pole_cart_software" => create_pole_cart_software()
+        )
+end
+

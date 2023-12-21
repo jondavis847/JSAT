@@ -47,7 +47,7 @@ end
 
 function df_save_values(save_values, save_config)
     D = DataFrame()
-    D[!, "t"] = save_values.t
+    D[!, "t"] = save_values.t    
     for i in eachindex(save_config)
         name = String(save_config[i]["name"])
         type = save_config[i]["type"]
@@ -71,5 +71,6 @@ function df_save_values(save_values, save_config)
             D[!, name] = values
         end
     end
+    delete!(D,1)#TODO: does this capture iniital point? got Inf before because it seemed like it wasnt getting initialized correctly
     return D
 end

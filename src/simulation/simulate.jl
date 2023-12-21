@@ -61,7 +61,7 @@ function simulate(orig_sys::MultibodySystem, tspan; dt = nothing, output_type=no
         #fixed step discrete
         sol = solve(prob, callback=cb, adaptive=false, dt=dt) 
     end
-
+    
     if output_type == DataFrame
         simout = df_save_values(save_values, save_config)
     elseif output_type == NamedTuple

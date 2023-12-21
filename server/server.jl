@@ -35,11 +35,11 @@ function routerSimFiles(req::HTTP.Request)
     files = readdir("sim")
     for file in files
         simfilename = replace(file, ".csv" => "")
-        simfiledate = Dates.unix2datetime(mtime("sim\\$(file)"))        
+        simfiledate = Dates.unix2datetime(mtime("sim\\$(file)"))
         D = Dict("fileName" => simfilename, "fileDate" => simfiledate)
         push!(tmp, D)
     end
-    sort!(tmp,by=x->x["fileDate"], rev=true)
+    sort!(tmp, by=x -> x["fileDate"], rev=true)
     msg = JSON3.write(tmp)
 
     HTTP.Response(200, JSON3.write(tmp))
@@ -54,10 +54,42 @@ function routerSimulate(req::HTTP.Request)
     joints = message[:joints]
     actuators = message[:actuators]
     softwares = message[:software]
+    sensors = message[:sensors]
     gravitys = message[:gravity]
+    
     #need to make these things in this order to make children first before connecting
 
-    Software = []
+    Sensors = AbstractSensor[]
+    for k in keys(sensors)
+        sensor = sensors[k]
+        type = sensor[:type]
+        if type == "simpleAttitudeSensor"
+            S = SimpleAttitudeSensor(sensor[:name])
+        elseif type == "simpleAttitudeSensor4"
+            S = SimpleAttitudeSensor4(sensor[:name])
+        elseif type == "simpleRateSensor"
+            S = SimpleRateSensor(sensor[:name])
+        elseif type == "simpleRateSensor3"
+            S = SimpleRateSensor3(sensor[:name])
+        end
+        push!(Sensors,S)
+    end
+
+    Actuators = AbstractActuator[]
+    for k in keys(actuators)
+        actuator = actuators[k]
+        type = actuator[:type]
+        if type == "thruster"
+            force = eval(Meta.parse(actuator[:thrust]))
+            A = SimpleThruster(Symbol(actuator[:name]), force)
+        else
+            error("bad actuator type provided")
+            return
+        end        
+        push!(Actuators, A)
+    end
+
+    Software = AbstractSoftware[]
     for k in keys(softwares)
         software = softwares[k]
         type = software[:type]
@@ -71,28 +103,20 @@ function routerSimulate(req::HTTP.Request)
             if !(typeof(tstops) <: Vector)
                 tstops = [tstops]
             end
-            S = TimedCommand(Symbol(software[:name]), init, tstarts, tstops,)
+            SW = TimedCommand(Symbol(software[:name]), init, tstarts, tstops,)
         else
             error("bad software type provided")
             return
         end
-        push!(Software, S)
-    end
+        matched_sensors = intersect(getfield.(Sensors, :name),Symbol.(software[:sensors]))
+        matched_sensors = Sensors[matched_sensors]
+        connect!.(matched_sensors, Ref(SW))
 
-    Actuators = AbstractActuator[]
-    for k in keys(actuators)
-        actuator = actuators[k]
-        type = actuator[:type]
-        if type == "thruster"
-            force = eval(Meta.parse(actuator[:thrust]))
-            A = SimpleThruster(Symbol(actuator[:name]), force)
-        else
-            error("bad actuator type provided")
-            return
-        end
-        command = Software[getfield.(Software, :name).==Symbol(actuator[:command])]
-        connect!(A, command...)
-        push!(Actuators, A)
+        matched_actuators = intersect(getfield.(Actuators, :name), Symbol.(software[:actuators]))
+        matched_actuators = Actuators[matched_actuators]
+        connect!.(Ref(SW), matched_actuators)
+
+        push!(Software, SW)
     end
 
     Gravitys = AbstractGravity[]
@@ -112,14 +136,14 @@ function routerSimulate(req::HTTP.Request)
     base_gravity = base[:gravity]
     BG = AbstractGravity[]
     if !isempty(base_gravity)
-        for bg in base_gravity            
-            append!(BG, Gravitys[getfield.(Gravitys, :name) .== Symbol(bg)])            
+        for bg in base_gravity
+            append!(BG, Gravitys[getfield.(Gravitys, :name).==Symbol(bg)])
         end
     else
-        push!(BG,GravityNone())
+        push!(BG, GravityNone())
     end
-    base = BaseFrame(:base, BG)    
-    
+    base = BaseFrame(:base, BG)
+
     Bodies = AbstractBody[]
     for k in keys(bodies)
         body = bodies[k]
@@ -134,6 +158,7 @@ function routerSimulate(req::HTTP.Request)
         iyz = Float64(eval(Meta.parse(body[:iyz])))
 
         connected_actuators = eval(Meta.parse.(body[:actuators]))
+        connected_sensors = eval(Meta.parse.(body[:sensors]))
 
         inertia = [
             ixx ixy ixz
@@ -157,6 +182,15 @@ function routerSimulate(req::HTTP.Request)
             connect!(B, A..., frame)
         end
 
+        for sensor_name in connected_sensors
+            sensor = sensors[sensor_name]
+            rotation = inv(eval(Meta.parse(sensor[:rotation]))) #inv because server gives rotation from body to act, need act to body
+            translation = -eval(Meta.parse(sensor[:translation])) #inv because server gives translation from body to act, need act to body
+            frame = Cartesian(rotation, translation)
+            S = Sensors[getfield.(Sensors, :name).==Symbol(sensor_name)]            
+            connect!(B, S..., frame)
+        end
+
         connected_gravity = body[:gravity]
         for gravity_name in connected_gravity
             G = Gravitys[getfield.(Gravitys, :name).==Symbol(gravity_name)]
@@ -165,7 +199,7 @@ function routerSimulate(req::HTTP.Request)
 
 
         push!(Bodies, B)
-    end    
+    end
 
     Joints = []
     for k in keys(joints)
@@ -213,7 +247,7 @@ function routerSimulate(req::HTTP.Request)
 
 
 
-    sys = MultibodySystem(Symbol(sim[:name]), base,  Bodies, Joints, Actuators, Software)
+    sys = MultibodySystem(Symbol(sim[:name]), base, Bodies, Joints, actuators = Actuators, software = Software, sensors = Sensors)
 
     t = time()
     sol = simulate(sys, eval(Meta.parse(sim[:tspan])); output_type=DataFrame)
@@ -332,12 +366,6 @@ function routerLoadModels(req::HTTP.Request)
 end
 
 function routerCustomSoftware(req::HTTP.Request)
-    tmp = []
-    files = readdir("src//software//custom")
-    for file in files
-        modulename = replace(file, ".jl" => "")
-        push!(tmp, modulename)
-    end
-
-    HTTP.Response(200, JSON3.write(tmp))
+    cs = keys(get_custom_software())
+    HTTP.Response(200, JSON3.write(cs))
 end

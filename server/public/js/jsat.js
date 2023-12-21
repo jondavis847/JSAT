@@ -18,6 +18,7 @@ let JSAT = {
     joints: {},
     actuators: {},
     software: {},
+    sensors: {},
     gravity: {},
     inports: {}, //only useful for defining models
     outports: {}, //only useful for defining models
@@ -81,7 +82,7 @@ $("#actuatorsButton").on("click", () => { $("#actuatorLoaderDiv").show() });
 $("#actuatorBackButton").on("click", () => { $("#actuatorLoaderDiv").hide() });
 $("#softwareButton").on("click", () => { $("#softwareLoaderDiv").show() });
 $("#softwareBackButton").on("click", () => { $("#softwareLoaderDiv").hide() });
-$("#sensorButton").on("click", () => { $("#sensorLoaderDiv").show() });
+$("#sensorsButton").on("click", () => { $("#sensorLoaderDiv").show() });
 $("#sensorBackButton").on("click", () => { $("#sensorLoaderDiv").hide() });
 $("#gravityButton").on("click", () => { $("#gravityLoaderDiv").show() });
 $("#gravityBackButton").on("click", () => { $("#gravityLoaderDiv").hide() });
@@ -107,7 +108,7 @@ $('#createModelBtn').on('click', clickCreateModel);
 $('#addInportButton').on('click', clickAddInport);
 $('#addOutportButton').on('click', clickAddOutport);
 $('#simpleAttitudeSensorButton').on('click', clickAddSimpleAttitudeSensor);
-$('#simpleAttitudeSensor3Button').on('click', clickAddSimpleAttitudeSensor3);
+$('#simpleAttitudeSensor4Button').on('click', clickAddSimpleAttitudeSensor4);
 $('#simpleRateSensorButton').on('click', clickAddSimpleRateSensor);
 $('#simpleRateSensor3Button').on('click', clickAddSimpleRateSensor3);
 $('#addElementCancelButton').on('click', () => { $('#nameOnlyDiv').hide() })
@@ -210,6 +211,15 @@ var cy = cytoscape({
             }
         },
         {
+            selector: '.sensor',
+            style: {
+                'shape': 'round-rectangle',
+                'background-color': '#d600ff',
+                'width': cy_autosize,
+                'height': 50,
+            }
+        },
+        {
             selector: '.gravity',
             style: {
                 'shape': 'round-rectangle',
@@ -231,7 +241,7 @@ var cy = cytoscape({
             selector: '.model',
             style: {
                 'shape': 'round-rectangle',
-                'background-color': '#966FD6',
+                'background-color': '#001eff',
                 'width': cy_autosize,
                 'height': 50,
             }
@@ -344,6 +354,8 @@ cy.on('ehcomplete', (evt, src, tar, edge) => {
             edge.remove();
             return;
         }
+
+        
     }
 
     if (src.classes().includes("actuator")) {
@@ -376,9 +388,23 @@ cy.on('ehcomplete', (evt, src, tar, edge) => {
         if (tar.classes().includes("actuator")) {
             const source_id = src.data().label;
             const target_id = tar.data().label;
-            JSAT.actuators[target_id]["command"] = source_id;
+            JSAT.actuators[target_id]["command"] = source_id;        
         } else {
-            jsatConsole("software can only connect to actuators")
+            jsatConsole("software only connects to actuators and other software")
+        }
+    }
+
+    if (src.classes().includes("sensor")) {
+        if (tar.classes().includes("body")) {
+            const source_id = src.data().label;
+            const target_id = tar.data().label;
+            JSAT.bodies[target_id].sensors.push(source_id);
+        } else if (tar.classes().includes("software")){
+            const source_id = src.data().label;
+            const target_id = tar.data().label;
+            JSAT.software[target_id].sensors.push(source_id);
+        } else {
+            jsatConsole("sensors only connect to bodies and software")
         }
     }
 
@@ -422,6 +448,7 @@ cy.on('dbltap', '.joint', editJoint)
 cy.on('dbltap', '.port', editPort)
 cy.on('dbltap', '.actuator', editActuator)
 cy.on('dbltap', '.software', editSoftware)
+cy.on('dbltap', '.sensor', editSensor)
 
 /*
 cy.on('tap', 'node', function (evt) {
@@ -607,6 +634,7 @@ function saveBody(event) {
         material: $("#newBodyMaterial").val(),
         color: $("#newBodyColor").val(),
         actuators: [],
+        sensors: [],
         gravity: [],
         environments: []
     };
@@ -676,6 +704,10 @@ function saveBody(event) {
         cy.$(`#body${event.data.name}`).data('label', name)
 
         body.actuators = JSAT.bodies[body.name].actuators
+        body.sensors = JSAT.bodies[body.name].sensors
+        body.gravity = JSAT.bodies[body.name].gravity
+        body.environments = JSAT.bodies[body.name].environments
+
         delete JSAT.bodies[event.data.name]
     }
 
@@ -932,6 +964,104 @@ function editJoint() {
 
 };
 
+function clickAddSimpleAttitudeSensor() {
+    //remove all old inputs
+    $('.sensor-input').remove();    
+    // bind sensor to save event, mark as new 
+    $("#addSensorSaveButton").off()
+    $("#addSensorSaveButton").on("click", { new: true, type: 'simpleAttitudeSensor', name: '' }, saveSensor)
+    //show the details div
+    $('#addSensorDiv').show();
+}
+
+
+function clickAddSimpleAttitudeSensor4() {
+    //remove all old inputs
+    $('.sensor-input').remove();    
+    // bind sensor to save event, mark as new 
+    $("#addSensorSaveButton").off()
+    $("#addSensorSaveButton").on("click", { new: true, type: 'simpleAttitudeSensor4', name: '' }, saveSensor)
+    //show the details div
+    $('#addSensorDiv').show();
+}
+
+function clickAddSimpleRateSensor() {
+    //remove all old inputs
+    $('.sensor-input').remove();    
+    // bind sensor to save event, mark as new 
+    $("#addSensorSaveButton").off()
+    $("#addSensorSaveButton").on("click", { new: true, type: 'simpleRateSensor', name: '' }, saveSensor)
+    //show the details div
+    $('#addSensorDiv').show();
+}
+
+function clickAddSimpleRateSensor3() {
+    //remove all old inputs
+    $('.sensor-input').remove();    
+    // bind sensor to save event, mark as new 
+    $("#addSensorSaveButton").off()
+    $("#addSensorSaveButton").on("click", { new: true, type: 'simpleRateSensor3', name: '' }, saveSensor)
+    //show the details div
+    $('#addSensorDiv').show();
+}
+
+
+function saveSensor(event) {
+    const name = $("#newSensorName").val();
+
+    let sensor = {
+        name: name,
+        type: event.data.type,
+        rotation: $("#newSensorRotation").val(),
+        translation: $("#newSensorTranslation").val(),
+        body: "undef"        
+    };
+
+    //defaults
+    if (sensor.rotation === "") { sensor.rotation = "I(3)" }
+    if (sensor.translation === "") { sensor.translation = "zeros(3)" }
+
+    if (event.data.new) {
+        cy.add({
+            group: 'nodes',
+            data: {
+                id: `sensor${name}`,
+                label: name,
+            },
+            classes: 'sensor',
+            renderedPosition: {
+                x: 300,
+                y: 300,
+            },
+        });
+    } else {
+        cy.$(`#sensor${event.data.name}`).data('id', `sensor${name}`)
+        cy.$(`#sensor${event.data.name}`).data('label', name)
+
+        sensor.body = JSAT.sensors[event.data.name].body
+        delete JSAT.sensors[event.data.name]
+    }
+
+    JSAT.sensors[name] = sensor;
+    console.log(JSAT);
+    $('#addSensorDiv').hide();
+}
+
+function editSensor() {
+    //remove all previously stored joint specific inputs
+    $('.sensor-input').remove();
+
+    const name = this.data().label;
+    const sensor = JSAT.sensors[name];
+
+    $("#newSensorName").val(sensor.name);
+    $("#newSensorRotation").val(sensor.rotation);
+    $("#newSensorTranslation").val(sensor.translation);
+
+    $("#addSensorSaveButton").off();
+    $("#addSensorSaveButton").on("click", { new: false, type: sensor.type, name: name }, saveSensor)
+    $("#addSensorDiv").show();
+};
 
 function addActuatorThrusterInputs() {
     $('#actuatorTable tbody').append("<tr class = 'actuator-input'> \
@@ -1009,7 +1139,7 @@ function editActuator() {
 
     $("#newActuatorName").val(actuator.name);
     $("#newActuatorRotation").val(actuator.rotation);
-    $("#newActuatorTranslation").val(actuator.FpRho);
+    $("#newActuatorTranslation").val(actuator.translation);
 
     if (actuator.type === 'thruster') {
         addActuatorThrusterInputs();
@@ -1086,6 +1216,9 @@ function saveSoftware(event) {
     let software = {
         name: name,
         type: event.data.type,
+        sensors: [],
+        actuators: [],
+        software: []
     };
 
     if (event.data.type === 'timedCommand') {
@@ -1115,6 +1248,11 @@ function saveSoftware(event) {
     } else {
         cy.$(`#software${event.data.name}`).data('id', `software${name}`)
         cy.$(`#software${event.data.name}`).data('label', name)
+
+        software.sensors = JSAT.software[event.data.name].sensors
+        software.actuators = JSAT.software[event.data.name].actuators
+        software.software = JSAT.software[event.data.name].software
+
         delete JSAT.software[event.data.name]
     }
 
@@ -1223,6 +1361,8 @@ function editGravity() {
     $("#addGravityDiv").show();
 
 };
+
+
 
 function savePort(event) {
     const name = $("#newElementName").val();
