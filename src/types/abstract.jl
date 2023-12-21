@@ -25,7 +25,6 @@ end
 
 does work
 =#
-
 abstract type AbstractBody end
 abstract type AbstractJoint end
 abstract type AbstractJointState end

@@ -17,6 +17,7 @@ function jsat_server()
 
     HTTP.register!(ROUTER, "POST", "/simulate", routerSimulate)
     HTTP.register!(ROUTER, "GET", "/simfiles", routerSimFiles)
+    HTTP.register!(ROUTER, "GET", "/customsoftware", routerCustomSoftware)
     HTTP.register!(ROUTER, "GET", "/loadmodels", routerLoadModels)
     HTTP.register!(ROUTER, "POST", "/loadstates", routerLoadStates)
     HTTP.register!(ROUTER, "POST", "/plotstates", routerPlot)
@@ -328,4 +329,15 @@ function routerLoadModels(req::HTTP.Request)
         models = load("server//models.jld2")
     end
     HTTP.Response(200, JSON3.write(models))
+end
+
+function routerCustomSoftware(req::HTTP.Request)
+    tmp = []
+    files = readdir("src//software//custom")
+    for file in files
+        modulename = replace(file, ".jl" => "")
+        push!(tmp, modulename)
+    end
+
+    HTTP.Response(200, JSON3.write(tmp))
 end

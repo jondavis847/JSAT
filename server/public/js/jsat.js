@@ -65,6 +65,7 @@ $("#simButton").on("click", sendSimulationData);
 $("#addBodyCancelButton").on("click", () => { $("#addBodyDiv").hide() });
 $("#addJointCancelButton").on("click", () => { $("#addJointDiv").hide() });
 $("#addActuatorCancelButton").on("click", () => { $("#addActuatorDiv").hide() });
+$("#addSensorCancelButton").on("click", () => { $("#addSensorDiv").hide() });
 $("#addSoftwareCancelButton").on("click", () => { $("#addSoftwareDiv").hide() });
 $("#createModelCancelButton").on("click", () => { $("#createModelDiv").hide() });
 $("#loadSimStates").on("click", getSimStates);
@@ -80,6 +81,8 @@ $("#actuatorsButton").on("click", () => { $("#actuatorLoaderDiv").show() });
 $("#actuatorBackButton").on("click", () => { $("#actuatorLoaderDiv").hide() });
 $("#softwareButton").on("click", () => { $("#softwareLoaderDiv").show() });
 $("#softwareBackButton").on("click", () => { $("#softwareLoaderDiv").hide() });
+$("#sensorButton").on("click", () => { $("#sensorLoaderDiv").show() });
+$("#sensorBackButton").on("click", () => { $("#sensorLoaderDiv").hide() });
 $("#gravityButton").on("click", () => { $("#gravityLoaderDiv").show() });
 $("#gravityBackButton").on("click", () => { $("#gravityLoaderDiv").hide() });
 $("#modelsButton").on("click", () => { $("#modelsLoaderDiv").show() });
@@ -95,6 +98,7 @@ $('#floatingButton').on('click', clickAddFloatingJoint);
 $('#fixedButton').on('click', clickAddFixedJoint);
 $('#thrusterButton').on('click', clickAddActuatorThruster);
 $('#timedCommandButton').on('click', clickAddSoftwareTimedCommand);
+$('#customSoftwareButton').on('click', clickAddSoftwareCustom);
 $('#constantGravityButton').on('click', clickAddGravityConstant);
 $('#drawModeBtn').on('click', toggleDrawMode);
 $('#chooseFileButton').on('click', () => { $('#loadFileInput').click() });
@@ -102,6 +106,10 @@ $('#deleteBtn').on('click', deleteElements);
 $('#createModelBtn').on('click', clickCreateModel);
 $('#addInportButton').on('click', clickAddInport);
 $('#addOutportButton').on('click', clickAddOutport);
+$('#simpleAttitudeSensorButton').on('click', clickAddSimpleAttitudeSensor);
+$('#simpleAttitudeSensor3Button').on('click', clickAddSimpleAttitudeSensor3);
+$('#simpleRateSensorButton').on('click', clickAddSimpleRateSensor);
+$('#simpleRateSensor3Button').on('click', clickAddSimpleRateSensor3);
 $('#addElementCancelButton').on('click', () => { $('#nameOnlyDiv').hide() })
 
 $('#loadFileInput').on('change', function (e) {
@@ -132,9 +140,9 @@ $('#loadFileInput').on('change', function (e) {
 });
 
 getSimFileNames();
+getCustomSoftware();
 loadModels();
 
-let rp;
 
 function cy_autosize(node) {
     let label_length = node.data('label').length * 7;
@@ -1043,6 +1051,35 @@ function clickAddSoftwareTimedCommand() {
     $('#addSoftwareDiv').show();
 }
 
+function addSoftwareCustomInputs() {
+    $('#softwareTable tbody').append("<tr class = 'software-input'> \
+            <td><label class='form-font'>function:</label><br></td> \
+            <td><input id='newSoftwareInit' class='form-input' type='text' placeholder='false'><br></td>\
+        </tr>");
+
+    $('#softwareTable tbody').append("<tr class = 'software-input'> \
+            <td><label class='form-font'>start times:</label><br></td> \
+            <td><input id='newSoftwareStartTimes' class='form-input' type='text' placeholder='[]'><br></td>\
+        </tr>");
+
+    $('#softwareTable tbody').append("<tr class = 'software-input'> \
+            <td><label class='form-font'>stop times:</label><br></td> \
+            <td><input id='newSoftwareStopTimes' class='form-input' type='text' placeholder='[]'><br></td>\
+        </tr>");
+}
+
+function clickAddSoftwareCustom() {
+    //remove all old inputs
+    $('.software-input').remove();
+    //add software specific inputs
+    addSoftwareCustomInputs();
+    // bind actuator to save event, mark as new 
+    $("#addSoftwareSaveButton").off()
+    $("#addSoftwareSaveButton").on("click", { new: true, type: 'custom', name: '' }, saveSoftware)
+    //show the details div
+    $('#addSoftwareDiv').show();
+}
+
 function saveSoftware(event) {
     const name = $("#newSoftwareName").val();
 
@@ -1297,6 +1334,29 @@ function getSimFileNames() {
     xhr.send();
 }
 
+
+function getCustomSoftware() {
+    const xhr = new XMLHttpRequest();
+    xhr.addEventListener("load", function () {
+        let data = JSON.parse(this.responseText)
+
+        for (let i = 0; i < data.length; i++) {
+            $("#customSoftwareSelect").append($('<option>', {
+                value: data[i],
+
+            }))
+        }
+    })
+    xhr.open("GET", "/customsoftware", true);
+    xhr.onreadystatechange = () => {
+        // Call a function when the state changes.
+        if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
+
+        }
+    };
+    xhr.send();
+}
+
 function loadModels() {
     const xhr = new XMLHttpRequest();
     xhr.addEventListener("load", function () {
@@ -1533,8 +1593,8 @@ function makeAnimation() {
 
         const light = new THREE.AmbientLight('white', 1); // soft white light
         scene.add(light);
-        
-        if (sys.base.type == "earth") {                         
+
+        if (sys.base.type == "earth") {
 
             //const rEarth = 6.3781e6;
             const rEarth = 1;
@@ -1744,7 +1804,7 @@ function deleteElements() {
                     //delete from any bodies that have this gravity selected
                     let deletedGravityName = ele.data().label;
                     let bodyNames = Object.keys(JSAT.bodies);
-                    for (let i = 0; i < bodyNames.length; i++) {                        
+                    for (let i = 0; i < bodyNames.length; i++) {
                         if (JSAT.bodies[bodyNames[i]].gravity.includes(deletedGravityName)) {
                             JSAT.bodies[bodyNames[i]].gravity = JSAT.bodies[bodyNames[i]].gravity.filter(e => e !== deletedGravityName);
                         }
@@ -1761,7 +1821,7 @@ function deleteElements() {
                     //delete from any bodies that have this actuator
                     let deletedActuator = ele.data().label;
                     let bodyNames = Object.keys(JSAT.bodies);
-                    for (let i = 0; i < bodyNames.length; i++) {                        
+                    for (let i = 0; i < bodyNames.length; i++) {
                         if (JSAT.bodies[bodyNames[i]].actuators.includes(deletedActuator)) {
                             JSAT.bodies[bodyNames[i]].actuators = JSAT.bodies[bodyNames[i]].actuators.filter(e => e !== deletedActuator);
                         }

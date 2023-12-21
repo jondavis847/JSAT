@@ -92,8 +92,9 @@
             <button id="jointsButton" class="model-button">joints</button>
             <button id="gravityButton" class="model-button">gravity</button>
             <button id="environmentsButton" class="model-button">environments</button>
-            <button id="actuatorsButton" class="model-button">actuators</button>
+            <button id="sensorsButton" class="model-button">sensors</button>
             <button id="softwareButton" class="model-button">software</button>
+            <button id="actuatorsButton" class="model-button">actuators</button>
             <button id="modelsButton" class="model-button">models</button>
             <button id="portsButton" class="model-button not-avail">ports</button>
           </div>
@@ -142,7 +143,16 @@
 
           <div id="softwareLoaderDiv" class="model-loader-div hidden-loader-div">
             <button id="timedCommandButton" class="model-button">+timed command</button>
+            <button id="customSoftwareButton" class="model-button">+custom</button>
             <button id="softwareBackButton" class="model-button model-loader-back-btn">back</button>
+          </div>
+
+          <div id="sensorLoaderDiv" class="model-loader-div hidden-loader-div">
+            <button id="simpleAttitudeSensorButton" class="model-button">+simple attitude</button>
+            <button id="simpleAttitudeSensor3Button" class="model-button">+simple attitude 3</button>
+            <button id="simpleRateSensorButton" class="model-button">+simple angular rate</button>
+            <button id="simpleRateSensor3Button" class="model-button">+simple angular rate 3</button>
+            <button id="sensorBackButton" class="model-button model-loader-back-btn">back</button>
           </div>
 
           <div id="modelsLoaderDiv" class="model-loader-div hidden-loader-div">
@@ -356,6 +366,32 @@
             <div class="add-body-buttons-div">
               <button id="addSoftwareSaveButton" class="add-body-save-button">save</button>
               <button id="addSoftwareCancelButton" class="add-body-cancel-button">cancel</button>
+            </div>
+          </div>
+
+          <div id='addSensorDiv' class='element-details-div'>
+            <div class="element-title-div">
+              enter info to add sensors
+            </div>
+            <div class='element-table-div'>
+              <table id='sensorTable' class='table'>
+                <tr>
+                  <td><label class='form-font'>name:</label><br></td>
+                  <td><input id='newSensorName' class='form-input' type='text' placeholder='name'><br></td>
+                </tr>
+                <tr>
+                  <td><label class='form-font'>body frame translation:</label><br></td>
+                  <td><input id='newSensorTranslation' class='form-input' type='text' placeholder='zeros(3)'><br></td>
+                </tr>
+                <tr>
+                  <td><label class='form-font'>body frame rotation:</label><br></td>
+                  <td><input id='newSensorRotation' class='form-input' type='text' placeholder='I(3)'><br></td>
+                </tr>
+              </table>
+            </div>
+            <div class="add-body-buttons-div">
+              <button id="addSensorSaveButton" class="add-body-save-button">save</button>
+              <button id="addSensorCancelButton" class="add-body-cancel-button">cancel</button>
             </div>
           </div>
         </div>
