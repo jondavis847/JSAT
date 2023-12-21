@@ -3,7 +3,7 @@ mutable struct SimpleThruster <: AbstractActuator
     name::Symbol
     force::Float64 # spatial force, first 3 elements are force, last 3 are torque
     current_force::Float64
-    command::AbstractSoftware
+    command::Bool
     body_transform::SMatrix{6,6,Float64,36} # transform from actuator frame to body frame
     joint_transform::SMatrix{6,6,Float64,36} # transform from actuator frame to inner joint frame
     xindex::SVector{1,Int16}
@@ -14,7 +14,7 @@ mutable struct SimpleThruster <: AbstractActuator
 end
 
 function get_actuator_force!(A::SimpleThruster)
-    A.current_force = A.command.current_value * A.force
+    A.current_force = A.command * A.force
     A.current_joint_force = A.joint_transform * SVector{6,Float64}(0, 0, 0, 0, 0, A.current_force)
     return nothing
 end
@@ -37,8 +37,8 @@ function get_savedict(A::SimpleThruster, i)
     save_dict!(
         save_config,
         "$(A.name)_u",
-        typeof(A.command.current_value),
-        integrator -> integrator.p.sys.actuators[i].command.current_value
+        typeof(A.command),
+        integrator -> integrator.p.sys.actuators[i].command
     )
     return save_config
 end

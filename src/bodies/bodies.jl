@@ -66,6 +66,7 @@ mutable struct Body{M<:BodyModels} <: AbstractBody
         x.cm = SVector{3,Float64}(cm)
         x.I = SMatrix{3,3,Float64,9}(I)
         x.inertia_body = mcI(m, cm, I)
+        x.inertia_joint = x.inertia_body
         x.models = models
         x.transforms = BodyTransforms()
         x.outer_joints = AbstractJoint[]

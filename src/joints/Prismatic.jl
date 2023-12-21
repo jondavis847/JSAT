@@ -48,7 +48,7 @@ function set_state!(G::Prismatic, x)
 end
 
 function update_joint_frame!(G::Prismatic, r = G.state.r)    
-    Φ = SMatrix{3,3,Float64}(1,0,0,0,1,0,0,0,1)
+    Φ = SMatrix{3,3,Float64,9}(1,0,0,0,1,0,0,0,1)
     G.frame = Cartesian(Φ,SVector{3,Float64}(r,0,0))
     nothing
 end

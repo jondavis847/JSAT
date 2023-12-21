@@ -1,3 +1,12 @@
+#= need to figure out if we want this on a joint
+mutable struct SimpleAttitudeSensor <: AbstractSensor
+    name::Symbol
+    attitude::Float64
+    body::Body
+    SimpleAttitudeSensor(name) = new(name)
+end
+=#
+
 mutable struct SimpleAttitudeSensor4 <: AbstractSensor
     name::Symbol
     attitude::SVector{4,Float64}    

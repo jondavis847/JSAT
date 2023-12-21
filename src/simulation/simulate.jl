@@ -40,7 +40,7 @@ end
 
 function simulate(orig_sys::MultibodySystem, tspan; dt = nothing, output_type=nothing)
     sys = deepcopy(orig_sys)# make a copy so we can rerun orig sys without mutating it during previous sim   
-       
+    #sys = orig_sys 
     u0 = initialize_state_vectors(sys)
 
     save_config, save_values, save_cb = configure_saving(sys)

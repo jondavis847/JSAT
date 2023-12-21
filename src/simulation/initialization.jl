@@ -12,8 +12,8 @@ function initialize_state_vectors(sys)
     end
 
     for software in sys.software
-        append!(x, software.initial_value)
-        software.u_index = length(x)
+        append!(x, get_initial_value(software))
+        set_xindex!(software,length(x))
     end
 
     for actuator in sys.actuators

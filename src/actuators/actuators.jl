@@ -23,8 +23,7 @@ function connect!(B::AbstractBody,A::AbstractActuator,F::Cartesian = Cartesian(I
     return nothing
 end
 
-function connect!(A::AbstractActuator,S::AbstractSoftware)
-    A.command = S
-    return nothing
+function connect!(SW::AbstractSoftware,A::AbstractActuator) 
+    push!(SW.connections.actuators,A)    
+    return nothing 
 end
-
