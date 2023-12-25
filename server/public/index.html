@@ -63,6 +63,10 @@
                   <td><input id="simStopTime" class='form-input' type='text' name="simStopTime" value="10"><br></td>
                 </tr>
                 <tr>
+                  <td><label class='form-font' for="simDt">sim dt:</label><br></td>
+                  <td><input id="simDt" class='form-input' type='text' name="simDt" placeholder="variable step"><br></td>
+                </tr>
+                <tr>
                   <td><label class='form-font' for="simNruns"># of MC runs:</label><br></td>
                   <td><input id="simNruns" class='form-input' type='text' name="simNruns" value="0"><br></td>
                 </tr>
@@ -116,7 +120,7 @@
           <div id="jointsLoaderDiv" class="model-loader-div hidden-loader-div">
             <button id="fixedButton" class="model-button">+fixed</button>
             <button id="floatingButton" class="model-button">+floating</button>
-            <button id="prismaticButton" class="model-button not-avail">+prismatic</button>
+            <button id="prismaticButton" class="model-button">+prismatic</button>
             <button id="revoluteButton" class="model-button">+revolute</button>
             <button id="sphericalButton" class="model-button not-avail">+spherical</button>
             <button id="jointBackButton" class="model-button model-loader-back-btn">back</button>

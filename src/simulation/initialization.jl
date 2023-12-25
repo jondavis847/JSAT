@@ -11,6 +11,7 @@ function initialize_state_vectors(sys)
         end
     end
 
+    #TODO: Maybe dont need this
     for software in sys.software
         append!(x, get_initial_value(software))
         set_xindex!(software,length(x))

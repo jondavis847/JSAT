@@ -6,9 +6,9 @@ function pole_cart_test()
     B1 = Body(:B1,10,zeros(3),10*I(3))
     connect!(J1,N,B1)
 
-    J2 = Revolute(:J2,80*pi/180,0)
+    J2 = Revolute(:J2,5*pi/180,0)
     B2 = Body(:B2,10,zeros(3),diagm([50,5,50]))
-    connect!(J2,B1,B2,eye(Cartesian),Cartesian(I(3),[0,-2,0]))
+    connect!(J2,B1,B2,Cartesian(I(3),[0,-0.5,0]),Cartesian(I(3),[0,0.5,0]))
 
     A = SimpleAttitudeSensor4(:A)
     R = SimpleRateSensor3(:R)

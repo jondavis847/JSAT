@@ -61,9 +61,9 @@ function third_pass!(body)
         body.state.a_body = body.transforms.parent_to_body_motion * parent.state.a_body
     else
         S = joint.S
-        a′ = body.transforms.parent_to_body_motion * parent.state.a_body + body.tmp.c
-        joint.state.q̈ = body.tmp.D \ (body.tmp.u - body.tmp.U' * a′)
-        body.state.a_body = a′ + S * joint.state.q̈
+        body.tmp.a′ = body.transforms.parent_to_body_motion * parent.state.a_body + body.tmp.c
+        joint.state.q̈ = inv(body.tmp.D) * (body.tmp.u - body.tmp.U' * body.tmp.a′)
+        body.state.a_body = body.tmp.a′ + S * joint.state.q̈
     end
     return nothing
 end

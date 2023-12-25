@@ -35,6 +35,7 @@ mutable struct BodyTmp
     U::SMatrix{SU1,SU2,Float64} where {SU1,SU2}
     D::SMatrix{SD1,SD2,Float64} where {SD1,SD2}
     u::SVector{Su,Float64} where {Su}
+    a′::SVector{6,Float64}
     BodyTmp() = new()
 end
 
@@ -113,5 +114,35 @@ function get_savedict(B::Body, i)
         typeof(B.external_force),
         integrator -> integrator.p.sys.bodies[i].external_force
     )
+
+    #get the ABA tmp values
+    save_dict!(
+        save_config,
+        "$(B.name)_pA",
+        typeof(B.tmp.pᴬ),
+        integrator -> integrator.p.sys.bodies[i].tmp.pᴬ
+    )
+
+    save_dict!(
+        save_config,
+        "$(B.name)_a′",
+        typeof(B.tmp.a′),
+        integrator -> integrator.p.sys.bodies[i].tmp.a′     
+    )
+
+    save_dict!(
+        save_config,
+        "$(B.name)_c",
+        typeof(B.tmp.c),
+        integrator -> integrator.p.sys.bodies[i].tmp.c     
+    )
+
+    save_dict!(
+        save_config,
+        "$(B.name)_c",
+        typeof(B.tmp.c),
+        integrator -> integrator.p.sys.bodies[i].tmp.c     
+    )
+
     return save_config
 end

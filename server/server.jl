@@ -92,7 +92,7 @@ function routerSimulate(req::HTTP.Request)
     Software = AbstractSoftware[]
     for k in keys(softwares)
         software = softwares[k]
-        type = software[:type]
+        type = software[:type]        
         if type == "timedCommand"
             init = eval(Meta.parse(software[:init]))
             tstarts = eval(Meta.parse(software[:tstarts]))
@@ -104,17 +104,27 @@ function routerSimulate(req::HTTP.Request)
                 tstops = [tstops]
             end
             SW = TimedCommand(Symbol(software[:name]), init, tstarts, tstops,)
+        elseif type == "custom"
+            modulename = software[:module]
+            custom_software_dict = get_custom_software()
+            SW = custom_software_dict[modulename]
         else
             error("bad software type provided")
             return
         end
         matched_sensors = intersect(getfield.(Sensors, :name),Symbol.(software[:sensors]))
-        matched_sensors = Sensors[matched_sensors]
-        connect!.(matched_sensors, Ref(SW))
+        for sensor in Sensors
+            if sensor.name in matched_sensors
+                connect!(sensor, SW)        
+            end
+        end
 
         matched_actuators = intersect(getfield.(Actuators, :name), Symbol.(software[:actuators]))
-        matched_actuators = Actuators[matched_actuators]
-        connect!.(Ref(SW), matched_actuators)
+        for actuator in Actuators
+            if actuator.name in matched_actuators
+                connect!(SW, actuator)        
+            end
+        end
 
         push!(Software, SW)
     end
@@ -187,7 +197,7 @@ function routerSimulate(req::HTTP.Request)
             rotation = inv(eval(Meta.parse(sensor[:rotation]))) #inv because server gives rotation from body to act, need act to body
             translation = -eval(Meta.parse(sensor[:translation])) #inv because server gives translation from body to act, need act to body
             frame = Cartesian(rotation, translation)
-            S = Sensors[getfield.(Sensors, :name).==Symbol(sensor_name)]            
+            S = Sensors[getfield.(Sensors, :name).==Symbol(sensor_name)]               
             connect!(B, S..., frame)
         end
 
@@ -209,6 +219,10 @@ function routerSimulate(req::HTTP.Request)
             θ = eval(Meta.parse(joint[:theta]))
             ω = eval(Meta.parse(joint[:omega]))
             J = Revolute(Symbol(joint[:name]), θ, ω)
+        elseif type == "prismatic"
+                r = eval(Meta.parse(joint[:position]))
+                v = eval(Meta.parse(joint[:velocity]))
+                J = Prismatic(Symbol(joint[:name]), r, v)
         elseif type == "fixed"
             q = eval(Meta.parse(joint[:q]))
             r = eval(Meta.parse(joint[:position]))
@@ -249,9 +263,12 @@ function routerSimulate(req::HTTP.Request)
 
     sys = MultibodySystem(Symbol(sim[:name]), base, Bodies, Joints, actuators = Actuators, software = Software, sensors = Sensors)
 
-    t = time()
-    sol = simulate(sys, eval(Meta.parse(sim[:tspan])); output_type=DataFrame)
-    dt = time() - t
+    sim_dt = eval(Meta.parse(sim[:dt]))
+
+    t = time()    
+    sol = simulate(sys, eval(Meta.parse(sim[:tspan])); dt = sim_dt, output_type=DataFrame)
+    
+    simtime = time() - t
     if (isempty(sim[:name]))
         t = lpad(string(abs(rand(Int16))), 5, "0")
         sim_name = "sim$(t)"
@@ -272,7 +289,7 @@ function routerSimulate(req::HTTP.Request)
     end
 
 
-    HTTP.Response(200, "$(dt)")
+    HTTP.Response(200, "$(simtime)")
 end
 
 function routerLoadStates(req::HTTP.Request)
@@ -366,6 +383,6 @@ function routerLoadModels(req::HTTP.Request)
 end
 
 function routerCustomSoftware(req::HTTP.Request)
-    cs = keys(get_custom_software())
+    cs = keys(get_custom_software())    
     HTTP.Response(200, JSON3.write(cs))
 end

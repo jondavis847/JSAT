@@ -48,7 +48,11 @@ function simulate(orig_sys::MultibodySystem, tspan; dt = nothing, output_type=no
 
     #get callbacks    
     sensor_cb = [get_callback(sys.sensors[i],i) for i in eachindex(sys.sensors)]
-    software_cb = [get_callback(sys.software[i],i) for i in eachindex(sys.software)]
+    software_cb = []
+    for i in eachindex(sys.software)
+        cbs = get_callback(sys.software[i], i)
+        append!(software_cb,cbs)
+    end    
     
     cb = CallbackSet(sensor_cb...,software_cb...,save_cb) #must follow order
 

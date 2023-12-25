@@ -26,7 +26,8 @@ let JSAT = {
         name: "",
         nruns: 0,
         tspan: "(0,10)",
-        saveLocation: ""
+        saveLocation: "",
+        dt: ""
     },
 };
 
@@ -58,6 +59,7 @@ $("#simStopTime").on("blur", getSimOptions);
 $("#simName").on("blur", getSimOptions);
 $("#simNruns").on("blur", getSimOptions);
 $("#simSaveLocation").on("blur", getSimOptions);
+$("#simDt").on("blur", getSimOptions);
 //on click
 $("#simTabButton").on("click", changeTab);
 $("#plotTabButton").on("click", changeTab);
@@ -94,6 +96,7 @@ $("#boxButton").on('click', clickAddBoxBody);
 $("#cylinderButton").on('click', clickAddCylinderBody);
 $('#baseButton').on('click', addBase);
 $('#earthButton').on('click', addBaseEarth);
+$('#prismaticButton').on('click', clickAddPrismaticJoint);
 $('#revoluteButton').on('click', clickAddRevoluteJoint);
 $('#floatingButton').on('click', clickAddFloatingJoint);
 $('#fixedButton').on('click', clickAddFixedJoint);
@@ -141,7 +144,6 @@ $('#loadFileInput').on('change', function (e) {
 });
 
 getSimFileNames();
-getCustomSoftware();
 loadModels();
 
 
@@ -335,27 +337,18 @@ cy.on('ehcomplete', (evt, src, tar, edge) => {
             const source_id = src.data().label;
             const target_id = tar.data().label;
             JSAT.joints[target_id]["predecessor"] = source_id;
-        }
-
-        if (tar.classes().includes("port")) {
-            const source_id = src.data().label;
-            const target_id = tar.data().label;
-            JSAT.outports[target_id]["predecessor"] = source_id;
-        }
-
-        if (tar.classes().includes("actuator")) {
+        } else if (tar.classes().includes("actuator")) {
             jsatConsole("connect actuators to bodies, not bodys to actuators")
             edge.remove();
             return;
-        }
-
-        if (tar.classes().includes("gravity")) {
+        } else if (tar.classes().includes("gravity")) {
             jsatConsole("connect environments to bodies, not bodies to environments")
             edge.remove();
             return;
+        } else if (tar.classes().includes("sensor")) {
+            jsatConsole("connect sensors to bodies, not bodies to sensors")
         }
 
-        
     }
 
     if (src.classes().includes("actuator")) {
@@ -388,7 +381,8 @@ cy.on('ehcomplete', (evt, src, tar, edge) => {
         if (tar.classes().includes("actuator")) {
             const source_id = src.data().label;
             const target_id = tar.data().label;
-            JSAT.actuators[target_id]["command"] = source_id;        
+            JSAT.actuators[target_id]["command"] = source_id;
+            JSAT.software[source_id].actuators.push(target_id);
         } else {
             jsatConsole("software only connects to actuators and other software")
         }
@@ -399,7 +393,7 @@ cy.on('ehcomplete', (evt, src, tar, edge) => {
             const source_id = src.data().label;
             const target_id = tar.data().label;
             JSAT.bodies[target_id].sensors.push(source_id);
-        } else if (tar.classes().includes("software")){
+        } else if (tar.classes().includes("software")) {
             const source_id = src.data().label;
             const target_id = tar.data().label;
             JSAT.software[target_id].sensors.push(source_id);
@@ -807,6 +801,31 @@ function addJointFixedInputs() {
 
 }
 
+function addJointPrismaticInputs() {
+    $('#jointTable tbody').append("<tr class = 'joint-input'> \
+            <td><label class='form-font'>position:</label><br></td> \
+            <td><input id='newJointPosition' class='form-input' type='text' placeholder='0'><br></td>\
+        </tr>");
+
+    $('#jointTable tbody').append("<tr class = 'joint-input'> \
+            <td><label class='form-font'>velocity:</label><br></td> \
+            <td><input id='newJointVelocity' class='form-input' type='text' placeholder='0'><br></td>\
+        </tr>");
+
+}
+function clickAddPrismaticJoint() {
+    //remove all old inputs
+    $('.joint-input').remove();
+    //add revolute specific inputs
+    addJointPrismaticInputs();
+    // bind revolute to save event, mark as new 
+    $("#addJointSaveButton").off()
+    $("#addJointSaveButton").on("click", { new: true, type: 'prismatic', name: '' }, saveJoint)
+    //show the details div
+    $('#addJointDiv').show();
+}
+
+
 function clickAddRevoluteJoint() {
     //remove all old inputs
     $('.joint-input').remove();
@@ -879,6 +898,15 @@ function saveJoint(event) {
         if (joint.omega === "") { joint.omega = "0" }
     }
 
+    if (event.data.type === 'prismatic') {
+        joint['position'] = $("#newJointPosition").val();
+        joint['velocity'] = $("#newJointVelocity").val();
+
+        //defaults
+        if (joint.position === "") { joint.position = "0" }
+        if (joint.velocity === "") { joint.velocity = "0" }
+    }
+
     if (event.data.type === 'floating') {
         joint['q'] = $("#newJointQuat").val();
         joint['omega'] = $("#newJointOmega").val();
@@ -944,6 +972,12 @@ function editJoint() {
         $("#newJointOmega").val(joint.omega);
     }
 
+    if (joint.type === 'prismatic') {
+        addJointPrismaticInputs();
+        $("#newJointPosition").val(joint.position);
+        $("#newJointVelocity").val(joint.velocity);
+    }
+
     if (joint.type === 'floating') {
         addJointFloatingInputs();
         $("#newJointQuat").val(joint.q);
@@ -966,7 +1000,7 @@ function editJoint() {
 
 function clickAddSimpleAttitudeSensor() {
     //remove all old inputs
-    $('.sensor-input').remove();    
+    $('.sensor-input').remove();
     // bind sensor to save event, mark as new 
     $("#addSensorSaveButton").off()
     $("#addSensorSaveButton").on("click", { new: true, type: 'simpleAttitudeSensor', name: '' }, saveSensor)
@@ -977,7 +1011,7 @@ function clickAddSimpleAttitudeSensor() {
 
 function clickAddSimpleAttitudeSensor4() {
     //remove all old inputs
-    $('.sensor-input').remove();    
+    $('.sensor-input').remove();
     // bind sensor to save event, mark as new 
     $("#addSensorSaveButton").off()
     $("#addSensorSaveButton").on("click", { new: true, type: 'simpleAttitudeSensor4', name: '' }, saveSensor)
@@ -987,7 +1021,7 @@ function clickAddSimpleAttitudeSensor4() {
 
 function clickAddSimpleRateSensor() {
     //remove all old inputs
-    $('.sensor-input').remove();    
+    $('.sensor-input').remove();
     // bind sensor to save event, mark as new 
     $("#addSensorSaveButton").off()
     $("#addSensorSaveButton").on("click", { new: true, type: 'simpleRateSensor', name: '' }, saveSensor)
@@ -997,7 +1031,7 @@ function clickAddSimpleRateSensor() {
 
 function clickAddSimpleRateSensor3() {
     //remove all old inputs
-    $('.sensor-input').remove();    
+    $('.sensor-input').remove();
     // bind sensor to save event, mark as new 
     $("#addSensorSaveButton").off()
     $("#addSensorSaveButton").on("click", { new: true, type: 'simpleRateSensor3', name: '' }, saveSensor)
@@ -1014,7 +1048,7 @@ function saveSensor(event) {
         type: event.data.type,
         rotation: $("#newSensorRotation").val(),
         translation: $("#newSensorTranslation").val(),
-        body: "undef"        
+        body: "undef"
     };
 
     //defaults
@@ -1183,22 +1217,15 @@ function clickAddSoftwareTimedCommand() {
 
 function addSoftwareCustomInputs() {
     $('#softwareTable tbody').append("<tr class = 'software-input'> \
-            <td><label class='form-font'>function:</label><br></td> \
-            <td><input id='newSoftwareInit' class='form-input' type='text' placeholder='false'><br></td>\
+            <td><label class='form-font'>module:</label><br></td> \
+            <td><select id='newSoftwareModule' class='select' placeholder='select'><br></td>\
         </tr>");
 
-    $('#softwareTable tbody').append("<tr class = 'software-input'> \
-            <td><label class='form-font'>start times:</label><br></td> \
-            <td><input id='newSoftwareStartTimes' class='form-input' type='text' placeholder='[]'><br></td>\
-        </tr>");
-
-    $('#softwareTable tbody').append("<tr class = 'software-input'> \
-            <td><label class='form-font'>stop times:</label><br></td> \
-            <td><input id='newSoftwareStopTimes' class='form-input' type='text' placeholder='[]'><br></td>\
-        </tr>");
+    getCustomSoftware();
 }
 
 function clickAddSoftwareCustom() {
+
     //remove all old inputs
     $('.software-input').remove();
     //add software specific inputs
@@ -1231,6 +1258,11 @@ function saveSoftware(event) {
         if (software.tstarts === "") { software.tstarts = "[]" }
         if (software.tstops === "") { software.tstops = "[]" }
     }
+
+    if (event.data.type === 'custom') {
+        software['module'] = $("#newSoftwareModule").val()
+    }
+
 
     if (event.data.new) {
         cy.add({
@@ -1275,6 +1307,11 @@ function editSoftware() {
         $("#newSoftwareInit").val(software.init);
         $("#newSoftwareStartTimes").val(software.tstarts);
         $("#newSoftwareStopTimes").val(software.tstops);
+    }
+
+    if (software.type === 'custom') {
+        addSoftwareCustomInputs();
+        $("#newSoftwareModule").val(software.module)
     }
 
     $("#addSoftwareSaveButton").off();
@@ -1479,11 +1516,11 @@ function getCustomSoftware() {
     const xhr = new XMLHttpRequest();
     xhr.addEventListener("load", function () {
         let data = JSON.parse(this.responseText)
-
+        console.log(data)
         for (let i = 0; i < data.length; i++) {
-            $("#customSoftwareSelect").append($('<option>', {
+            $("#newSoftwareModule").append($('<option>', {
                 value: data[i],
-
+                text: data[i]
             }))
         }
     })
@@ -1657,12 +1694,17 @@ function plotStateData() {
 
 function getSimOptions() {
     var tstart = $("#simStartTime").val();
-    var tstop = $("#simStopTime").val();
+    var tstop = $("#simStopTime").val();    
+    var dt = $("#simDt").val()
+    if (dt == "") {
+        dt = "nothing"
+    }
 
     JSAT.sim.name = $("#simName").val();
     JSAT.sim.saveLocation = $("#simSaveLocation").val();
     JSAT.sim.nruns = $("#simNruns").val();
     JSAT.sim.tspan = `(${tstart},${tstop})`;
+    JSAT.sim.dt = dt
 }
 
 function changeTab(evt) {

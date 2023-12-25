@@ -3,11 +3,15 @@ mutable struct CustomSoftware <: AbstractSoftware
     entry::Function
     period::Float64    
     parameters::NamedTuple
-    variables::ComponentArray
+    variables::ComponentArray    
+    required_sensors::Vector{Symbol}
+    required_actuators::Vector{Symbol}
     connections::SoftwareConnection
-    CustomSoftware(name,entry,period) = new(name,entry,period,NamedTuple(),ComponentArray(),SoftwareConnection())    
-    CustomSoftware(name,entry,period,parameters) = new(name,entry,period,parameters,ComponentArray(),SoftwareConnection())    
-    CustomSoftware(name,entry,period,parameters,variables) = new(name,entry,period,parameters,variables,SoftwareConnection())    
+
+    CustomSoftware(name,entry,period) = new(name,entry,period,NamedTuple(),ComponentArray(),[],[],SoftwareConnection())    
+    CustomSoftware(name,entry,period,parameters) = new(name,entry,period,parameters,ComponentArray(),[],[],SoftwareConnection())        
+    CustomSoftware(name,entry,period,parameters,variables) = new(name,entry,period,parameters,variables,[],[],SoftwareConnection())        
+    CustomSoftware(name,entry,period,parameters,variables,sensors,actuators) = new(name,entry,period,parameters,variables,sensors,actuators,SoftwareConnection())        
 end
 
 get_initial_value(SW::CustomSoftware) = []

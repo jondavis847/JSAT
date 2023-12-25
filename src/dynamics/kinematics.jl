@@ -3,25 +3,29 @@ function calculate_transforms!(body::Body)
     parent = joint.connection.predecessor
 
     if !isa(joint, FixedJoint)
-        parent_to_body = inv(joint.connection.Fs) * joint.frame * joint.connection.Fp
-        body_to_parent = inv(joint.connection.Fp) * inv(joint.frame) * joint.connection.Fs
+        #parent_to_body = inv(joint.connection.Fs) * joint.frame * joint.connection.Fp        
+        #body_to_parent = inv(joint.connection.Fp) * inv(joint.frame) * joint.connection.Fs
+
+        #Featherstone transforms only go from Fp to outer joint frame, not to Fs. See figure 4.7
+        parent_to_body = joint.frame * joint.connection.Fp        
+        body_to_parent = inv(joint.connection.Fp) * inv(joint.frame)
 
         body.transforms.body_to_parent_force = ℱ(body_to_parent)
         body.transforms.body_to_parent_motion = ℳ(body_to_parent)
-        body.transforms.parent_to_body_force = ℳ(parent_to_body)
-        body.transforms.parent_to_body_motion = ℱ(parent_to_body)
+        body.transforms.parent_to_body_force = ℱ(parent_to_body)
+        body.transforms.parent_to_body_motion = ℳ(parent_to_body)
     end
 
     if parent isa BaseFrame
         body.transforms.body_to_base_force = body.transforms.body_to_parent_force
         body.transforms.body_to_base_motion = body.transforms.body_to_parent_motion
         body.transforms.base_to_body_force = body.transforms.parent_to_body_force
-        body.transforms.base_to_body_motion = body.transforms.parent_to_body_force
+        body.transforms.base_to_body_motion = body.transforms.parent_to_body_motion
     else    
         body.transforms.body_to_base_force = parent.transforms.body_to_base_force * body.transforms.body_to_parent_force
         body.transforms.body_to_base_motion = parent.transforms.body_to_base_motion * body.transforms.body_to_parent_motion
         body.transforms.base_to_body_force = body.transforms.parent_to_body_force * parent.transforms.base_to_body_force
-        body.transforms.base_to_body_motion = body.transforms.parent_to_body_force * parent.transforms.base_to_body_force
+        body.transforms.base_to_body_motion = body.transforms.parent_to_body_motion * parent.transforms.base_to_body_motion
     end
 
     return nothing
@@ -33,8 +37,12 @@ calculate_transforms!(sys::MultibodySystem) = calculate_transforms!.(sys.bodies)
 function calculate_transforms_FixedJoints!(body)
         joint = body.inner_joint    
         if isa(joint, FixedJoint)            
-            parent_to_body = inv(joint.connection.Fs) * joint.frame * joint.connection.Fp
-            body_to_parent = inv(joint.connection.Fp) * inv(joint.frame) * joint.connection.Fs
+            #parent_to_body = inv(joint.connection.Fs) * joint.frame * joint.connection.Fp
+            #body_to_parent = inv(joint.connection.Fp) * inv(joint.frame) * joint.connection.Fs
+
+            #Featherstone transforms only go from Fp to outer joint frame, not to Fs. See figure 4.7
+            parent_to_body = joint.frame * joint.connection.Fp        
+            body_to_parent = inv(joint.connection.Fp) * inv(joint.frame)
 
             body.transforms.body_to_parent_motion = ℳ(body_to_parent)
             body.transforms.body_to_parent_force = ℱ(body_to_parent)

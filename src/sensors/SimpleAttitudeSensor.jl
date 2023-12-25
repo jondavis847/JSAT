@@ -2,7 +2,7 @@ mutable struct SimpleAttitudeSensor <: AbstractSensor
     name::Symbol
     connection::SensorConnection
     attitude::Float64        
-    SimpleAttitudeSensor(name) = new(Symbol(name))
+    SimpleAttitudeSensor(name) = new(Symbol(name),SensorConnection())
 end
 mutable struct SimpleAttitudeSensor4 <: AbstractSensor
     name::Symbol    

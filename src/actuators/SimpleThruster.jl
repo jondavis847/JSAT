@@ -10,7 +10,7 @@ mutable struct SimpleThruster <: AbstractActuator
     current_joint_force::SVector{6,Float64}
     body::AbstractBody #TODO need to make this parametric
     callback::DiscreteCallback # really a FunctionCallingCallback
-    SimpleThruster(name, force) = new(name, force, 0)
+    SimpleThruster(name, force) = new(name, force, 0,false)
 end
 
 function get_actuator_force!(A::SimpleThruster)
