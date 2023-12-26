@@ -80,15 +80,6 @@
             <button id="simButton" class="sim-button"> simulate </button>
           </div>
 
-
-          <!-- scenario loader -->
-          <div id="scenarioLoaderDiv" class="scenario-loader-div">
-            <button id="scenarioTitleButton" class="builder-title-button"> scenarios </button>
-            <button id="saveScenarioButton" class="loader-save-button">save</button>
-            <button id="loadScenarioButton" class="loader-load-button">load</button>
-          </div>
-
-
           <!-- model loader -->
           <div id="modelLoaderDiv" class="model-loader-div">
             <button id="basesButton" class="model-button">bases</button>
@@ -100,7 +91,11 @@
             <button id="softwareButton" class="model-button">software</button>
             <button id="actuatorsButton" class="model-button">actuators</button>
             <button id="modelsButton" class="model-button">models</button>
-            <button id="portsButton" class="model-button not-avail">ports</button>
+            <button id="scenariosButton" class="model-button">scenarios</button>
+          </div>
+
+          <div id="scenariosLoaderDiv" class="model-loader-div hidden-loader-div">            
+            <button id="scenariosBackButton" class="model-button model-loader-back-btn">back</button>
           </div>
 
           <div id="basesLoaderDiv" class="model-loader-div hidden-loader-div">
@@ -162,16 +157,12 @@
           <div id="modelsLoaderDiv" class="model-loader-div hidden-loader-div">
             <button id="modelsBackButton" class="model-button model-loader-back-btn">back</button>
           </div>
-          <div id="portsLoaderDiv" class="model-loader-div hidden-loader-div">
-            <button id="addInportButton" class="model-button">+in port</button>
-            <button id="addOutportButton" class="model-button">+out port</button>
-            <button id="portsBackButton" class="model-button model-loader-back-btn">back</button>
-          </div>
 
           <div id='cyToolbar' class='cy-toolbar'>
             <button id='drawModeBtn' class='draw-mode-btn not-active-border'>connect</button>
             <button id='deleteBtn' class='delete-btn not-active-border'>delete</button>
-            <button id='createModelBtn' class='create-model-btn not-active-border'>create model</button>
+            <button id='saveScenarioBtn' class='save-scenario-btn not-active-border'>save scenario</button>
+            <button id='clearCanvasBtn' class='clear-canvas-btn not-active-border'>clear canvas</button>
           </div>
           <div id="cyCanvasDiv" class="cy-canvas-div"></div>
           <div id="nameOnlyDiv" class="element-details-div">
@@ -189,24 +180,7 @@
               <button id="addElementSaveButton" class="add-body-save-button">save</button>
               <button id="addElementCancelButton" class="add-body-cancel-button">cancel</button>
             </div>
-          </div>
-          <div id="createModelDiv" class="element-details-div">
-            <div class="element-title-div">enter info to create model</div>
-            <button id="addModelParamBtn" class="add-model-param-button">+ parameter</button>
-            <div class="model-element-table-div">
-              <table class="table">
-                <tr>
-                  <td><label class='form-font'>name:</label><br></td>
-                  <td><input id="createModelName" class='form-input' type='text' placeholder="name"><br>
-                  </td>
-                </tr>
-              </table>
-            </div>
-            <div class="add-body-buttons-div">
-              <button id="createModelSaveButton" class="add-body-save-button">save</button>
-              <button id="createModelCancelButton" class="add-body-cancel-button">cancel</button>
-            </div>
-          </div>
+          </div>          
 
           <div id="addBodyDiv" class="element-details-div">
             <div class="element-title-div">

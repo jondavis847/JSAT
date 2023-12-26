@@ -21,8 +21,10 @@ function jsat_server()
     HTTP.register!(ROUTER, "GET", "/loadmodels", routerLoadModels)
     HTTP.register!(ROUTER, "POST", "/loadstates", routerLoadStates)
     HTTP.register!(ROUTER, "POST", "/plotstates", routerPlot)
-    HTTP.register!(ROUTER, "POST", "/animation", routerAnimate)
-    HTTP.register!(ROUTER, "POST", "/createmodel", routerCreateModel)
+    HTTP.register!(ROUTER, "POST", "/animation", routerAnimate)    
+    HTTP.register!(ROUTER, "POST", "/savescenario", routerSaveScenario)
+    HTTP.register!(ROUTER, "GET", "/getscenarios", routerGetScenarios)
+    HTTP.register!(ROUTER, "POST", "/loadscenario", routerLoadScenario)
 
     server = HTTP.serve!(ROUTER, ip"127.0.0.1", 80)
     printstyled("servers up! ctrl+click url to go : http://127.0.0.1:80 \n", color=:light_yellow)
@@ -385,4 +387,30 @@ end
 function routerCustomSoftware(req::HTTP.Request)
     cs = keys(get_custom_software())    
     HTTP.Response(200, JSON3.write(cs))
+end
+
+function routerSaveScenario(req::HTTP.Request)
+    message = JSON3.read(req.body)
+    scenario_name = message[:name] 
+     open("scenarios\\$(scenario_name).json", "w") do io
+        JSON3.pretty(io, message)
+    end
+    HTTP.Response(200, "saved")
+end
+
+function routerGetScenarios(req::HTTP.Request)
+    tmp = []
+    files = readdir("scenarios")
+    for file in files
+        scenario_name = replace(file, ".json" => "")               
+        push!(tmp, scenario_name)
+    end        
+    HTTP.Response(200, JSON3.write(tmp))
+end
+
+function routerLoadScenario(req::HTTP.Request)  
+    message = JSON3.read(req.body)
+    println(message)  
+    scenario = JSON3.read("scenarios\\$(message[:name]).json")
+    HTTP.Response(200, JSON3.write(scenario))
 end

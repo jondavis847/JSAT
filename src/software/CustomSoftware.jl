@@ -20,7 +20,7 @@ set_state!(SW::CustomSoftware,x) = nothing
 
 function get_callback(SW::CustomSoftware,i)
     affect! = (integrator) -> integrator.p.sys.software[i].entry(integrator.p.sys.software[i])
-    return PeriodicCallback(affect!,SW.period; initial_affect = false)
+    return [PeriodicCallback(affect!,SW.period; initial_affect = false)]
 end
 
 function get_savedict(SW::CustomSoftware, i)

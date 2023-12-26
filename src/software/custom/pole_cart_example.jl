@@ -19,13 +19,13 @@ function create_pole_cart_software()
             software.parameters.kd * software.variables.rate_error +
             software.parameters.ki * software.variables.integral_error)
 
-        software.variables.accel_cmd > 1 ? left_thruster.command = true : left_thruster.command = false
-        software.variables.accel_cmd < -1 ? right_thruster.command = true : right_thruster.command = false
+        software.variables.accel_cmd < -1 ? left_thruster.command = true : left_thruster.command = false
+        software.variables.accel_cmd > 1 ? right_thruster.command = true : right_thruster.command = false
 
         return nothing
     end
 
-    fsw_parameters = (kp=-10, kd=0, ki=0)
+    fsw_parameters = (kp=-100, kd=-100, ki=0)
     fsw_variables = ComponentArray(attitude_error=0.0, rate_error=0.0, integral_error=0.0, accel_cmd=0.0)
     required_sensors = [:attitude,:rate]
     required_actuators = [:left_thruster,:right_thruster]

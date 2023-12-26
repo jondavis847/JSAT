@@ -596,7 +596,7 @@ button:focus {
 .cy-canvas-div {
     position:absolute;
     left:35%;
-    width:75%;
+    width:65%;
     top:5%;
     height:95%;    
     background-color: rgba(35, 36, 35, 1);
@@ -732,7 +732,7 @@ button:focus {
     z-index: 10;      
 }
 
-.create-model-btn {
+.save-scenario-btn {
     background-color: rgba(25, 25, 25, 1);
     box-sizing: border-box;    
     position:absolute;
@@ -743,6 +743,20 @@ button:focus {
     color: aquamarine;
     text-align: center;
     font-family: 'Courier New', monospace; 
-    z-index: 10;      
+    z-index: 10;    
+}
 
+
+.clear-canvas-btn {
+    background-color: rgba(25, 25, 25, 1);
+    box-sizing: border-box;    
+    position:absolute;
+    left:40%;
+    width:15%;
+    top:0%;
+    height:100%;   
+    color: aquamarine;
+    text-align: center;
+    font-family: 'Courier New', monospace; 
+    z-index: 10;    
 }

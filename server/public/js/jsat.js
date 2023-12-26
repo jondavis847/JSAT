@@ -70,7 +70,6 @@ $("#addJointCancelButton").on("click", () => { $("#addJointDiv").hide() });
 $("#addActuatorCancelButton").on("click", () => { $("#addActuatorDiv").hide() });
 $("#addSensorCancelButton").on("click", () => { $("#addSensorDiv").hide() });
 $("#addSoftwareCancelButton").on("click", () => { $("#addSoftwareDiv").hide() });
-$("#createModelCancelButton").on("click", () => { $("#createModelDiv").hide() });
 $("#loadSimStates").on("click", getSimStates);
 $("#plotState").on("click", plotStateData);
 $("#animateBtn").on("click", makeAnimation);
@@ -92,6 +91,8 @@ $("#modelsButton").on("click", () => { $("#modelsLoaderDiv").show() });
 $("#modelsBackButton").on("click", () => { $("#modelsLoaderDiv").hide() });
 $("#portsButton").on("click", () => { $("#portsLoaderDiv").show() });
 $("#portsBackButton").on("click", () => { $("#portsLoaderDiv").hide() });
+$("#scenariosButton").on("click", () => { $("#scenariosLoaderDiv").show() });
+$("#scenariosBackButton").on("click", () => { $("#scenariosLoaderDiv").hide() });
 $("#boxButton").on('click', clickAddBoxBody);
 $("#cylinderButton").on('click', clickAddCylinderBody);
 $('#baseButton').on('click', addBase);
@@ -107,9 +108,8 @@ $('#constantGravityButton').on('click', clickAddGravityConstant);
 $('#drawModeBtn').on('click', toggleDrawMode);
 $('#chooseFileButton').on('click', () => { $('#loadFileInput').click() });
 $('#deleteBtn').on('click', deleteElements);
-$('#createModelBtn').on('click', clickCreateModel);
-$('#addInportButton').on('click', clickAddInport);
-$('#addOutportButton').on('click', clickAddOutport);
+$('#saveScenarioBtn').on('click', clickSaveScenario);
+$('#clearCanvasBtn').on('click', clearCanvas);
 $('#simpleAttitudeSensorButton').on('click', clickAddSimpleAttitudeSensor);
 $('#simpleAttitudeSensor4Button').on('click', clickAddSimpleAttitudeSensor4);
 $('#simpleRateSensorButton').on('click', clickAddSimpleRateSensor);
@@ -145,6 +145,8 @@ $('#loadFileInput').on('change', function (e) {
 
 getSimFileNames();
 loadModels();
+getScenarios();
+
 
 
 function cy_autosize(node) {
@@ -248,15 +250,6 @@ var cy = cytoscape({
                 'height': 50,
             }
         },
-        {
-            selector: '.port',
-            style: {
-                'shape': 'ellipse',
-                'background-color': '#eeeeee',
-                'width': 50,
-                'height': 25,
-            }
-        },
         { // just to suppress a warning with edgehandles https://github.com/cytoscape/cytoscape.js-edgehandles/issues/119
             //didnt work
             selector: '.eh-ghost-node',
@@ -308,6 +301,19 @@ $(document).on("keyup", (event) => {
     }
 });
 */
+
+function clearCanvas() {
+    cy.elements().remove();
+    JSAT.base = {};
+    JSAT.bodies = {};
+    JSAT.joints = {};
+    JSAT.actuators = {};
+    JSAT.software = {};
+    JSAT.sensors = {};
+    JSAT.gravity = {};
+};
+
+
 
 cy.on('select', (evt) => {
     evt.target.style({ 'border-color': 'yellow' });
@@ -439,10 +445,20 @@ cy.on('ehcomplete', (evt, src, tar, edge) => {
 
 cy.on('dbltap', '.body', editBody)
 cy.on('dbltap', '.joint', editJoint)
-cy.on('dbltap', '.port', editPort)
 cy.on('dbltap', '.actuator', editActuator)
 cy.on('dbltap', '.software', editSoftware)
 cy.on('dbltap', '.sensor', editSensor)
+cy.on('dbltap', '.gravity', editGravity)
+
+cy.on('dragfree', '.base', function (evt) { JSAT.base.renderedPosition = evt.target.renderedPosition(); });
+cy.on('dragfree', '.body', function (evt) { JSAT.bodies[evt.target.data("label")].renderedPosition = evt.target.renderedPosition(); });
+cy.on('dragfree', '.joint', function (evt) { JSAT.joints[evt.target.data("label")].renderedPosition = evt.target.renderedPosition(); });
+cy.on('dragfree', '.actuator', function (evt) { JSAT.actuators[evt.target.data("label")].renderedPosition = evt.target.renderedPosition(); console.log(JSAT)});
+cy.on('dragfree', '.software', function (evt) { JSAT.software[evt.target.data("label")].renderedPosition = evt.target.renderedPosition(); });
+cy.on('dragfree', '.sensor', function (evt) { JSAT.sensors[evt.target.data("label")].renderedPosition = evt.target.renderedPosition(); });
+cy.on('dragfree', '.gravity', function (evt) { JSAT.gravity[evt.target.data("label")].renderedPosition = evt.target.renderedPosition(); });
+
+
 
 /*
 cy.on('tap', 'node', function (evt) {
@@ -464,6 +480,8 @@ function toggleDrawMode() {
 }
 
 function addBase() {
+    let height = cy.height()
+    let width = cy.width()
     if (cy.$('.base').length > 0) {
         jsatConsole('cant have more than 1 base!')
     } else {
@@ -471,22 +489,28 @@ function addBase() {
             group: 'nodes',
             data: {
                 id: 'base',
-                label: 'base'
+                label: 'base',
+                jsatTarget: JSAT.base
             },
             classes: 'base',
             renderedPosition: {
-                x: 300,
-                y: 300,
+                x: width / 2,
+                y: height / 2,
             },
         });
     }
     JSAT.base = {
         type: "default",
-        gravity: []
+        gravity: [],
+        renderedPosition: cy.$('#base').renderedPosition()
     }
+    console.log(JSAT.base)
 }
 
+
 function addBaseEarth() {
+    let height = cy.height()
+    let width = cy.width()
     if (cy.$('.base').length > 0) {
         jsatConsole('cant have more than 1 base!')
     } else {
@@ -498,14 +522,15 @@ function addBaseEarth() {
             },
             classes: 'base',
             renderedPosition: {
-                x: 300,
-                y: 300,
+                x: width / 2,
+                y: height / 2,
             },
         });
     }
     JSAT.base = {
         type: "earth",
-        gravity: []
+        gravity: [],
+        renderedPosition: cy.$('#earth').renderedPosition()
     }
 }
 
@@ -597,22 +622,6 @@ function clickAddCylinderBody() {
     $('#addBodyDiv').show();
 }
 
-function clickAddInport() {
-    $('#newElementName').val("");
-    $('#nameOnlyDiv').show();
-    // bind box to save event, mark as new 
-    $("#addElementSaveButton").off()
-    $("#addElementSaveButton").on("click", { new: true, name: "", type: "in" }, savePort)
-}
-
-function clickAddOutport() {
-    $('#newElementName').val("");
-    $('#nameOnlyDiv').show();
-    // bind box to save event, mark as new 
-    $("#addElementSaveButton").off()
-    $("#addElementSaveButton").on("click", { new: true, name: "", type: "out" }, savePort)
-}
-
 function saveBody(event) {
     let body = {
         name: $("#newBodyName").val(),
@@ -630,7 +639,8 @@ function saveBody(event) {
         actuators: [],
         sensors: [],
         gravity: [],
-        environments: []
+        environments: [],
+        renderedPosition: {}
     };
 
     //defaults
@@ -679,6 +689,8 @@ function saveBody(event) {
 
     // create button if this is a new body        
     const name = $("#newBodyName").val();
+    const height = cy.height();
+    const width = cy.width();
     if (event.data.new) {
         cy.add({
             group: 'nodes',
@@ -688,10 +700,11 @@ function saveBody(event) {
             },
             classes: 'body',
             renderedPosition: {
-                x: 300,
-                y: 300,
+                x: width / 2,
+                y: height / 2,
             },
         });
+        body.renderedPosition = cy.$(`#body${name}`).renderedPosition();
     } else {
         //update node data
         cy.$(`#body${event.data.name}`).data('id', `body${name}`)
@@ -872,6 +885,7 @@ function saveJoint(event) {
         FpPhi: $("#newJointFpPhi").val(),
         FsRho: $("#newJointFsRho").val(),
         FsPhi: $("#newJointFsPhi").val(),
+        renderedPosition: {}
     };
 
     if (event.data.new) {
@@ -930,6 +944,8 @@ function saveJoint(event) {
     }
 
     if (event.data.new) {
+        const height = cy.height();
+        const width = cy.width();
         cy.add({
             group: 'nodes',
             data: {
@@ -938,10 +954,11 @@ function saveJoint(event) {
             },
             classes: 'joint',
             renderedPosition: {
-                x: 300,
-                y: 300,
+                x: width / 2,
+                y: height / 2,
             },
         });
+        joint.renderedPosition = cy.$(`joint${name}`).renderedPosition();
     } else {
         cy.$(`#joint${event.data.name}`).data('id', `joint${name}`)
         cy.$(`#joint${event.data.name}`).data('label', name)
@@ -1048,7 +1065,8 @@ function saveSensor(event) {
         type: event.data.type,
         rotation: $("#newSensorRotation").val(),
         translation: $("#newSensorTranslation").val(),
-        body: "undef"
+        body: "undef",
+        renderedPosition: {}
     };
 
     //defaults
@@ -1056,6 +1074,9 @@ function saveSensor(event) {
     if (sensor.translation === "") { sensor.translation = "zeros(3)" }
 
     if (event.data.new) {
+        const height = cy.height();
+        const width = cy.width();
+
         cy.add({
             group: 'nodes',
             data: {
@@ -1064,10 +1085,11 @@ function saveSensor(event) {
             },
             classes: 'sensor',
             renderedPosition: {
-                x: 300,
-                y: 300,
+                x: width / 2,
+                y: height / 2,
             },
         });
+        sensor.renderedPosition = cy.$(`#sensor${name}`).renderedPosition();
     } else {
         cy.$(`#sensor${event.data.name}`).data('id', `sensor${name}`)
         cy.$(`#sensor${event.data.name}`).data('label', name)
@@ -1124,7 +1146,8 @@ function saveActuator(event) {
         type: event.data.type,
         rotation: $("#newActuatorRotation").val(),
         translation: $("#newActuatorTranslation").val(),
-        command: "undef"
+        command: "undef",
+        renderedPosition: {}
     };
 
     //defaults
@@ -1139,6 +1162,8 @@ function saveActuator(event) {
     }
 
     if (event.data.new) {
+        const height = cy.height();
+        const width = cy.width();
         cy.add({
             group: 'nodes',
             data: {
@@ -1147,10 +1172,11 @@ function saveActuator(event) {
             },
             classes: 'actuator',
             renderedPosition: {
-                x: 300,
-                y: 300,
+                x: width / 2,
+                y: height / 2,
             },
         });
+        actuator.renderedPosition = cy.$(`#actuator${name}`).renderedPosition();
     } else {
         cy.$(`#actuator${event.data.name}`).data('id', `actuator${name}`)
         cy.$(`#actuator${event.data.name}`).data('label', name)
@@ -1245,7 +1271,8 @@ function saveSoftware(event) {
         type: event.data.type,
         sensors: [],
         actuators: [],
-        software: []
+        software: [],
+        renderedPosition: {}
     };
 
     if (event.data.type === 'timedCommand') {
@@ -1265,6 +1292,8 @@ function saveSoftware(event) {
 
 
     if (event.data.new) {
+        const height = cy.height();
+        const width = cy.width();
         cy.add({
             group: 'nodes',
             data: {
@@ -1273,10 +1302,11 @@ function saveSoftware(event) {
             },
             classes: 'software',
             renderedPosition: {
-                x: 300,
-                y: 300,
+                x: width / 2,
+                y: height / 2,
             },
         });
+        software.renderedPosition = cy.$(`#software${name}`).renderedPosition();
     } else {
         cy.$(`#software${event.data.name}`).data('id', `software${name}`)
         cy.$(`#software${event.data.name}`).data('label', name)
@@ -1346,6 +1376,7 @@ function saveGravity(event) {
     let gravity = {
         name: name,
         type: event.data.type,
+        renderedPosition: {},
     };
 
     if (event.data.type === 'constant') {
@@ -1356,6 +1387,8 @@ function saveGravity(event) {
     }
 
     if (event.data.new) {
+        const height = cy.height();
+        const width = cy.width();
         cy.add({
             group: 'nodes',
             data: {
@@ -1364,10 +1397,11 @@ function saveGravity(event) {
             },
             classes: 'gravity',
             renderedPosition: {
-                x: 300,
-                y: 300,
+                x: width / 2,
+                y: height / 2,
             },
         });
+        gravity.renderedPosition = cy.$(`gravity${name}`).renderedPosition();
     } else {
         cy.$(`#gravity${event.data.name}`).data('id', `gravity${name}`)
         cy.$(`#gravity${event.data.name}`).data('label', name)
@@ -1398,75 +1432,6 @@ function editGravity() {
     $("#addGravityDiv").show();
 
 };
-
-
-
-function savePort(event) {
-    const name = $("#newElementName").val();
-
-    let port = {
-        name: name,
-    };
-
-    if (event.data.new) {
-        if (event.data.type === "in") {
-            port.successor = "undef";  //defined after connection
-        }
-        if (event.data.type === "out") {
-            port.predecessor = "undef";  //defined after connection
-        }
-        cy.add({
-            group: 'nodes',
-            data: {
-                id: `${name}`,
-                label: name,
-                type: event.data.type
-            },
-            classes: 'port',
-            renderedPosition: {
-                x: 300,
-                y: 300,
-            },
-        });
-    } else {
-        if (event.data.type === "in") {
-            port.successor = event.data.successor;
-            delete JSAT.inports[event.data.name]
-        }
-        if (event.data.type === "out") {
-            port.predecessor = event.data.predecessor;
-            delete JSAT.outports[event.data.name]
-        }
-
-    }
-    if (event.data.type === "in") {
-        JSAT.inports[name] = port;
-    }
-    if (event.data.type === "out") {
-        JSAT.outports[name] = port;
-    }
-    $('#nameOnlyDiv').hide();
-    console.log(JSAT)
-}
-
-function editPort() {
-
-    const name = this.data().label;
-    const type = this.data().type;
-    let port;
-    if (type === "in") {
-        port = JSAT.inports[name];
-    }
-    if (type === "out") {
-        port = JSAT.outports[name];
-    }
-
-    $("#newElementName").val(port.name);
-
-    $("#addElementSaveButton").off();
-    $("#addElementSaveButton").on("click", { new: false, name: name, type: type, successor: port.successor }, savePort)
-    $("#addElementDiv").show();
-}
 
 function sendSimulationData() {
     const xhr = new XMLHttpRequest();
@@ -1694,7 +1659,7 @@ function plotStateData() {
 
 function getSimOptions() {
     var tstart = $("#simStartTime").val();
-    var tstop = $("#simStopTime").val();    
+    var tstop = $("#simStopTime").val();
     var dt = $("#simDt").val()
     if (dt == "") {
         dt = "nothing"
@@ -2019,47 +1984,267 @@ function deleteElements() {
 
     console.log(JSAT)
 }
-function clickCreateModel() {
-    $('#createModelName').val("");
-    $('#createModelDiv').show();
 
-    $("#createModelSaveButton").off()
-    $("#createModelSaveButton").on("click", { new: true, name: "" }, createModel)
+function clickSaveScenario() {
+    $("#newElementName").val("");
+    $("#addElementSaveButton").off();
+    $("#addElementSaveButton").on("click", saveScenario);
+    $("#nameOnlyDiv").show();
 }
-function createModel(event) {
-    const name = $('#createModelName').val();
-    const elements = cy.nodes();
-    elements.forEach((ele) => {
-        if (ele.hasClass('body')) {
-            JSAT.bodies[ele.data().label].nodeRenderedPosition = ele.renderedPosition;
-            console.log(JSAT)
-        }
-        if (ele.hasClass('joint')) {
-            JSAT.joints[ele.data().label].nodeRenderedPosition = ele.renderedPosition;
-        }
-        if (ele.hasClass('port')) {
-            if (ele.data.type === "in") {
-                JSAT.inports[ele.data().label].nodeRenderedPosition = ele.renderedPosition;
-            }
-            if (ele.data.type === "out") {
-                JSAT.outports[ele.data().label].nodeRenderedPosition = ele.renderedPosition;
-            }
-        }
 
-    });
-
+function saveScenario() {
+    const scenario_name = $("#newElementName").val();
     const xhr = new XMLHttpRequest();
-    xhr.open("POST", "/createmodel");
+    xhr.open("POST", "/savescenario");
     xhr.setRequestHeader("Content-Type", "application/json; charset=UTF-8");
     xhr.onreadystatechange = () => {
         // Call a function when the state changes.
         if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
-            loadModels();
-            jsatConsole(`added ${name} to models.jld2 on jsat server. check model library`)
+            jsatConsole(`scenario saved`)
+            $("#nameOnlyDiv").hide();
+            getScenarios()
         }
     };
-    let modelData = { name: name, model: JSAT }
-    xhr.send(JSON.stringify(modelData));
+    let message = {
+        name: scenario_name,
+        scenario: JSAT
+    }
+    xhr.send(JSON.stringify(message));
+}
 
-    $('#createModelDiv').hide()
+function getScenarios() {
+    const xhr = new XMLHttpRequest();
+    xhr.addEventListener("load", function () {
+        let scenarios = JSON.parse(this.responseText)
+        //remove old buttons
+        $('.loaded-scenario-button').remove();
+        //make scenario buttons for each model        
+        for (let i = 0; i < scenarios.length; i++) {
+            let name = scenarios[i];
+            let btn = $('<button/>', {
+                id: `${name}ScenarioButton`,
+                html: name
+            });
+            btn.addClass('model-button');
+            btn.addClass('loaded-scenario-button');
+
+            btn.on('click', { name: name }, loadScenario)
+            //place button in div            
+            $('#scenariosLoaderDiv').append(btn);
+        }
+
+    });
+    xhr.open("GET", "/getscenarios", true);
+    xhr.send();
+}
+
+function loadScenario(event) {
+    const name = event.data.name;
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", "/loadscenario", true);
+    xhr.setRequestHeader("Content-Type", "application/json; charset=UTF-8");
+    xhr.addEventListener("load", function () {
+        const response = JSON.parse(this.responseText)
+        const jsat = response.scenario
+
+        cy.elements().remove();
+
+        //create the base
+
+        const base = jsat.base;
+        cy.add({
+            group: 'nodes',
+            data: {
+                id: 'base',
+                label: 'base',
+            },
+            classes: 'base',
+            renderedPosition: jsat.base.renderedPosition,
+        });
+
+        //create all the bodies
+
+        const bodies = Object.keys(jsat.bodies);
+        for (let i = 0; i < bodies.length; i++) {
+            let body = jsat.bodies[bodies[i]];
+            cy.add({
+                group: 'nodes',
+                data: {
+                    id: `body${body.name}`,
+                    label: body.name,
+                },
+                classes: 'body',
+                renderedPosition: body.renderedPosition,
+            });
+        }
+        //create all the joints
+        const joints = Object.keys(jsat.joints);
+        for (let i = 0; i < joints.length; i++) {
+            let joint = jsat.joints[joints[i]];
+            cy.add({
+                group: 'nodes',
+                data: {
+                    id: `joint${joint.name}`,
+                    label: joint.name,
+                },
+                classes: 'joint',
+                renderedPosition: joint.renderedPosition,
+            });
+        }
+        //create all the actuators
+        const actuators = Object.keys(jsat.actuators);
+        for (let i = 0; i < actuators.length; i++) {
+            let actuator = jsat.actuators[actuators[i]];
+            cy.add({
+                group: 'nodes',
+                data: {
+                    id: `actuator${actuator.name}`,
+                    label: actuator.name,
+                },
+                classes: 'actuator',
+                renderedPosition: actuator.renderedPosition,
+            });
+        }
+        //create all the software
+        const softwares = Object.keys(jsat.software);
+        for (let i = 0; i < softwares.length; i++) {
+            let software = jsat.software[softwares[i]];
+            cy.add({
+                group: 'nodes',
+                data: {
+                    id: `software${software.name}`,
+                    label: software.name,
+                },
+                classes: 'software',
+                renderedPosition: software.renderedPosition,
+            });
+        }
+        //create all the sensors
+        const sensors = Object.keys(jsat.sensors);
+        for (let i = 0; i < sensors.length; i++) {
+            let sensor = jsat.sensors[sensors[i]];
+            cy.add({
+                group: 'nodes',
+                data: {
+                    id: `sensor${sensor.name}`,
+                    label: sensor.name,
+                },
+                classes: 'sensor',
+                renderedPosition: sensor.renderedPosition,
+            });
+        }
+        //create all the gravity
+        const gravitys = Object.keys(jsat.gravity);
+        for (let i = 0; i < gravitys.length; i++) {
+            let gravity = jsat.gravity[gravitys[i]];
+            cy.add({
+                group: 'nodes',
+                data: {
+                    id: `gravity${gravity.name}`,
+                    label: gravity.name,
+                },
+                classes: 'gravity',
+                renderedPosition: gravity.renderedPosition,
+            });
+        }
+
+        //make all connections
+        if (base.gravity.length > 0) {
+            for (let i = 0; i < base.gravity.length; i++) {
+                cy.add({
+                    group: 'edges',
+                    data: { source: `gravity${base.gravity[i]}`, target: `base` }
+                })
+            }
+        }
+
+        for (let i = 0; i < joints.length; i++) {
+            let joint = jsat.joints[joints[i]];
+            if (joint.predecessor == 'base') {
+                cy.add({
+                    group: 'edges',
+                    data: { source: `base`, target: `joint${joint.name}` }
+                })
+            } else {
+                cy.add({
+                    group: 'edges',
+                    data: { source: `body${joint.predecessor}`, target: `joint${joint.name}` }
+                })
+            }
+            if (joint.successor == 'base') {
+                cy.add({
+                    group: 'edges',
+                    data: { source: `joint${joint.name}`, target: 'base' }
+                })
+            } else {
+                cy.add({
+                    group: 'edges',
+                    data: { source: `joint${joint.name}`, target: `body${joint.successor}` }
+                })
+            }
+
+        }
+
+        for (let i = 0; i < bodies.length; i++) {
+            let body = jsat.bodies[bodies[i]];
+            for (let j = 0; j < body.sensors.length; j++) {
+                let sensor = body.sensors[j]
+                cy.add({
+                    group: 'edges',
+                    data: { source: `sensor${sensor}`, target: `body${body.name}` }
+                })
+            }
+
+            for (let j = 0; j < body.actuators.length; j++) {
+                let actuator = body.actuators[j]
+                cy.add({
+                    group: 'edges',
+                    data: { source: `actuator${actuator}`, target: `body${body.name}` }
+                })
+            }
+
+            for (let j = 0; j < body.gravity.length; j++) {
+                let gravity = body.gravity[j]
+                cy.add({
+                    group: 'edges',
+                    data: { source: `gravity${gravity}`, target: `body${body.name}` }
+                })
+            }
+
+            for (let j = 0; j < body.environments.length; j++) {
+                let environment = body.environments[j]
+                cy.add({
+                    group: 'edges',
+                    data: { source: `environment${environment}`, target: `body${body.name}` }
+                })
+            }
+        }
+
+        for (let i = 0; i < softwares.length; i++) {
+            let software = jsat.software[softwares[i]];
+            for (let j = 0; j < software.actuators.length; j++) {
+                let actuator = software.actuators[j]
+                cy.add({
+                    group: 'edges',
+                    data: { source: `software${software.name}`, target: `actuator${actuator}` }
+                })
+            }
+
+            for (let j = 0; j < software.sensors.length; j++) {
+                let sensor = software.sensors[j]
+                cy.add({
+                    group: 'edges',
+                    data: { source: `sensor${sensor}`, target: `software${software.name}` }
+                })
+            }
+        }
+        //TODO: set sim options
+
+
+        cy.center()
+        JSAT = jsat;
+        console.log(JSAT)
+
+    });
+    xhr.send(JSON.stringify({ name: name }));
 }
