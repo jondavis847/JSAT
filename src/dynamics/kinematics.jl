@@ -53,7 +53,7 @@ function calculate_transforms_FixedJoints!(body)
 end
 calculate_transforms_FixedJoints!(sys::MultibodySystem) = calculate_transforms_FixedJoints!.(sys.bodies)
 
-function calculate_r!(body::AbstractBody)
+function calculate_body_positions!(body::AbstractBody)
     if !isa(body, BaseFrame)
         joint = body.inner_joint
 
@@ -79,4 +79,4 @@ function calculate_r!(body::AbstractBody)
 end
 
 # this assumes that vector of bodies are ordered by id. that must be true or this wont work, since the calc is recursive
-calculate_r!(sys::MultibodySystem) = calculate_r!.(sys.bodies)
+calculate_body_positions!(sys::MultibodySystem) = calculate_body_positions!.(sys.bodies)

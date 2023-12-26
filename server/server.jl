@@ -331,8 +331,9 @@ function routerAnimate(req::HTTP.Request)
     loc = "sim\\$(sim)"
     f = readdir(loc)
     sys = JSON3.read("$(loc)\\system.json")
-    t = CSV.read("$(loc)\\$(run).csv", DataFrame, select=["t"])
-    rd = DataFrame(t)
+    #t = CSV.read("$(loc)\\$(run).csv", DataFrame, select=["t"])
+    #rd = DataFrame(t)
+    full_states = []
 
     for body in sys.bodies
         body_name = body[2].name
@@ -345,12 +346,27 @@ function routerAnimate(req::HTTP.Request)
             "$(body_name)_r_base[2]"
             "$(body_name)_r_base[3]"
         ]
-        this_rd = CSV.read("$(loc)\\$(run).csv", DataFrame, select=[states...])
-        rd = hcat(rd, this_rd)
+        append!(full_states,states)
     end
 
+    for actuator in sys.actuators
+        actuator_name = actuator[2].name
+        states = [
+            "$(actuator_name)_q_base[1]"
+            "$(actuator_name)_q_base[2]"
+            "$(actuator_name)_q_base[3]"
+            "$(actuator_name)_q_base[4]"
+            "$(actuator_name)_r_base[1]"
+            "$(actuator_name)_r_base[2]"
+            "$(actuator_name)_r_base[3]"
+            "$(actuator_name)_force"
+        ]
+        append!(full_states,states)
+    end
+    rd = CSV.read("$(loc)\\$(run).csv", DataFrame, select=["t",full_states...])    
+
     D = Dict("sys" => sys, "data" => rd)
-    HTTP.Response(200, JSON3.write(D))#JSON3.write(simdata))
+    HTTP.Response(200, JSON3.write(D))
 end
 
 function routerCreateModel(req::HTTP.Request)

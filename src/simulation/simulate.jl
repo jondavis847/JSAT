@@ -10,7 +10,8 @@ function update_model!(sys, x)
     set_state!.(sys.software,Ref(x))
     set_state!.(sys.actuators,Ref(x))
     calculate_transforms!(sys)  # spatial transforms
-    calculate_r!(sys) # update generalized coords
+    calculate_body_positions!(sys) # update generalized coords
+    calculate_actuator_positions!(sys)
     nothing
 end
 

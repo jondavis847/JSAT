@@ -4,13 +4,15 @@ mutable struct SimpleThruster <: AbstractActuator
     force::Float64 # spatial force, first 3 elements are force, last 3 are torque
     current_force::Float64
     command::Bool
+    state::ActuatorState
+    frame::Cartesian # cartesian frame from actuator to body frame
     body_transform::SMatrix{6,6,Float64,36} # transform from actuator frame to body frame
     joint_transform::SMatrix{6,6,Float64,36} # transform from actuator frame to inner joint frame
     xindex::SVector{1,Int16}
     current_joint_force::SVector{6,Float64}
     body::AbstractBody #TODO need to make this parametric
     callback::DiscreteCallback # really a FunctionCallingCallback
-    SimpleThruster(name, force) = new(name, force, 0,false)
+    SimpleThruster(name, force) = new(name, force, 0, false, ActuatorState())
 end
 
 function get_actuator_force!(A::SimpleThruster)
@@ -27,6 +29,17 @@ get_q(A::SimpleThruster) = A.current_force
 
 function get_savedict(A::SimpleThruster, i)
     save_config = Dict[]
+
+    states = fieldnames(typeof(A.state))
+    for state in states
+        save_dict!(
+            save_config,
+            "$(A.name)_$(string(state))",
+            typeof(getfield(A.state, state)),
+            integrator -> getfield(integrator.p.sys.actuators[i].state, state)
+        )
+    end
+
     save_dict!(
         save_config,
         "$(A.name)_force",

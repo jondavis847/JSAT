@@ -453,7 +453,7 @@ cy.on('dbltap', '.gravity', editGravity)
 cy.on('dragfree', '.base', function (evt) { JSAT.base.renderedPosition = evt.target.renderedPosition(); });
 cy.on('dragfree', '.body', function (evt) { JSAT.bodies[evt.target.data("label")].renderedPosition = evt.target.renderedPosition(); });
 cy.on('dragfree', '.joint', function (evt) { JSAT.joints[evt.target.data("label")].renderedPosition = evt.target.renderedPosition(); });
-cy.on('dragfree', '.actuator', function (evt) { JSAT.actuators[evt.target.data("label")].renderedPosition = evt.target.renderedPosition(); console.log(JSAT)});
+cy.on('dragfree', '.actuator', function (evt) { JSAT.actuators[evt.target.data("label")].renderedPosition = evt.target.renderedPosition(); console.log(JSAT) });
 cy.on('dragfree', '.software', function (evt) { JSAT.software[evt.target.data("label")].renderedPosition = evt.target.renderedPosition(); });
 cy.on('dragfree', '.sensor', function (evt) { JSAT.sensors[evt.target.data("label")].renderedPosition = evt.target.renderedPosition(); });
 cy.on('dragfree', '.gravity', function (evt) { JSAT.gravity[evt.target.data("label")].renderedPosition = evt.target.renderedPosition(); });
@@ -1586,7 +1586,6 @@ function plotStateData() {
     let selectedYStates = []
     $("#yStateSelect").find(":selected").each(function () { selectedYStates.push($(this).val()) })
     const selectedStates = [...new Set([selectedXState, ...selectedYStates])]
-    console.log(selectedStates)
     const xhr = new XMLHttpRequest();
     xhr.addEventListener("load", function () {
         const simData = JSON.parse(xhr.responseText);
@@ -1802,6 +1801,45 @@ function makeAnimation() {
             mesh.userData = this_data;
             scene.add(mesh);
         }
+
+        //create thrusters
+        const actuator_keys = Object.keys(sys.actuators);
+        for (let i = 0; i < actuator_keys.length; i++) {
+            const actuator = sys.actuators[actuator_keys[i]];
+            if (actuator.type == 'thruster') {
+
+                let geometry = new THREE.ConeGeometry(0.25, 0.5, 8, 1);
+                geometry.rotateX(Math.PI / 2); // force cones to be Z in the height direction                        
+                geometry.translate(0,0,-0.25);
+                const material = new THREE.MeshBasicMaterial({ color: 'grey', transparent: true, opacity: 0.3 });
+                const mesh = new THREE.Mesh(geometry, material);
+                mesh.name = actuator.name;
+                
+                
+
+                let q1_index = animData.colindex.names.indexOf(`${actuator.name}_q_base[1]`);
+                let q2_index = animData.colindex.names.indexOf(`${actuator.name}_q_base[2]`);
+                let q3_index = animData.colindex.names.indexOf(`${actuator.name}_q_base[3]`);
+                let q4_index = animData.colindex.names.indexOf(`${actuator.name}_q_base[4]`);
+                let r1_index = animData.colindex.names.indexOf(`${actuator.name}_r_base[1]`);
+                let r2_index = animData.colindex.names.indexOf(`${actuator.name}_r_base[2]`);
+                let r3_index = animData.colindex.names.indexOf(`${actuator.name}_r_base[3]`);
+                let f_index = animData.colindex.names.indexOf(`${actuator.name}_force`);
+
+                let this_data = {
+                    q1: animData.columns[q1_index],
+                    q2: animData.columns[q2_index],
+                    q3: animData.columns[q3_index],
+                    q4: animData.columns[q4_index],
+                    r1: animData.columns[r1_index],
+                    r2: animData.columns[r2_index],
+                    r3: animData.columns[r3_index],
+                    f: animData.columns[f_index]
+                }
+                mesh.userData = this_data;
+                scene.add(mesh);
+            }
+        }
         const clock = new THREE.Clock({ autoStart: false });
 
         /*
@@ -1841,6 +1879,18 @@ function makeAnimation() {
                 let body = scene.getObjectByName(this_body.name);
                 body.position.set(body.userData.r1[i], body.userData.r2[i], body.userData.r3[i]);
                 body.quaternion.set(body.userData.q1[i], body.userData.q2[i], body.userData.q3[i], body.userData.q4[i]);
+            }
+
+            for (let a = 0; a < actuator_keys.length; a++) {
+                let this_actuator = sys.actuators[actuator_keys[a]];
+                let actuator = scene.getObjectByName(this_actuator.name);                
+                if (actuator.userData.f[i] > 0) {
+                    actuator.position.set(actuator.userData.r1[i], actuator.userData.r2[i], actuator.userData.r3[i] );
+                    actuator.quaternion.set(actuator.userData.q1[i], actuator.userData.q2[i], actuator.userData.q3[i], actuator.userData.q4[i]);
+                    actuator.visible = true;
+                } else {
+                    actuator.visible = false;
+                }
             }
             /*
             spacecraft.position.set(data.r1[i], data.r2[i], data.r3[i]);
