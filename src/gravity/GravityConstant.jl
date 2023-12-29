@@ -14,4 +14,4 @@ end
 
 GravityNone() = GravityConstant(:none,0)
 
-calculate_gravity(g::GravityConstant) = g.value
+calculate_gravity(g::GravityConstant,r) = g.value

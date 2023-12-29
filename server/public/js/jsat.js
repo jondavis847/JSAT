@@ -115,6 +115,7 @@ $('#simpleAttitudeSensor4Button').on('click', clickAddSimpleAttitudeSensor4);
 $('#simpleRateSensorButton').on('click', clickAddSimpleRateSensor);
 $('#simpleRateSensor3Button').on('click', clickAddSimpleRateSensor3);
 $('#addElementCancelButton').on('click', () => { $('#nameOnlyDiv').hide() })
+$("#twoBodyEarthButton").on("click", clickAddGravityTwoBodyEarth);
 
 $('#loadFileInput').on('change', function (e) {
     console.log(e)
@@ -1369,8 +1370,16 @@ function clickAddGravityConstant() {
     $('#addGravityDiv').show();
 }
 
-function saveGravity(event) {
-    console.log('test')
+function clickAddGravityTwoBodyEarth() {
+    //remove all old inputs
+    $('.gravity-input').remove(); 
+    $("#newGravityName").val("two_body_earth")    
+    $("#addGravitySaveButton").off()
+    $("#addGravitySaveButton").on("click", { new: true, type: 'twoBodyEarth', name: '' }, saveGravity)    
+    $('#addGravityDiv').show();
+}
+
+function saveGravity(event) {    
     const name = $("#newGravityName").val();
 
     let gravity = {
@@ -1741,15 +1750,11 @@ function makeAnimation() {
         scene.add(light);
 
         if (sys.base.type == "earth") {
-
-            //const rEarth = 6.3781e6;
-            const rEarth = 1;
-            //const i_earth = new THREE.TextureLoader().load('../images/earth.jpeg');
+            const rEarth = 6378.1370e3;                        
             const i_earth = new THREE.TextureLoader().load("./images/earth.jpeg");
             const g_earth = new THREE.SphereGeometry(rEarth, 64, 64)
             const m_earth = new THREE.MeshPhongMaterial({ map: i_earth });
-            const earth = new THREE.Mesh(g_earth, m_earth);
-            earth.position.set(0, 1, 0);
+            const earth = new THREE.Mesh(g_earth, m_earth);            
             scene.add(earth);
         }
 

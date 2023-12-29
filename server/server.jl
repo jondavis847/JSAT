@@ -137,6 +137,8 @@ function routerSimulate(req::HTTP.Request)
         if gravity[:type] == "constant"
             value = eval(Meta.parse(gravity[:value]))
             G = GravityConstant(Symbol(gravity[:name]), value)
+        elseif gravity[:type] == "twoBodyEarth"
+            G = TwoBodyEarth(Symbol(gravity[:name]))
         else
             error("bad gravity type provided")
             return
@@ -204,9 +206,9 @@ function routerSimulate(req::HTTP.Request)
         end
 
         connected_gravity = body[:gravity]
-        for gravity_name in connected_gravity
-            G = Gravitys[getfield.(Gravitys, :name).==Symbol(gravity_name)]
-            connect!(B, G)
+        for gravity_name in connected_gravity            
+            G = Gravitys[getfield.(Gravitys, :name).==Symbol(gravity_name)]                        
+            connect!(B, G...)
         end
 
 
