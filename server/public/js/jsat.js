@@ -1702,7 +1702,8 @@ function changeTab(evt) {
     }
 }
 
-function makeAnimation() {
+function makeAnimation() {    
+
     // cancel any ongoing animation
     if (ANIMATION_ID !== null) {
         cancelAnimationFrame(ANIMATION_ID)
@@ -1734,8 +1735,8 @@ function makeAnimation() {
         scene.background = new THREE.Color("rgb(30,30,30)")
         const axesHelper = new THREE.AxesHelper(1);
         scene.add(axesHelper);
-        const camera = new THREE.PerspectiveCamera(300, w / h, 1, 100);
-        camera.position.set(0, 0, 10);
+        const camera = new THREE.PerspectiveCamera(300, w / h, .1, 1e9);
+        camera.position.set(0, 0, 1e7);
         //camera.rotation.set(0,0,Math.PI);
 
         const controls = new TrackballControls(camera, renderer.domElement);
@@ -1743,8 +1744,6 @@ function makeAnimation() {
         //camera.up.set(0, 1, 0);
         camera.up = new THREE.Vector3(0, -1, 0)
         //camera.rotation.set(0, 0, Math.PI)
-        controls.update()
-
 
         const light = new THREE.AmbientLight('white', 1); // soft white light
         scene.add(light);
@@ -1758,8 +1757,13 @@ function makeAnimation() {
             scene.add(earth);
         }
 
+        //create time
+        const sim_time_index = animData.colindex.names.indexOf("t");
+        const sim_time = animData.columns[sim_time_index];
+        
         //create bodys
         const body_keys = Object.keys(sys.bodies);
+        
         for (let i = 0; i < body_keys.length; i++) {
             const body = sys.bodies[body_keys[i]];
             let geometry;
@@ -1793,7 +1797,7 @@ function makeAnimation() {
             let r1_index = animData.colindex.names.indexOf(`${body.name}_r_base[1]`);
             let r2_index = animData.colindex.names.indexOf(`${body.name}_r_base[2]`);
             let r3_index = animData.colindex.names.indexOf(`${body.name}_r_base[3]`);
-
+/*
             let this_data = {
                 q1: animData.columns[q1_index],
                 q2: animData.columns[q2_index],
@@ -1803,9 +1807,44 @@ function makeAnimation() {
                 r2: animData.columns[r2_index],
                 r3: animData.columns[r3_index],
             }
+*/
+            const r1 = new THREE.CubicInterpolant(
+                new Float32Array(sim_time),
+                new Float32Array(animData.columns[r1_index]),
+                animData.columns[r1_index].length
+
+                
+
+            )
+
+let this_data = {
+    q1: animData.columns[q1_index],
+    q2: animData.columns[q2_index],
+    q3: animData.columns[q3_index],
+    q4: animData.columns[q4_index],
+    r1: animData.columns[r1_index],
+    r2: animData.columns[r2_index],
+    r3: animData.columns[r3_index],
+}
+
             mesh.userData = this_data;
             scene.add(mesh);
+
+            //add body to targets menu
+            $("#animationTarget").append($('<option>', {
+                value: body.name,
+                text: body.name,
+            }))
         }
+
+        // global for camera target, set event for when it changes
+        let TARGET = scene.getObjectByName($("#animationTarget").val());
+
+        $("#animationTarget").on("change", function () {
+            TARGET = scene.getObjectByName($("#animationTarget").val());
+        });
+
+        controls.update()   
 
         //create thrusters
         const actuator_keys = Object.keys(sys.actuators);
@@ -1847,12 +1886,12 @@ function makeAnimation() {
         }
         const clock = new THREE.Clock({ autoStart: false });
 
-        /*
-        let deltaSpacecraftCamera = new THREE.Vector3(0, 0, 300);
+        
+        let deltaCameraPosition = new THREE.Vector3(0, 0, 10);
         controls.addEventListener("change", function () {
-            deltaSpacecraftCamera.subVectors(camera.position, spacecraft.position);
+            deltaCameraPosition.subVectors(camera.position, TARGET.position);
         });
-*/
+
         const time_index = animData.colindex.names.indexOf("t");
         const time_data = animData.columns[time_index];
         let t;
@@ -1896,13 +1935,11 @@ function makeAnimation() {
                 } else {
                     actuator.visible = false;
                 }
-            }
-            /*
-            spacecraft.position.set(data.r1[i], data.r2[i], data.r3[i]);
-            spacecraft.quaternion.set(data.q1[i], data.q2[i], data.q3[i], data.q4[i]);
-            camera.position.set(data.r1[i] + deltaSpacecraftCamera.x, data.r2[i] + deltaSpacecraftCamera.y, data.r3[i] + deltaSpacecraftCamera.z)
-            controls.target.copy(spacecraft.position);
-            */
+            }            
+            
+            controls.target.copy(TARGET.position)
+            camera.position.set(TARGET.position.x + deltaCameraPosition.x, TARGET.position.y + deltaCameraPosition.y,TARGET.position.z + deltaCameraPosition.z);
+            
             controls.update();
             renderer.render(scene, camera);
 

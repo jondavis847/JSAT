@@ -581,7 +581,47 @@ button:focus {
     bottom: 0%;
     left: 25%;
     width: 75%;
+    height: 96.4%;
+}
+
+.animation-toolbar {
+    background-color: rgba(20, 20, 20, 1);
+    box-sizing: border-box;
+    border: black thin solid;
+    color: aquamarine;
+    text-align: center;
+    position:absolute;
+    top: 0%;
+    left: 25%;
+    width: 75%;
+    height: 3.6%;
+}
+
+.animation-target{ 
+position: absolute;
+    top: 0%;
+    left:10%;
+    height:100%;
+    width:10%;
+    background-color: rgba(35, 36, 35, 1);
+    box-sizing: border-box;
+    border: solid black thin;
+    color: white;
+}
+
+
+.animation-target-btn {
+    background-color: rgba(20, 20, 20, 1);
+    border: solid thin black;
+    position: absolute;
+    top: 0%;
+    width: 10%;
     height: 100%;
+    left:0%;
+    text-align: center;
+    font-family: 'Courier New', monospace;
+    align-items: middle;
+    color: white;
 }
 
 .cy-toolbar {
