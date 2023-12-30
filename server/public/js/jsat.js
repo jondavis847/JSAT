@@ -1372,14 +1372,14 @@ function clickAddGravityConstant() {
 
 function clickAddGravityTwoBodyEarth() {
     //remove all old inputs
-    $('.gravity-input').remove(); 
-    $("#newGravityName").val("two_body_earth")    
+    $('.gravity-input').remove();
+    $("#newGravityName").val("two_body_earth")
     $("#addGravitySaveButton").off()
-    $("#addGravitySaveButton").on("click", { new: true, type: 'twoBodyEarth', name: '' }, saveGravity)    
+    $("#addGravitySaveButton").on("click", { new: true, type: 'twoBodyEarth', name: '' }, saveGravity)
     $('#addGravityDiv').show();
 }
 
-function saveGravity(event) {    
+function saveGravity(event) {
     const name = $("#newGravityName").val();
 
     let gravity = {
@@ -1702,7 +1702,7 @@ function changeTab(evt) {
     }
 }
 
-function makeAnimation() {    
+function makeAnimation() {
 
     // cancel any ongoing animation
     if (ANIMATION_ID !== null) {
@@ -1749,21 +1749,21 @@ function makeAnimation() {
         scene.add(light);
 
         if (sys.base.type == "earth") {
-            const rEarth = 6378.1370e3;                        
+            const rEarth = 6378.1370e3;
             const i_earth = new THREE.TextureLoader().load("./images/earth.jpeg");
             const g_earth = new THREE.SphereGeometry(rEarth, 64, 64)
             const m_earth = new THREE.MeshPhongMaterial({ map: i_earth });
-            const earth = new THREE.Mesh(g_earth, m_earth);            
+            const earth = new THREE.Mesh(g_earth, m_earth);
             scene.add(earth);
         }
 
         //create time
         const sim_time_index = animData.colindex.names.indexOf("t");
         const sim_time = animData.columns[sim_time_index];
-        
+
         //create bodys
         const body_keys = Object.keys(sys.bodies);
-        
+
         for (let i = 0; i < body_keys.length; i++) {
             const body = sys.bodies[body_keys[i]];
             let geometry;
@@ -1797,7 +1797,7 @@ function makeAnimation() {
             let r1_index = animData.colindex.names.indexOf(`${body.name}_r_base[1]`);
             let r2_index = animData.colindex.names.indexOf(`${body.name}_r_base[2]`);
             let r3_index = animData.colindex.names.indexOf(`${body.name}_r_base[3]`);
-/*
+
             let this_data = {
                 q1: animData.columns[q1_index],
                 q2: animData.columns[q2_index],
@@ -1807,25 +1807,6 @@ function makeAnimation() {
                 r2: animData.columns[r2_index],
                 r3: animData.columns[r3_index],
             }
-*/
-            const r1 = new THREE.CubicInterpolant(
-                new Float32Array(sim_time),
-                new Float32Array(animData.columns[r1_index]),
-                animData.columns[r1_index].length
-
-                
-
-            )
-
-let this_data = {
-    q1: animData.columns[q1_index],
-    q2: animData.columns[q2_index],
-    q3: animData.columns[q3_index],
-    q4: animData.columns[q4_index],
-    r1: animData.columns[r1_index],
-    r2: animData.columns[r2_index],
-    r3: animData.columns[r3_index],
-}
 
             mesh.userData = this_data;
             scene.add(mesh);
@@ -1844,7 +1825,7 @@ let this_data = {
             TARGET = scene.getObjectByName($("#animationTarget").val());
         });
 
-        controls.update()   
+        controls.update()
 
         //create thrusters
         const actuator_keys = Object.keys(sys.actuators);
@@ -1854,12 +1835,10 @@ let this_data = {
 
                 let geometry = new THREE.ConeGeometry(0.25, 0.5, 8, 1);
                 geometry.rotateX(Math.PI / 2); // force cones to be Z in the height direction                        
-                geometry.translate(0,0,-0.25);
+                geometry.translate(0, 0, -0.25);
                 const material = new THREE.MeshBasicMaterial({ color: 'grey', transparent: true, opacity: 0.3 });
                 const mesh = new THREE.Mesh(geometry, material);
                 mesh.name = actuator.name;
-                
-                
 
                 let q1_index = animData.colindex.names.indexOf(`${actuator.name}_q_base[1]`);
                 let q2_index = animData.colindex.names.indexOf(`${actuator.name}_q_base[2]`);
@@ -1886,7 +1865,6 @@ let this_data = {
         }
         const clock = new THREE.Clock({ autoStart: false });
 
-        
         let deltaCameraPosition = new THREE.Vector3(0, 0, 10);
         controls.addEventListener("change", function () {
             deltaCameraPosition.subVectors(camera.position, TARGET.position);
@@ -1918,28 +1896,42 @@ let this_data = {
             }
 
             const i = time_data.findIndex(findTimeIndex);
+
+            // interp scale factor
+            const alpha = (sim_elapsed_time - time_data[i])/(time_data[i+1] - time_data[i]);
+
             for (let b = 0; b < body_keys.length; b++) {
                 let this_body = sys.bodies[body_keys[b]];
                 let body = scene.getObjectByName(this_body.name);
-                body.position.set(body.userData.r1[i], body.userData.r2[i], body.userData.r3[i]);
-                body.quaternion.set(body.userData.q1[i], body.userData.q2[i], body.userData.q3[i], body.userData.q4[i]);
+
+                //TODO: linear interpolate for now, should use THREE.js interpolations or animation mixer later
+                const current_position = new THREE.Vector3(body.userData.r1[i],body.userData.r2[i], body.userData.r3[i]);
+                const next_position = new THREE.Vector3(body.userData.r1[i+1],body.userData.r2[i+1], body.userData.r3[i+1]);
+                const interp_position = current_position.lerp(next_position,alpha)                
+                
+                body.position.set(interp_position.x,interp_position.y,interp_position.z);
+                
+                const current_quaternion = new THREE.Quaternion(body.userData.q1[i], body.userData.q2[i], body.userData.q3[i], body.userData.q4[i]);
+                const next_quaternion = new THREE.Quaternion(body.userData.q1[i+1], body.userData.q2[i+1], body.userData.q3[i+1], body.userData.q4[i+1]);
+                const interp_quaternion = current_quaternion.slerp(next_quaternion,alpha);                
+                body.quaternion.set(interp_quaternion.x,interp_quaternion.y,interp_quaternion.z,interp_quaternion.w);
             }
 
             for (let a = 0; a < actuator_keys.length; a++) {
                 let this_actuator = sys.actuators[actuator_keys[a]];
-                let actuator = scene.getObjectByName(this_actuator.name);                
+                let actuator = scene.getObjectByName(this_actuator.name);
                 if (actuator.userData.f[i] > 0) {
-                    actuator.position.set(actuator.userData.r1[i], actuator.userData.r2[i], actuator.userData.r3[i] );
+                    actuator.position.set(actuator.userData.r1[i], actuator.userData.r2[i], actuator.userData.r3[i]);
                     actuator.quaternion.set(actuator.userData.q1[i], actuator.userData.q2[i], actuator.userData.q3[i], actuator.userData.q4[i]);
                     actuator.visible = true;
                 } else {
                     actuator.visible = false;
                 }
-            }            
-            
+            }
+
             controls.target.copy(TARGET.position)
-            camera.position.set(TARGET.position.x + deltaCameraPosition.x, TARGET.position.y + deltaCameraPosition.y,TARGET.position.z + deltaCameraPosition.z);
-            
+            camera.position.set(TARGET.position.x + deltaCameraPosition.x, TARGET.position.y + deltaCameraPosition.y, TARGET.position.z + deltaCameraPosition.z);
+
             controls.update();
             renderer.render(scene, camera);
 
