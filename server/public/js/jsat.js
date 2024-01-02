@@ -1786,8 +1786,13 @@ function makeAnimation() {
                 );
                 geometry.rotateX(Math.PI / 2) //force cylinders to be z in the height direction
             }
-            const material = new THREE.MeshBasicMaterial({ color: body.color });
+
+
+            const material = new THREE.MeshBasicMaterial({
+                color: body.color,
+            });
             const mesh = new THREE.Mesh(geometry, material);
+
             mesh.name = body.name;
 
             let q1_index = animData.colindex.names.indexOf(`${body.name}_q_base[1]`);
@@ -1798,6 +1803,19 @@ function makeAnimation() {
             let r2_index = animData.colindex.names.indexOf(`${body.name}_r_base[2]`);
             let r3_index = animData.colindex.names.indexOf(`${body.name}_r_base[3]`);
 
+            const r1 = animData.columns[r1_index];
+            const r2 = animData.columns[r2_index];
+            const r3 = animData.columns[r3_index];
+
+            let r_vector = [];
+            for (let j = 0; j < sim_time.length; j++) {
+                r_vector.push(r1[j]);
+                r_vector.push(r2[j]);
+                r_vector.push(r3[j]);
+            }
+
+            const r_interpolant = new THREE.CubicInterpolant(sim_time, r_vector, 3, [])
+
             let this_data = {
                 q1: animData.columns[q1_index],
                 q2: animData.columns[q2_index],
@@ -1806,10 +1824,12 @@ function makeAnimation() {
                 r1: animData.columns[r1_index],
                 r2: animData.columns[r2_index],
                 r3: animData.columns[r3_index],
+                r_interpolant: r_interpolant
             }
 
             mesh.userData = this_data;
-            scene.add(mesh);
+            scene.add(mesh);            
+
 
             //add body to targets menu
             $("#animationTarget").append($('<option>', {
@@ -1898,23 +1918,24 @@ function makeAnimation() {
             const i = time_data.findIndex(findTimeIndex);
 
             // interp scale factor
-            const alpha = (sim_elapsed_time - time_data[i])/(time_data[i+1] - time_data[i]);
+            const alpha = (sim_elapsed_time - time_data[i]) / (time_data[i + 1] - time_data[i]);
 
             for (let b = 0; b < body_keys.length; b++) {
                 let this_body = sys.bodies[body_keys[b]];
                 let body = scene.getObjectByName(this_body.name);
 
-                
-                const current_position = new THREE.Vector3(body.userData.r1[i],body.userData.r2[i], body.userData.r3[i]);
-                const next_position = new THREE.Vector3(body.userData.r1[i+1],body.userData.r2[i+1], body.userData.r3[i+1]);
-                const interp_position = current_position.lerp(next_position,alpha)                
-                
-                body.position.set(interp_position.x,interp_position.y,interp_position.z);
-                
+
+                const current_position = new THREE.Vector3(body.userData.r1[i], body.userData.r2[i], body.userData.r3[i]);
+                const next_position = new THREE.Vector3(body.userData.r1[i + 1], body.userData.r2[i + 1], body.userData.r3[i + 1]);
+                const interp_position = current_position.lerp(next_position, alpha)
+                //const interp_position = body.userData.r_interpolant.evaluate(t);                
+                body.position.set(interp_position.x, interp_position.y, interp_position.z);
+                //body.position.set(interp_position[0],interp_position[1],interp_position[2]);
+
                 const current_quaternion = new THREE.Quaternion(body.userData.q1[i], body.userData.q2[i], body.userData.q3[i], body.userData.q4[i]);
-                const next_quaternion = new THREE.Quaternion(body.userData.q1[i+1], body.userData.q2[i+1], body.userData.q3[i+1], body.userData.q4[i+1]);
-                const interp_quaternion = current_quaternion.slerp(next_quaternion,alpha);                
-                body.quaternion.set(interp_quaternion.x,interp_quaternion.y,interp_quaternion.z,interp_quaternion.w);
+                const next_quaternion = new THREE.Quaternion(body.userData.q1[i + 1], body.userData.q2[i + 1], body.userData.q3[i + 1], body.userData.q4[i + 1]);
+                const interp_quaternion = current_quaternion.slerp(next_quaternion, alpha);
+                body.quaternion.set(interp_quaternion.x, interp_quaternion.y, interp_quaternion.z, interp_quaternion.w);
             }
 
             for (let a = 0; a < actuator_keys.length; a++) {
@@ -2143,7 +2164,7 @@ function loadScenario(event) {
                 label: 'base',
             },
             classes: 'base',
-            renderedPosition: jsat.base.renderedPosition,
+            renderedPosition: base.renderedPosition,
         });
 
         //create all the bodies
@@ -2243,7 +2264,7 @@ function loadScenario(event) {
         }
 
         for (let i = 0; i < joints.length; i++) {
-            let joint = jsat.joints[joints[i]];            
+            let joint = jsat.joints[joints[i]];
             if (joint.predecessor == 'base' || joint.predecessor == 'earth') {
                 cy.add({
                     group: 'edges',
