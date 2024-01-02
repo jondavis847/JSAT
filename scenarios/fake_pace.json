@@ -1,0 +1,93 @@
+{
+    "name": "fake_pace",
+    "scenario": {
+        "base": {
+            "type": "earth",
+            "gravity": [
+            ],
+            "renderedPosition": {
+                "x": 318,
+                "y": 281.5
+            }
+        },
+        "bodies": {
+            "bus": {
+                "name": "bus",
+                "mass": "1000",
+                "cm": "zeros(3)",
+                "ixx": "1500",
+                "iyy": "1500",
+                "izz": "1500",
+                "ixy": "0",
+                "ixz": "0",
+                "iyz": "0",
+                "geometry": "box",
+                "material": "basic",
+                "color": "silver",
+                "actuators": [
+                ],
+                "sensors": [
+                ],
+                "gravity": [
+                    "two_body_earth"
+                ],
+                "environments": [
+                ],
+                "renderedPosition": {
+                    "x": 440,
+                    "y": 462.5
+                },
+                "xlength": "2.5",
+                "ylength": "1.5",
+                "zlength": "1.5"
+            }
+        },
+        "joints": {
+            "bus_floating": {
+                "name": "bus_floating",
+                "type": "floating",
+                "FpRho": "zeros(3)",
+                "FpPhi": "I(3)",
+                "FsRho": "zeros(3)",
+                "FsPhi": "I(3)",
+                "renderedPosition": {
+                    "x": 376,
+                    "y": 370.5
+                },
+                "predecessor": "earth",
+                "successor": "bus",
+                "q": "[-0.28199131744604533, 0.6998673436290516, -0.12625703437873603, -0.6439920492339523]",
+                "omega": "[-0.001256637061435917, 0.003944444109507185, 0.003159045946109736]",
+                "position": "[-3.9292738554734, 5.71264013167723, 1.31199443874228] *1e6",
+                "velocity": "[84.5551344721184, 1749.4937756303016, -7311.912202797997]"
+            }
+        },
+        "actuators": {
+        },
+        "software": {
+        },
+        "sensors": {
+        },
+        "gravity": {
+            "two_body_earth": {
+                "name": "two_body_earth",
+                "type": "twoBodyEarth",
+                "renderedPosition": {
+                    "x": 318,
+                    "y": 281.5
+                }
+            }
+        },
+        "inports": {
+        },
+        "outports": {
+        },
+        "sim": {
+            "name": "",
+            "nruns": "0",
+            "tspan": "(0,7200)",
+            "saveLocation": "",
+            "dt": "nothing"
+        }
+    }
+}

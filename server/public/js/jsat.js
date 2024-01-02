@@ -1904,7 +1904,7 @@ function makeAnimation() {
                 let this_body = sys.bodies[body_keys[b]];
                 let body = scene.getObjectByName(this_body.name);
 
-                //TODO: linear interpolate for now, should use THREE.js interpolations or animation mixer later
+                
                 const current_position = new THREE.Vector3(body.userData.r1[i],body.userData.r2[i], body.userData.r3[i]);
                 const next_position = new THREE.Vector3(body.userData.r1[i+1],body.userData.r2[i+1], body.userData.r3[i+1]);
                 const interp_position = current_position.lerp(next_position,alpha)                
