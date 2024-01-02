@@ -2243,8 +2243,8 @@ function loadScenario(event) {
         }
 
         for (let i = 0; i < joints.length; i++) {
-            let joint = jsat.joints[joints[i]];
-            if (joint.predecessor == 'base') {
+            let joint = jsat.joints[joints[i]];            
+            if (joint.predecessor == 'base' || joint.predecessor == 'earth') {
                 cy.add({
                     group: 'edges',
                     data: { source: `base`, target: `joint${joint.name}` }
