@@ -626,14 +626,16 @@ function clickAddCylinderBody() {
 function saveBody(event) {
     let body = {
         name: $("#newBodyName").val(),
-        mass: $("#newBodyMass").val(),
-        cm: $("#newBodyCm").val(),
-        ixx: $("#newBodyIxx").val(),
-        iyy: $("#newBodyIyy").val(),
-        izz: $("#newBodyIzz").val(),
-        ixy: $("#newBodyIxy").val(),
-        ixz: $("#newBodyIxz").val(),
-        iyz: $("#newBodyIyz").val(),
+        mass: {nominal: $("#newBodyMass").val(), dispersed: $("#newBodyMassDist").val()},
+        cmx: {nominal: $("#newBodyCmX").val(), dispersed: $("#newBodyCmXDist").val()},
+        cmy: {nominal: $("#newBodyCmY").val(), dispersed: $("#newBodyCmYDist").val()},
+        cmz: {nominal: $("#newBodyCmZ").val(), dispersed: $("#newBodyCmZDist").val()},
+        ixx: {nominal: $("#newBodyIxx").val(), dispersed: $("#newBodyIxxDist").val()},
+        iyy: {nominal: $("#newBodyIyy").val(), dispersed: $("#newBodyIyyDist").val()},
+        izz: {nominal: $("#newBodyIzz").val(), dispersed: $("#newBodyIzzDist").val()},
+        ixy: {nominal: $("#newBodyIxy").val(), dispersed: $("#newBodyIxyDist").val()},
+        ixz: {nominal: $("#newBodyIxz").val(), dispersed: $("#newBodyIxzDist").val()},
+        iyz: {nominal: $("#newBodyIyz").val(), dispersed: $("#newBodyIyzDist").val()},
         geometry: event.data.geometry,
         material: $("#newBodyMaterial").val(),
         color: $("#newBodyColor").val(),
@@ -645,14 +647,16 @@ function saveBody(event) {
     };
 
     //defaults
-    if (body.mass === "") { body.mass = "1" }
-    if (body.cm === "") { body.cm = "zeros(3)" }
-    if (body.ixx === "") { body.ixx = "1" }
-    if (body.iyy === "") { body.iyy = "1" }
-    if (body.izz === "") { body.izz = "1" }
-    if (body.ixy === "") { body.ixy = "0" }
-    if (body.ixz === "") { body.ixz = "0" }
-    if (body.iyz === "") { body.iyz = "0" }
+    if (body.mass.nominal === "") { body.mass.nominal = "1" }
+    if (body.cmx.nominal === "") { body.cmx.nominal = "0" }
+    if (body.cmy.nominal === "") { body.cmy.nominal = "0" }
+    if (body.cmz.nominal === "") { body.cmz.nominal = "0" }
+    if (body.ixx.nominal === "") { body.ixx.nominal = "1" }
+    if (body.iyy.nominal === "") { body.iyy.nominal = "1" }
+    if (body.izz.nominal === "") { body.izz.nominal = "1" }
+    if (body.ixy.nominal === "") { body.ixy.nominal = "0" }
+    if (body.ixz.nominal === "") { body.ixz.nominal = "0" }
+    if (body.iyz.nominal === "") { body.iyz.nominal = "0" }
     if (body.material === "") { body.material = "basic" }
     if (body.color === "") { body.color = "aquamarine" }
 
@@ -731,14 +735,26 @@ function editBody() {
     const name = this.data().label;
     const body = JSAT.bodies[name];
     $("#newBodyName").val(body.name);
-    $("#newBodyMass").val(body.mass);
-    $("#newBodyCm").val(body.cm);
-    $("#newBodyIxx").val(body.ixx);
-    $("#newBodyIyy").val(body.iyy);
-    $("#newBodyIzz").val(body.izz);
-    $("#newBodyIxy").val(body.ixy);
-    $("#newBodyIxz").val(body.ixz);
-    $("#newBodyIyz").val(body.iyz);
+    $("#newBodyMass").val(body.mass.nominal);
+    $("#newBodyMassDist").val(body.mass.dispersed);
+    $("#newBodyCmX").val(body.cmx.nominal);
+    $("#newBodyCmXDist").val(body.cmx.dispersed);
+    $("#newBodyCmY").val(body.cmy.nominal);    
+    $("#newBodyCmYDist").val(body.cmy.dispersed);
+    $("#newBodyCmZ").val(body.cmz.nominal);
+    $("#newBodyCmZDist").val(body.cmz.dispersed);
+    $("#newBodyIxx").val(body.ixx.nominal);
+    $("#newBodyIxxDist").val(body.ixx.dispersed);
+    $("#newBodyIyy").val(body.iyy.nominal);
+    $("#newBodyIyyDist").val(body.iyy.dispersed);
+    $("#newBodyIzz").val(body.izz.nominal);
+    $("#newBodyIzzDist").val(body.izz.dispersed);
+    $("#newBodyIxy").val(body.ixy.nominal);
+    $("#newBodyIxyDist").val(body.ixy.dispersed);
+    $("#newBodyIxz").val(body.ixz.nominal);
+    $("#newBodyIxzDist").val(body.ixz.dispersed);
+    $("#newBodyIyz").val(body.iyz.nominal);
+    $("#newBodyIyzDist").val(body.iyz.dispersed);
     $("#newBodyMaterial").val(body.material);
     $("#newBodyColor").val(body.color);
 
@@ -1722,7 +1738,8 @@ function makeAnimation() {
     xhr.addEventListener("load", function () {
         const data = JSON.parse(xhr.responseText);
         const sys = data.sys;
-        const animData = data.data;
+        console.log(sys)
+        const animData = data.data;        
 
         const animationDiv = document.getElementById("animationDiv")
         var renderer = new THREE.WebGLRenderer({ antialias: true, logarithmicDepthBuffer: true });
@@ -1827,7 +1844,7 @@ function makeAnimation() {
                 r_interpolant: r_interpolant
             }
 
-            mesh.userData = this_data;
+            mesh.userData = this_data;            
             scene.add(mesh);            
 
 
@@ -1891,7 +1908,7 @@ function makeAnimation() {
         });
 
         const time_index = animData.colindex.names.indexOf("t");
-        const time_data = animData.columns[time_index];
+        const time_data = animData.columns[time_index];        
         let t;
         const findTimeIndex = (data) => (data > t);
         let start_time;
@@ -1903,7 +1920,7 @@ function makeAnimation() {
             ANIMATION_ID = requestAnimationFrame(animate);
 
             if (clock.running) {
-                sim_elapsed_time = clock.getElapsedTime() - start_time;
+                sim_elapsed_time = clock.getElapsedTime() - start_time;                
                 t = t0 + sim_elapsed_time;
                 if (t > time_data[time_data.length - 1]) {
                     t = t0;
@@ -1915,25 +1932,27 @@ function makeAnimation() {
                 start_time = 0
             }
 
-            const i = time_data.findIndex(findTimeIndex);
+            const i = time_data.findIndex(findTimeIndex);            
 
             // interp scale factor
-            const alpha = (sim_elapsed_time - time_data[i]) / (time_data[i + 1] - time_data[i]);
+
+            let j = i+1
+            while (time_data[j] - time_data[i] == 0 ) {j++} //protection from when consecutive time points are identical
+
+            const alpha = (sim_elapsed_time - time_data[i]) / (time_data[j] - time_data[i]);            
 
             for (let b = 0; b < body_keys.length; b++) {
                 let this_body = sys.bodies[body_keys[b]];
                 let body = scene.getObjectByName(this_body.name);
 
-
-                const current_position = new THREE.Vector3(body.userData.r1[i], body.userData.r2[i], body.userData.r3[i]);
-                const next_position = new THREE.Vector3(body.userData.r1[i + 1], body.userData.r2[i + 1], body.userData.r3[i + 1]);
+                const current_position = new THREE.Vector3(body.userData.r1[i], body.userData.r2[i], body.userData.r3[i]);                
+                const next_position = new THREE.Vector3(body.userData.r1[j], body.userData.r2[j], body.userData.r3[j]);                
                 const interp_position = current_position.lerp(next_position, alpha)
                 //const interp_position = body.userData.r_interpolant.evaluate(t);                
                 body.position.set(interp_position.x, interp_position.y, interp_position.z);
-                //body.position.set(interp_position[0],interp_position[1],interp_position[2]);
-
+                //body.position.set(interp_position[0],interp_position[1],interp_position[2]);                
                 const current_quaternion = new THREE.Quaternion(body.userData.q1[i], body.userData.q2[i], body.userData.q3[i], body.userData.q4[i]);
-                const next_quaternion = new THREE.Quaternion(body.userData.q1[i + 1], body.userData.q2[i + 1], body.userData.q3[i + 1], body.userData.q4[i + 1]);
+                const next_quaternion = new THREE.Quaternion(body.userData.q1[j], body.userData.q2[j], body.userData.q3[j], body.userData.q4[j]);
                 const interp_quaternion = current_quaternion.slerp(next_quaternion, alpha);
                 body.quaternion.set(interp_quaternion.x, interp_quaternion.y, interp_quaternion.z, interp_quaternion.w);
             }

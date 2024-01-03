@@ -27,11 +27,7 @@ struct MultibodySystem{B,J,A,SW,S}
          joints = Tuple(joints)
          actuators = Tuple(actuators)
          software = Tuple(software)
-         sensors = Tuple(sensors)
-    
-        # initialize to joint specific values 
-        initialize_inertias!.(bodies)
-        initialize_actuators!.(actuators)        
+         sensors = Tuple(sensors)    
     
         # copy base gravity into bodies TODO needs to be for only child bodies of this base
         if !isempty(base.gravity)

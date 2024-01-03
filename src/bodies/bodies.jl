@@ -42,9 +42,9 @@ end
 mutable struct Body{M<:BodyModels} <: AbstractBody
     name::Symbol
     #parameters
-    m::Float64 # mass
-    I::SMatrix{3,3,Float64,9} # inertia tensor
-    cm::SVector{3,Float64} # center of mass    
+    m::M where {M<:SimVal} # mass    
+    cm::CM where {CM<:Vector{SimVal}} # center of mass    
+    I::I where {I<:Matrix{SimVal}} # inertia tensor
     id::Int64 # body number for table designation (applied automatically by sys)  
     inertia_body::SMatrix{6,6,Float64,36}
     inertia_joint::SMatrix{6,6,Float64,36}
@@ -59,15 +59,40 @@ mutable struct Body{M<:BodyModels} <: AbstractBody
     state::BodyState
     tmp::BodyTmp
 
-    function Body(name, m, cm, I)
+    function Body(name, m, cm, ixx, iyy, izz, ixy, ixz, iyz)
+        ixx = (ixx isa SimValue) ? ixx : SimValue(ixx)
+        iyy = (iyy isa SimValue) ? iyy : SimValue(iyy)
+        izz = (izz isa SimValue) ? izz : SimValue(izz)
+        ixy = (ixy isa SimValue) ? ixy : SimValue(ixy)
+        ixz = (ixz isa SimValue) ? ixz : SimValue(ixz)
+        iyz = (iyz isa SimValue) ? iyz : SimValue(iyz)
+
+        inertia = [
+            ixx ixy ixz
+            ixy iyy iyz
+            ixz iyz izz
+        ]
+        return Body(name,m,cm,inertia)
+    end
+
+    function Body(name, m, cm, inertia)
         models = BodyModels()
+
+        #convert to simvalue to support monte carlo
+        m = (m isa SimVal) ? m : SimVal(m)
+        if !isa(cm,Vector{SimVal})
+            cm = map(x-> (!isa(x,SimVal)) ? SimVal(x) : x , cm)
+        end
+
+        if !isa(inertia,Matrix{SimVal})
+            inertia = map(x-> (!isa(x,SimVal)) ? SimVal(x) : x , inertia)
+        end
+
         x = new{typeof(models)}()
         x.name = Symbol(name)
-        x.m = Float64(m)
-        x.cm = SVector{3,Float64}(cm)
-        x.I = SMatrix{3,3,Float64,9}(I)
-        x.inertia_body = mcI(m, cm, I)
-        x.inertia_joint = x.inertia_body
+        x.m = m
+        x.cm = cm
+        x.I = inertia
         x.models = models
         x.transforms = BodyTransforms()
         x.outer_joints = AbstractJoint[]
@@ -77,7 +102,14 @@ mutable struct Body{M<:BodyModels} <: AbstractBody
     end
 end
 
-mcI(body::T) where {T<:Body} = mcI(body.m, body.cm, body.I)
+mcI(body::T) where {T<:Body} = mcI(body.m.value, getfield.(body.cm,:value), getfield.(body.I,:value))
+
+function disperse!(body::Body)
+    (isdefined(body.m, :dispersion)) ? body.m.value = rand(body.m.dispersion) : nothing
+    map(x-> (isdefined(x, :dispersion)) ? x.value = rand(x.dispersion) : nothing, body.cm)
+    map(x-> (isdefined(x, :dispersion)) ? x.value = rand(x.dispersion) : nothing, body.I)    
+    return nothing
+end
 
 function get_savedict(B::Body, i)
     save_config = Dict[]
@@ -127,21 +159,21 @@ function get_savedict(B::Body, i)
         save_config,
         "$(B.name)_a′",
         typeof(B.tmp.a′),
-        integrator -> integrator.p.sys.bodies[i].tmp.a′     
+        integrator -> integrator.p.sys.bodies[i].tmp.a′
     )
 
     save_dict!(
         save_config,
         "$(B.name)_c",
         typeof(B.tmp.c),
-        integrator -> integrator.p.sys.bodies[i].tmp.c     
+        integrator -> integrator.p.sys.bodies[i].tmp.c
     )
 
     save_dict!(
         save_config,
         "$(B.name)_c",
         typeof(B.tmp.c),
-        integrator -> integrator.p.sys.bodies[i].tmp.c     
+        integrator -> integrator.p.sys.bodies[i].tmp.c
     )
 
     return save_config

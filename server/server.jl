@@ -21,7 +21,7 @@ function jsat_server()
     HTTP.register!(ROUTER, "GET", "/loadmodels", routerLoadModels)
     HTTP.register!(ROUTER, "POST", "/loadstates", routerLoadStates)
     HTTP.register!(ROUTER, "POST", "/plotstates", routerPlot)
-    HTTP.register!(ROUTER, "POST", "/animation", routerAnimate)    
+    HTTP.register!(ROUTER, "POST", "/animation", routerAnimate)
     HTTP.register!(ROUTER, "POST", "/savescenario", routerSaveScenario)
     HTTP.register!(ROUTER, "GET", "/getscenarios", routerGetScenarios)
     HTTP.register!(ROUTER, "POST", "/loadscenario", routerLoadScenario)
@@ -58,7 +58,7 @@ function routerSimulate(req::HTTP.Request)
     softwares = message[:software]
     sensors = message[:sensors]
     gravitys = message[:gravity]
-    
+
     #need to make these things in this order to make children first before connecting
 
     Sensors = AbstractSensor[]
@@ -74,7 +74,7 @@ function routerSimulate(req::HTTP.Request)
         elseif type == "simpleRateSensor3"
             S = SimpleRateSensor3(sensor[:name])
         end
-        push!(Sensors,S)
+        push!(Sensors, S)
     end
 
     Actuators = AbstractActuator[]
@@ -87,14 +87,14 @@ function routerSimulate(req::HTTP.Request)
         else
             error("bad actuator type provided")
             return
-        end        
+        end
         push!(Actuators, A)
     end
 
     Software = AbstractSoftware[]
     for k in keys(softwares)
         software = softwares[k]
-        type = software[:type]        
+        type = software[:type]
         if type == "timedCommand"
             init = eval(Meta.parse(software[:init]))
             tstarts = eval(Meta.parse(software[:tstarts]))
@@ -114,17 +114,17 @@ function routerSimulate(req::HTTP.Request)
             error("bad software type provided")
             return
         end
-        matched_sensors = intersect(getfield.(Sensors, :name),Symbol.(software[:sensors]))
+        matched_sensors = intersect(getfield.(Sensors, :name), Symbol.(software[:sensors]))
         for sensor in Sensors
             if sensor.name in matched_sensors
-                connect!(sensor, SW)        
+                connect!(sensor, SW)
             end
         end
 
         matched_actuators = intersect(getfield.(Actuators, :name), Symbol.(software[:actuators]))
         for actuator in Actuators
             if actuator.name in matched_actuators
-                connect!(SW, actuator)        
+                connect!(SW, actuator)
             end
         end
 
@@ -162,17 +162,21 @@ function routerSimulate(req::HTTP.Request)
     for k in keys(bodies)
         body = bodies[k]
 
-        mass = Float64(eval(Meta.parse(body[:mass])))
-        cm = Float64.(eval(Meta.parse(body[:cm])))
-        ixx = Float64(eval(Meta.parse(body[:ixx])))
-        iyy = Float64(eval(Meta.parse(body[:iyy])))
-        izz = Float64(eval(Meta.parse(body[:izz])))
-        ixy = Float64(eval(Meta.parse(body[:ixy])))
-        ixz = Float64(eval(Meta.parse(body[:ixz])))
-        iyz = Float64(eval(Meta.parse(body[:iyz])))
+        mass = make_SimVal(body[:mass])
+        cmx = make_SimVal(body[:cmx])
+        cmy = make_SimVal(body[:cmy])
+        cmz = make_SimVal(body[:cmz])
+        ixx = make_SimVal(body[:ixx])
+        iyy = make_SimVal(body[:iyy])
+        izz = make_SimVal(body[:izz])
+        ixy = make_SimVal(body[:ixy])
+        ixz = make_SimVal(body[:ixz])
+        iyz = make_SimVal(body[:iyz])
 
         connected_actuators = eval(Meta.parse.(body[:actuators]))
         connected_sensors = eval(Meta.parse.(body[:sensors]))
+
+        cm = [cmx,cmy,cmz]
 
         inertia = [
             ixx ixy ixz
@@ -201,13 +205,13 @@ function routerSimulate(req::HTTP.Request)
             rotation = inv(eval(Meta.parse(sensor[:rotation]))) #inv because server gives rotation from body to act, need act to body
             translation = -eval(Meta.parse(sensor[:translation])) #inv because server gives translation from body to act, need act to body
             frame = Cartesian(rotation, translation)
-            S = Sensors[getfield.(Sensors, :name).==Symbol(sensor_name)]               
+            S = Sensors[getfield.(Sensors, :name).==Symbol(sensor_name)]
             connect!(B, S..., frame)
         end
 
         connected_gravity = body[:gravity]
-        for gravity_name in connected_gravity            
-            G = Gravitys[getfield.(Gravitys, :name).==Symbol(gravity_name)]                        
+        for gravity_name in connected_gravity
+            G = Gravitys[getfield.(Gravitys, :name).==Symbol(gravity_name)]
             connect!(B, G...)
         end
 
@@ -224,9 +228,9 @@ function routerSimulate(req::HTTP.Request)
             ω = eval(Meta.parse(joint[:omega]))
             J = Revolute(Symbol(joint[:name]), θ, ω)
         elseif type == "prismatic"
-                r = eval(Meta.parse(joint[:position]))
-                v = eval(Meta.parse(joint[:velocity]))
-                J = Prismatic(Symbol(joint[:name]), r, v)
+            r = eval(Meta.parse(joint[:position]))
+            v = eval(Meta.parse(joint[:velocity]))
+            J = Prismatic(Symbol(joint[:name]), r, v)
         elseif type == "fixed"
             q = eval(Meta.parse(joint[:q]))
             r = eval(Meta.parse(joint[:position]))
@@ -265,13 +269,14 @@ function routerSimulate(req::HTTP.Request)
 
 
 
-    sys = MultibodySystem(Symbol(sim[:name]), base, Bodies, Joints, actuators = Actuators, software = Software, sensors = Sensors)
+    sys = MultibodySystem(Symbol(sim[:name]), base, Bodies, Joints, actuators=Actuators, software=Software, sensors=Sensors)
 
     sim_dt = eval(Meta.parse(sim[:dt]))
+    sim_nruns = sim[:nruns] isa String ? eval(Meta.parse(sim[:nruns])) : sim[:nruns]
 
-    t = time()    
-    sol = simulate(sys, eval(Meta.parse(sim[:tspan])); dt = sim_dt, output_type=DataFrame)
-    
+    t = time()
+    sol = simulate(sys, eval(Meta.parse(sim[:tspan])); nruns=sim_nruns, dt=sim_dt, output_type=DataFrame)
+
     simtime = time() - t
     if (isempty(sim[:name]))
         t = lpad(string(abs(rand(Int16))), 5, "0")
@@ -285,15 +290,32 @@ function routerSimulate(req::HTTP.Request)
     end
 
     #save simulation data file
-    CSV.write("sim\\$(sim_name)\\run0.csv", sol)
+    if sol isa DataFrame
+        CSV.write("sim\\$(sim_name)\\run0.csv", sol)
+    elseif sol isa Tuple # (nominal,dispersed)
+        CSV.write("sim\\$(sim_name)\\run0.csv", sol[1])
+        for i in eachindex(sol[2])
+            CSV.write("sim\\$(sim_name)\\run$(i).csv", sol[2][i])
+        end
+    else 
+        error("why is sol not a dataframe or tuple?")
+    end
 
     #save system file
     open("sim\\$(sim_name)\\system.json", "w") do io
         JSON3.pretty(io, message)
     end
 
-
     HTTP.Response(200, "$(simtime)")
+end
+
+
+function make_SimVal(expr)
+    
+    nominal = eval(Meta.parse(expr[:nominal]))
+    dispersed = eval(Meta.parse(expr[:dispersed]))
+    sv = isnothing(dispersed) ? SimVal(nominal) : SimVal(nominal,dispersed)
+    return sv
 end
 
 function routerLoadStates(req::HTTP.Request)
@@ -348,7 +370,7 @@ function routerAnimate(req::HTTP.Request)
             "$(body_name)_r_base[2]"
             "$(body_name)_r_base[3]"
         ]
-        append!(full_states,states)
+        append!(full_states, states)
     end
 
     for actuator in sys.actuators
@@ -363,9 +385,9 @@ function routerAnimate(req::HTTP.Request)
             "$(actuator_name)_r_base[3]"
             "$(actuator_name)_force"
         ]
-        append!(full_states,states)
+        append!(full_states, states)
     end
-    rd = CSV.read("$(loc)\\$(run).csv", DataFrame, select=["t",full_states...])    
+    rd = CSV.read("$(loc)\\$(run).csv", DataFrame, select=["t", full_states...])
 
     D = Dict("sys" => sys, "data" => rd)
     HTTP.Response(200, JSON3.write(D))
@@ -403,14 +425,14 @@ function routerLoadModels(req::HTTP.Request)
 end
 
 function routerCustomSoftware(req::HTTP.Request)
-    cs = keys(get_custom_software())    
+    cs = keys(get_custom_software())
     HTTP.Response(200, JSON3.write(cs))
 end
 
 function routerSaveScenario(req::HTTP.Request)
     message = JSON3.read(req.body)
-    scenario_name = message[:name] 
-     open("scenarios\\$(scenario_name).json", "w") do io
+    scenario_name = message[:name]
+    open("scenarios\\$(scenario_name).json", "w") do io
         JSON3.pretty(io, message)
     end
     HTTP.Response(200, "saved")
@@ -420,15 +442,15 @@ function routerGetScenarios(req::HTTP.Request)
     tmp = []
     files = readdir("scenarios")
     for file in files
-        scenario_name = replace(file, ".json" => "")               
+        scenario_name = replace(file, ".json" => "")
         push!(tmp, scenario_name)
-    end        
+    end
     HTTP.Response(200, JSON3.write(tmp))
 end
 
-function routerLoadScenario(req::HTTP.Request)  
+function routerLoadScenario(req::HTTP.Request)
     message = JSON3.read(req.body)
-    println(message)  
+    println(message)
     scenario = JSON3.read("scenarios\\$(message[:name]).json")
     HTTP.Response(200, JSON3.write(scenario))
 end

@@ -1,5 +1,5 @@
 {
-    "name": "pole_cart",
+    "name": "demo_pole_cart",
     "scenario": {
         "base": {
             "type": "default",
@@ -7,27 +7,59 @@
                 "gravity"
             ],
             "renderedPosition": {
-                "x": 401.49559261027656,
-                "y": 615.5369118889339
+                "x": 672,
+                "y": 610.5
             }
         },
         "bodies": {
             "cart": {
                 "name": "cart",
-                "mass": "1",
-                "cm": "zeros(3)",
-                "ixx": "1",
-                "iyy": "1",
-                "izz": "1",
-                "ixy": "0",
-                "ixz": "0",
-                "iyz": "0",
+                "mass": {
+                    "nominal": "1",
+                    "dispersed": ""
+                },
+                "cmx": {
+                    "nominal": "0",
+                    "dispersed": ""
+                },
+                "cmy": {
+                    "nominal": "0",
+                    "dispersed": ""
+                },
+                "cmz": {
+                    "nominal": "0",
+                    "dispersed": ""
+                },
+                "ixx": {
+                    "nominal": "1",
+                    "dispersed": ""
+                },
+                "iyy": {
+                    "nominal": "1",
+                    "dispersed": ""
+                },
+                "izz": {
+                    "nominal": "1",
+                    "dispersed": ""
+                },
+                "ixy": {
+                    "nominal": "0",
+                    "dispersed": ""
+                },
+                "ixz": {
+                    "nominal": "0",
+                    "dispersed": ""
+                },
+                "iyz": {
+                    "nominal": "0",
+                    "dispersed": ""
+                },
                 "geometry": "box",
                 "material": "basic",
                 "color": "aquamarine",
                 "actuators": [
-                    "right_thruster",
-                    "left_thruster"
+                    "left_thruster",
+                    "right_thruster"
                 ],
                 "sensors": [
                 ],
@@ -36,8 +68,8 @@
                 "environments": [
                 ],
                 "renderedPosition": {
-                    "x": 399.4952253277997,
-                    "y": 388.49522532779963
+                    "x": 666,
+                    "y": 396.5
                 },
                 "xlength": 1,
                 "ylength": 1,
@@ -45,14 +77,46 @@
             },
             "pole": {
                 "name": "pole",
-                "mass": "1",
-                "cm": "zeros(3)",
-                "ixx": "1",
-                "iyy": "1",
-                "izz": "1",
-                "ixy": "0",
-                "ixz": "0",
-                "iyz": "0",
+                "mass": {
+                    "nominal": "1",
+                    "dispersed": ""
+                },
+                "cmx": {
+                    "nominal": "0",
+                    "dispersed": ""
+                },
+                "cmy": {
+                    "nominal": "0",
+                    "dispersed": ""
+                },
+                "cmz": {
+                    "nominal": "0",
+                    "dispersed": ""
+                },
+                "ixx": {
+                    "nominal": "1",
+                    "dispersed": ""
+                },
+                "iyy": {
+                    "nominal": "1",
+                    "dispersed": ""
+                },
+                "izz": {
+                    "nominal": "1",
+                    "dispersed": ""
+                },
+                "ixy": {
+                    "nominal": "0",
+                    "dispersed": ""
+                },
+                "ixz": {
+                    "nominal": "0",
+                    "dispersed": ""
+                },
+                "iyz": {
+                    "nominal": "0",
+                    "dispersed": ""
+                },
                 "geometry": "box",
                 "material": "basic",
                 "color": "aquamarine",
@@ -67,8 +131,8 @@
                 "environments": [
                 ],
                 "renderedPosition": {
-                    "x": 389.49338891541487,
-                    "y": 152.45188599551918
+                    "x": 659,
+                    "y": 151.5
                 },
                 "xlength": "0.1",
                 "ylength": 1,
@@ -76,52 +140,40 @@
             }
         },
         "joints": {
-            "cart_prismatic": {
-                "name": "cart_prismatic",
+            "prismatic": {
+                "name": "prismatic",
                 "type": "prismatic",
                 "FpRho": "zeros(3)",
                 "FpPhi": "I(3)",
                 "FsRho": "zeros(3)",
                 "FsPhi": "I(3)",
                 "renderedPosition": {
-                    "x": 398.4950416865611,
-                    "y": 508.5172622764168
+                    "x": 667,
+                    "y": 503.5
                 },
                 "predecessor": "base",
                 "successor": "cart",
                 "position": "0",
                 "velocity": "0"
             },
-            "pole_hinge": {
-                "name": "pole_hinge",
+            "revolute": {
+                "name": "revolute",
                 "type": "revolute",
                 "FpRho": "[0,0.5,0]",
                 "FpPhi": "I(3)",
                 "FsRho": "[0,-0.5,0]",
                 "FsPhi": "I(3)",
                 "renderedPosition": {
-                    "x": 452.5049583134388,
-                    "y": 278.4750247915672
+                    "x": 660,
+                    "y": 280.5
                 },
                 "predecessor": "cart",
                 "successor": "pole",
-                "theta": "10*pi/180",
+                "theta": "30 * pi / 180",
                 "omega": "0"
             }
         },
         "actuators": {
-            "right_thruster": {
-                "name": "right_thruster",
-                "type": "thruster",
-                "rotation": "[0 0 -1; 0 1 0; 1 0 0]",
-                "translation": "[0.5,0,0]",
-                "command": "fsw",
-                "renderedPosition": {
-                    "x": 610.5339736291181,
-                    "y": 419.50091820619235
-                },
-                "thrust": "10"
-            },
             "left_thruster": {
                 "name": "left_thruster",
                 "type": "thruster",
@@ -129,8 +181,20 @@
                 "translation": "[-0.5,0,0]",
                 "command": "fsw",
                 "renderedPosition": {
-                    "x": 283.47392294413635,
-                    "y": 427.5023873361002
+                    "x": 497,
+                    "y": 399.5
+                },
+                "thrust": "10"
+            },
+            "right_thruster": {
+                "name": "right_thruster",
+                "type": "thruster",
+                "rotation": "[0 0 -1; 0 1 0; 1 0 0]",
+                "translation": "[0.5,0,0]",
+                "command": "fsw",
+                "renderedPosition": {
+                    "x": 846,
+                    "y": 394.5
                 },
                 "thrust": "10"
             }
@@ -150,8 +214,8 @@
                 "software": [
                 ],
                 "renderedPosition": {
-                    "x": 230.46418995849712,
-                    "y": 275.47447386785177
+                    "x": 473,
+                    "y": 269.5
                 },
                 "module": "pole_cart_software"
             }
@@ -164,8 +228,8 @@
                 "translation": "zeros(3)",
                 "body": "undef",
                 "renderedPosition": {
-                    "x": 259.4695155544129,
-                    "y": 156.45262056047306
+                    "x": 509,
+                    "y": 150.5
                 }
             },
             "rate": {
@@ -175,8 +239,8 @@
                 "translation": "zeros(3)",
                 "body": "undef",
                 "renderedPosition": {
-                    "x": 524.518180482609,
-                    "y": 152.45188599551915
+                    "x": 802,
+                    "y": 153.5
                 }
             }
         },
@@ -185,8 +249,8 @@
                 "name": "gravity",
                 "type": "constant",
                 "renderedPosition": {
-                    "x": 539.5209351011862,
-                    "y": 601.5343409115951
+                    "x": 878,
+                    "y": 604.5
                 },
                 "value": "-9.8"
             }
@@ -201,8 +265,6 @@
             "tspan": "(0,10)",
             "saveLocation": "",
             "dt": "0.01"
-        },
-        "bodis": {
         }
     }
 }

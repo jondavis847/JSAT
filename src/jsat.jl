@@ -4,6 +4,7 @@ using CSV
 using DataFrames
 using Dates
 using DifferentialEquations
+using Distributions
 using LinearAlgebra
 using Plots
 using PlotThemes
@@ -18,6 +19,7 @@ includet(joinpath("math", "quaternion.jl"))
 includet(joinpath("math", "spatial.jl"))
 includet(joinpath("math", "rotations.jl"))
 includet(joinpath("types","abstract.jl"))
+includet(joinpath("types","SimVal.jl"))
 includet(joinpath("bases", "base.jl"))
 includet(joinpath("types", "system.jl"))
 includet(joinpath("bodies", "bodies.jl"))

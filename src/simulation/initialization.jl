@@ -28,6 +28,8 @@ function initialize_state_vectors(sys)
 end
 
 function initialize_inertias!(body::Body)
+    body.inertia_body = mcI(body)
+    body.inertia_joint = body.inertia_body
     # make the assumption for revolute or spherical joints that the body frame is coincident with the joint Fs frame
     # shift mass properties to the joint frame
     if typeof(body.inner_joint) in [Revolute, Spherical]

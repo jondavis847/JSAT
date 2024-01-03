@@ -2,7 +2,7 @@ includet("..\\src\\jsat.jl")
 function fixed_joint_test()
     N = BaseFrame(:N,-9.8)
     j1 = Revolute(:j1,pi/4,0.)
-    b1 = Body(:p1,1,zeros(3),I(3))
+    b1 = Body(:p1,SimVal(1,Normal(1,1)),zeros(3),I(3))
     fp1 = eye(Cartesian)
     fs1 = Cartesian(I(3),[0,1,0])
 
@@ -16,6 +16,6 @@ function fixed_joint_test()
 
     sys = MultibodySystem(:fjt,N,[b1,b2],[j1,j2])
 
-    sol = simulate(sys,(0,10); output_type = DataFrame)
+    sol = simulate(sys,(0,10),nruns = 5, output_type = DataFrame)
     return sol
 end
