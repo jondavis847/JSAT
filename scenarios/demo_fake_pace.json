@@ -1,0 +1,200 @@
+{
+    "name": "demo_fake_pace",
+    "scenario": {
+        "base": {
+            "type": "earth",
+            "gravity": [
+            ],
+            "renderedPosition": {
+                "x": 376,
+                "y": 211.5
+            }
+        },
+        "bodies": {
+            "bus": {
+                "name": "bus",
+                "mass": {
+                    "nominal": "1",
+                    "dispersed": ""
+                },
+                "cmx": {
+                    "nominal": "0",
+                    "dispersed": ""
+                },
+                "cmy": {
+                    "nominal": "0",
+                    "dispersed": ""
+                },
+                "cmz": {
+                    "nominal": "0",
+                    "dispersed": ""
+                },
+                "ixx": {
+                    "nominal": "1",
+                    "dispersed": ""
+                },
+                "iyy": {
+                    "nominal": "1",
+                    "dispersed": ""
+                },
+                "izz": {
+                    "nominal": "1",
+                    "dispersed": ""
+                },
+                "ixy": {
+                    "nominal": "0",
+                    "dispersed": ""
+                },
+                "ixz": {
+                    "nominal": "0",
+                    "dispersed": ""
+                },
+                "iyz": {
+                    "nominal": "0",
+                    "dispersed": ""
+                },
+                "geometry": "box",
+                "material": "basic",
+                "color": "aquamarine",
+                "actuators": [
+                ],
+                "sensors": [
+                ],
+                "gravity": [
+                    "two_body_earth"
+                ],
+                "environments": [
+                ],
+                "renderedPosition": {
+                    "x": 453,
+                    "y": 434.5
+                },
+                "xlength": "2.5",
+                "ylength": "1.5",
+                "zlength": "1.5"
+            },
+            "solar_array": {
+                "name": "solar_array",
+                "mass": {
+                    "nominal": "1",
+                    "dispersed": ""
+                },
+                "cmx": {
+                    "nominal": "0",
+                    "dispersed": ""
+                },
+                "cmy": {
+                    "nominal": "0",
+                    "dispersed": ""
+                },
+                "cmz": {
+                    "nominal": "0",
+                    "dispersed": ""
+                },
+                "ixx": {
+                    "nominal": "1",
+                    "dispersed": ""
+                },
+                "iyy": {
+                    "nominal": "1",
+                    "dispersed": ""
+                },
+                "izz": {
+                    "nominal": "1",
+                    "dispersed": ""
+                },
+                "ixy": {
+                    "nominal": "0",
+                    "dispersed": ""
+                },
+                "ixz": {
+                    "nominal": "0",
+                    "dispersed": ""
+                },
+                "iyz": {
+                    "nominal": "0",
+                    "dispersed": ""
+                },
+                "geometry": "box",
+                "material": "basic",
+                "color": "aquamarine",
+                "actuators": [
+                ],
+                "sensors": [
+                ],
+                "gravity": [
+                ],
+                "environments": [
+                ],
+                "renderedPosition": {
+                    "x": 727,
+                    "y": 349.5
+                },
+                "xlength": "3",
+                "ylength": "4",
+                "zlength": "0.1"
+            }
+        },
+        "joints": {
+            "bus_floating": {
+                "name": "bus_floating",
+                "type": "floating",
+                "FpRho": "zeros(3)",
+                "FpPhi": "I(3)",
+                "FsRho": "zeros(3)",
+                "FsPhi": "I(3)",
+                "renderedPosition": {
+                    "x": 418,
+                    "y": 327.5
+                },
+                "predecessor": "earth",
+                "successor": "bus",
+                "q": "[-0.28199131744604533, 0.6998673436290516, -0.12625703437873603, -0.6439920492339523]",
+                "omega": "[-0.001256637061435917, 0.003944444109507185, 0.003159045946109736]",
+                "position": "[-3.9292738554734, 5.71264013167723, 1.31199443874228] *1e6",
+                "velocity": "[84.5551344721184, 1749.4937756303016, -7311.912202797997]"
+            },
+            "sa_fixed": {
+                "name": "sa_fixed",
+                "type": "fixed",
+                "FpRho": "[0,1,0]",
+                "FpPhi": "I(3)",
+                "FsRho": "[0,-2,0]",
+                "FsPhi": "I(3)",
+                "renderedPosition": {
+                },
+                "predecessor": "bus",
+                "successor": "solar_array",
+                "q": "[0,0,0,1]",
+                "position": "zeros(3)"
+            }
+        },
+        "actuators": {
+        },
+        "software": {
+        },
+        "sensors": {
+        },
+        "gravity": {
+            "two_body_earth": {
+                "name": "two_body_earth",
+                "type": "twoBodyEarth",
+                "renderedPosition": {
+                    "x": 524,
+                    "y": 585.5
+                }
+            }
+        },
+        "inports": {
+        },
+        "outports": {
+        },
+        "sim": {
+            "name": "",
+            "nruns": "0",
+            "tspan": "(0,7200)",
+            "saveLocation": "",
+            "dt": "nothing"
+        }
+    }
+}

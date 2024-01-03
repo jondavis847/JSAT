@@ -42,7 +42,7 @@ function initialize_inertias!(body::Body)
     # make the assumption for FloatingJoints that the body frame is coincident with the com
     # shift mass properties to the com
     if typeof(body.inner_joint) == FloatingJoint
-        body.inertia_joint = mcI(body.m, SVector{3,Float64}(zeros(3)), body.I)
+        body.inertia_joint = mcI(body.m.value, SVector{3,Float64}(zeros(3)), getfield.(body.I,:value))
     end
     return nothing
 end
