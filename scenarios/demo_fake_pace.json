@@ -123,6 +123,7 @@
                 "sensors": [
                 ],
                 "gravity": [
+                    "two_body_earth"
                 ],
                 "environments": [
                 ],
@@ -162,6 +163,8 @@
                 "FsRho": "[0,-2,0]",
                 "FsPhi": "I(3)",
                 "renderedPosition": {
+		    "x": 553,
+                    "y": 434.5
                 },
                 "predecessor": "bus",
                 "successor": "solar_array",
