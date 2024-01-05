@@ -106,7 +106,7 @@ $('#timedCommandButton').on('click', clickAddSoftwareTimedCommand);
 $('#customSoftwareButton').on('click', clickAddSoftwareCustom);
 $('#constantGravityButton').on('click', clickAddGravityConstant);
 $('#drawModeBtn').on('click', toggleDrawMode);
-$('#chooseFileButton').on('click', () => { $('#loadFileInput').click() });
+$('#loadFileStates').on('click', () => { $('#loadFileInput').click() });
 $('#deleteBtn').on('click', deleteElements);
 $('#saveScenarioBtn').on('click', clickSaveScenario);
 $('#clearCanvasBtn').on('click', clearCanvas);
@@ -117,32 +117,16 @@ $('#simpleRateSensor3Button').on('click', clickAddSimpleRateSensor3);
 $('#addElementCancelButton').on('click', () => { $('#nameOnlyDiv').hide() })
 $("#twoBodyEarthButton").on("click", clickAddGravityTwoBodyEarth);
 
-$('#loadFileInput').on('change', function (e) {
-    console.log(e)
-    if (e.target.files[0]) {
-        $('#loadFileStates').on('click', function () {
-            Papa.parse(e.target.files[0], {
-                complete: function (results) {
-                    const states = results.data[0];
-                    // remove all options first...
-                    $("#xStateSelect").empty();
-                    $("#yStateSelect").empty();
-                    //then reload all options
-                    for (let i = 0; i < states.length; i++) {
-                        $("#xStateSelect").append($('<option>', {
-                            value: states[i],
-                            text: states[i],
-                        }))
-                        $("#yStateSelect").append($('<option>', {
-                            value: states[i],
-                            text: states[i],
-                        }))
-                    }
-                }
-            });
-        });
-    }
-});
+
+
+
+function objectMap(obj, fn) {
+    const newObject = {};
+    Object.keys(obj).forEach((key) => {
+        newObject[key] = fn(obj[key]);
+    });
+    return newObject;
+}
 
 getSimFileNames();
 loadModels();
@@ -626,16 +610,16 @@ function clickAddCylinderBody() {
 function saveBody(event) {
     let body = {
         name: $("#newBodyName").val(),
-        mass: {nominal: $("#newBodyMass").val(), dispersed: $("#newBodyMassDist").val()},
-        cmx: {nominal: $("#newBodyCmX").val(), dispersed: $("#newBodyCmXDist").val()},
-        cmy: {nominal: $("#newBodyCmY").val(), dispersed: $("#newBodyCmYDist").val()},
-        cmz: {nominal: $("#newBodyCmZ").val(), dispersed: $("#newBodyCmZDist").val()},
-        ixx: {nominal: $("#newBodyIxx").val(), dispersed: $("#newBodyIxxDist").val()},
-        iyy: {nominal: $("#newBodyIyy").val(), dispersed: $("#newBodyIyyDist").val()},
-        izz: {nominal: $("#newBodyIzz").val(), dispersed: $("#newBodyIzzDist").val()},
-        ixy: {nominal: $("#newBodyIxy").val(), dispersed: $("#newBodyIxyDist").val()},
-        ixz: {nominal: $("#newBodyIxz").val(), dispersed: $("#newBodyIxzDist").val()},
-        iyz: {nominal: $("#newBodyIyz").val(), dispersed: $("#newBodyIyzDist").val()},
+        mass: { nominal: $("#newBodyMass").val(), dispersed: $("#newBodyMassDist").val() },
+        cmx: { nominal: $("#newBodyCmX").val(), dispersed: $("#newBodyCmXDist").val() },
+        cmy: { nominal: $("#newBodyCmY").val(), dispersed: $("#newBodyCmYDist").val() },
+        cmz: { nominal: $("#newBodyCmZ").val(), dispersed: $("#newBodyCmZDist").val() },
+        ixx: { nominal: $("#newBodyIxx").val(), dispersed: $("#newBodyIxxDist").val() },
+        iyy: { nominal: $("#newBodyIyy").val(), dispersed: $("#newBodyIyyDist").val() },
+        izz: { nominal: $("#newBodyIzz").val(), dispersed: $("#newBodyIzzDist").val() },
+        ixy: { nominal: $("#newBodyIxy").val(), dispersed: $("#newBodyIxyDist").val() },
+        ixz: { nominal: $("#newBodyIxz").val(), dispersed: $("#newBodyIxzDist").val() },
+        iyz: { nominal: $("#newBodyIyz").val(), dispersed: $("#newBodyIyzDist").val() },
         geometry: event.data.geometry,
         material: $("#newBodyMaterial").val(),
         color: $("#newBodyColor").val(),
@@ -739,7 +723,7 @@ function editBody() {
     $("#newBodyMassDist").val(body.mass.dispersed);
     $("#newBodyCmX").val(body.cmx.nominal);
     $("#newBodyCmXDist").val(body.cmx.dispersed);
-    $("#newBodyCmY").val(body.cmy.nominal);    
+    $("#newBodyCmY").val(body.cmy.nominal);
     $("#newBodyCmYDist").val(body.cmy.dispersed);
     $("#newBodyCmZ").val(body.cmz.nominal);
     $("#newBodyCmZDist").val(body.cmz.dispersed);
@@ -1588,22 +1572,74 @@ function getSimStates() {
                 text: states[i],
             }))
         }
-
+        $("#plotState").data("simOrFile", 0); //0 for Sim
     });
     xhr.open("POST", "/loadstates");
     xhr.send(JSON.stringify(selected));
 }
 
-function plotStateData() {
+$('#loadFileInput').on('change', function (e) {
+    if (e.target.files[0]) {
+        $("#chosenFileText").text(e.target.files[0].name)
+        Papa.parse(e.target.files[0], {
+            dynamicTyping: true,
+            complete: function (results) {
+                const states = results.data[0];
+                const data = results.data.slice(1);
+                // remove all options first...
+                $("#xStateSelect").empty();
+                $("#yStateSelect").empty();
+                //then reload all options
+                const reg = /(\d{4})-(\d{3})-(\d{2}):(\d{2}):(\S+)/ //YYYY-DDD-HH:MM:SS.
+                for (let i = 0; i < states.length; i++) {                    
+                    let values = data.map((x) => x[i]);
+                    const tester = values[0];
+                    if (typeof tester == "string") {
+                        const match = tester.match(reg)
+                        if (match) {
+                            let new_values = [];
+                            values.forEach(function (str) {
+                                if (str == null) {
+                                    new_values.push("")
+                                } else {
+                                    const each_match = str.match(reg)
+                                    const Y = parseInt(each_match[1]);
+                                    const D = parseInt(each_match[2]);
+                                    const H = parseInt(each_match[3]);
+                                    const M = parseInt(each_match[4]);
+                                    const S = parseFloat(each_match[5]);
 
-    let colormap = [
-        [0, 255, 159],
-        [0, 184, 255],
-        [189, 0, 255],
-        [255, 95, 31],
-        [0, 30, 255],
-        [234, 0, 217],
-    ];
+                                    const date = new Date(Y, 0, D, H, M, S);
+                                    new_values.push(date.toISOString());
+                                }
+                            });
+                            values = new_values;
+                        }
+                    }
+
+                    $("#xStateSelect").append($('<option>', { id: `xstate${i}`, text: states[i] }));
+                    $("#yStateSelect").append($('<option>', { id: `ystate${i}`, text: states[i] }));
+
+                    $(`#xstate${i}`).data("values", values);
+                    $(`#ystate${i}`).data("values", values);
+                    
+                }
+                
+            }
+        });
+        $("#plotState").data("simOrFile", 1); //1 for file
+    };
+});
+
+function plotStateData() {
+    if ($("#plotState").data("simOrFile") == 0) {
+        plotSimData();
+    } else if ($("#plotState").data("simOrFile") == 1) {
+        plotFileData();
+    }
+}
+function plotSimData() {
+    const colormap = getColorMap();
 
     let selectedSims = []
     $("#simSelect").find(":selected").each(function () { selectedSims.push($(this).val()) })
@@ -1644,42 +1680,89 @@ function plotStateData() {
             })
 
         })
-        let layout = {
-            plot_bgcolor: "rgb(35, 36, 36)",
-            paper_bgcolor: "rgb(35, 36, 36)",
-            font: {
-                family: 'Courier New, monospace',
-                size: 10,
-                color: 'aliceblue'
-            },
-            title: selectedYStates.join(),
-            showlegend: true,
-            legend: {
-                orientation: "h",
-                bgcolor: 'rgba(0,0,0,0)' //transparent
-            },
-            xaxis: {
-                title: selectedXState,
-                gridcolor: "rgb(0,0,0)"
-            },
-            yaxis: {
-                gridcolor: "rgb(0,0,0)"
-            },
-            margin: {
-                l: 50,
-                r: 50,
-                b: 50,
-                t: 50,
-                pad: 4
-            },
-        }
-        Plotly.newPlot("plotsDiv", traces, layout, { scrollZoom: true })
+
+        Plotly.newPlot("plotsDiv", traces, getLayout(selectedXState, selectedYStates), { scrollZoom: true })
     });
 
     xhr.open("POST", "/plotstates");
     xhr.send(JSON.stringify({ sims: selectedSims, states: selectedStates }));
 }
 
+function plotFileData() {
+    const colormap = getColorMap();
+    let selectedXState = $("#xStateSelect").find(":selected");
+    //let selectedYStates = [];
+    let selectedYStates = $("#yStateSelect option:selected")//.find(":selected") //.each(function () { selectedYStates.push($(this)) });    
+    let traces = [];
+    let colorCtr = 0;
+    selectedYStates.each(function () {
+        traces.push({
+            x: selectedXState.data("values"),
+            y: $(this).data("values"),
+            type: 'scatter',
+            mode: 'lines',
+            name: $(this).text(),
+            showlegend: true,
+            line: {
+                color: `rgb(${colormap[colorCtr]})`,
+                width: 1
+            },
+        })
+
+        colorCtr++;
+        if (colorCtr >= colormap.length) {
+            colorCtr = 0
+        }
+    })
+    let ystates = []
+    selectedYStates.each(function () { ystates.push($(this).text()) })
+    Plotly.newPlot("plotsDiv", traces, getLayout(selectedXState, ystates), { scrollZoom: true })
+}
+
+function getLayout(xstate, ystate) {
+    let layout = {
+        plot_bgcolor: "rgb(35, 36, 36)",
+        paper_bgcolor: "rgb(35, 36, 36)",
+        font: {
+            family: 'Courier New, monospace',
+            size: 10,
+            color: 'aliceblue'
+        },
+        showlegend: true,
+        legend: {
+            orientation: "h",
+            bgcolor: 'rgba(0,0,0,0)' //transparent
+        },
+        xaxis: {
+            title: xstate,
+            gridcolor: "rgb(0,0,0)"
+        },
+        yaxis: {
+            title: ystate.join(),
+            gridcolor: "rgb(0,0,0)"
+        },
+        margin: {
+            l: 50,
+            r: 50,
+            b: 50,
+            t: 50,
+            pad: 4
+        },
+    }
+    return layout
+}
+
+function getColorMap() {
+    const colormap = [
+        [0, 255, 159],
+        [0, 184, 255],
+        [189, 0, 255],
+        [255, 95, 31],
+        [0, 30, 255],
+        [234, 0, 217],
+    ];
+    return colormap
+}
 
 function getSimOptions() {
     var tstart = $("#simStartTime").val();
@@ -1739,7 +1822,7 @@ function makeAnimation() {
         const data = JSON.parse(xhr.responseText);
         const sys = data.sys;
         console.log(sys)
-        const animData = data.data;        
+        const animData = data.data;
 
         const animationDiv = document.getElementById("animationDiv")
         var renderer = new THREE.WebGLRenderer({ antialias: true, logarithmicDepthBuffer: true });
@@ -1844,8 +1927,8 @@ function makeAnimation() {
                 r_interpolant: r_interpolant
             }
 
-            mesh.userData = this_data;            
-            scene.add(mesh);            
+            mesh.userData = this_data;
+            scene.add(mesh);
 
 
             //add body to targets menu
@@ -1908,7 +1991,7 @@ function makeAnimation() {
         });
 
         const time_index = animData.colindex.names.indexOf("t");
-        const time_data = animData.columns[time_index];        
+        const time_data = animData.columns[time_index];
         let t;
         const findTimeIndex = (data) => (data > t);
         let start_time;
@@ -1920,7 +2003,7 @@ function makeAnimation() {
             ANIMATION_ID = requestAnimationFrame(animate);
 
             if (clock.running) {
-                sim_elapsed_time = clock.getElapsedTime() - start_time;                
+                sim_elapsed_time = clock.getElapsedTime() - start_time;
                 t = t0 + sim_elapsed_time;
                 if (t > time_data[time_data.length - 1]) {
                     t = t0;
@@ -1932,21 +2015,21 @@ function makeAnimation() {
                 start_time = 0
             }
 
-            const i = time_data.findIndex(findTimeIndex);            
+            const i = time_data.findIndex(findTimeIndex);
 
             // interp scale factor
 
-            let j = i+1
-            while (time_data[j] - time_data[i] == 0 ) {j++} //protection from when consecutive time points are identical
+            let j = i + 1
+            while (time_data[j] - time_data[i] == 0) { j++ } //protection from when consecutive time points are identical
 
-            const alpha = (sim_elapsed_time - time_data[i]) / (time_data[j] - time_data[i]);            
+            const alpha = (sim_elapsed_time - time_data[i]) / (time_data[j] - time_data[i]);
 
             for (let b = 0; b < body_keys.length; b++) {
                 let this_body = sys.bodies[body_keys[b]];
                 let body = scene.getObjectByName(this_body.name);
 
-                const current_position = new THREE.Vector3(body.userData.r1[i], body.userData.r2[i], body.userData.r3[i]);                
-                const next_position = new THREE.Vector3(body.userData.r1[j], body.userData.r2[j], body.userData.r3[j]);                
+                const current_position = new THREE.Vector3(body.userData.r1[i], body.userData.r2[i], body.userData.r3[i]);
+                const next_position = new THREE.Vector3(body.userData.r1[j], body.userData.r2[j], body.userData.r3[j]);
                 const interp_position = current_position.lerp(next_position, alpha)
                 //const interp_position = body.userData.r_interpolant.evaluate(t);                
                 body.position.set(interp_position.x, interp_position.y, interp_position.z);

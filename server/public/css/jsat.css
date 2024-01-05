@@ -1,5 +1,6 @@
 ::-webkit-scrollbar {
     width: 10px;
+    height: 10px;
 }
 
 ::-webkit-scrollbar-track {
@@ -440,7 +441,7 @@ button:focus {
     top: 0%;
     left: 25%;
     width: 15%;
-    height: 100%;    
+    height: 100%;        
 }
 
 .x-states {
@@ -462,7 +463,8 @@ button:focus {
     height: 90%;
     background-color: rgba(35, 36, 35, 1);
     box-sizing: border-box;
-    border: solid black thin;
+    border: solid black thin;    
+    overflow-x:auto;
 }
 
 .x-state-select {
@@ -545,6 +547,19 @@ button:focus {
     color: aquamarine;
     text-align: center;
     position: absolute;
+    bottom: 5%;
+    left: 0%;
+    width: 100%;
+    height: 5%;
+}
+
+.plot-btn {
+    background-color: rgba(20, 20, 20, 1);
+    box-sizing: border-box;
+    border: black thin solid;
+    color: aquamarine;
+    text-align: center;
+    position: absolute;
     bottom: 0%;
     left: 0%;
     width: 100%;
@@ -555,17 +570,18 @@ button:focus {
     display: none;
 }
 
-.choose-file-btn {
-    background-color: rgba(20, 20, 20, 1);
-    box-sizing: border-box;
-    border: black thin solid;
-    color: aquamarine;
-    text-align: center;
+.chosen-file-text {
+    background-color: rgba(50, 50, 50, 1);    
+    color: whitesmoke;
+    text-align: left;
     position: absolute;
-    bottom: 5%;
+    bottom: 0%;
     left: 0%;
-    width: 30%;
+    width: 100%;
     height: 5%;
+    font-family: 'Courier New', monospace;
+    font-size: small;
+    overflow-x:auto;
 }
 
 .plot-canvas {
