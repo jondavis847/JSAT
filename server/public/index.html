@@ -64,7 +64,8 @@
                 </tr>
                 <tr>
                   <td><label class='form-font' for="simDt">sim dt:</label><br></td>
-                  <td><input id="simDt" class='form-input' type='text' name="simDt" placeholder="variable step"><br></td>
+                  <td><input id="simDt" class='form-input' type='text' name="simDt" placeholder="variable step"><br>
+                  </td>
                 </tr>
                 <tr>
                   <td><label class='form-font' for="simNruns"># of MC runs:</label><br></td>
@@ -94,7 +95,7 @@
             <button id="scenariosButton" class="model-button">scenarios</button>
           </div>
 
-          <div id="scenariosLoaderDiv" class="model-loader-div hidden-loader-div">            
+          <div id="scenariosLoaderDiv" class="model-loader-div hidden-loader-div">
             <button id="scenariosBackButton" class="model-button model-loader-back-btn">back</button>
           </div>
 
@@ -181,7 +182,7 @@
               <button id="addElementSaveButton" class="add-body-save-button">save</button>
               <button id="addElementCancelButton" class="add-body-cancel-button">cancel</button>
             </div>
-          </div>          
+          </div>
 
           <div id="addBodyDiv" class="element-details-div">
             <div class="element-title-div">
@@ -391,7 +392,7 @@
             <button id="simsTitle" class="title-button"> simulations </button>
             <select id="simSelect" class="sim-select" name="sims" multiple></select>
             <button id="loadSimStates" class="load-from-sim-btn"> load states from sim </button>
-            <input type='file' id='loadFileInput' class='load-file-input' accept=".csv">                        
+            <input type='file' id='loadFileInput' class='load-file-input' accept=".csv">
             <button id="loadFileStates" class="load-from-file-btn"> load states from file </button>
             <div id="chosenFileText" class="chosen-file-text"></div>
           </div>
@@ -418,9 +419,13 @@
             <select id="sim2Select" class="sim-select" name="sims" multiple></select>
             <button id="animateBtn" class="load-from-file-btn"> animate </button>
           </div>
-          <div id="animationToolBar" class = "animation-toolbar">
+          <div id="animationToolBar" class="animation-toolbar">
             <button class='animation-target-btn'>target:</button>
             <select id="animationTarget" class="animation-target"></select>
+            <div class="playback-speed-div">
+              <label class='pb-speed-label'>speed:</label>
+              <input type="range" min="0" max="100" value="1" class="slider" id="pbSpeedSlider">
+            </div>
           </div>
           <div id="animationDiv" class="animation-div"></div>
         </div>

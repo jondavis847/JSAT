@@ -32,6 +32,7 @@ let JSAT = {
 };
 
 let ANIMATION_ID = null; //used to cancel animations
+let PLAYBACK_SPEED = 1.0; 
 
 function jsatConsole(msg) {
     $("#consoleLog").val($("#consoleLog").val() + `\n${msg}`);
@@ -118,7 +119,7 @@ $('#simpleRateSensor3Button').on('click', clickAddSimpleRateSensor3);
 $('#addElementCancelButton').on('click', () => { $('#nameOnlyDiv').hide() })
 $("#twoBodyEarthButton").on("click", clickAddGravityTwoBodyEarth);
 
-
+$("#pbSpeedSlider").on("change", () => { PLAYBACK_SPEED = $("#pbSpeedSlider").val();})
 
 
 function objectMap(obj, fn) {
@@ -1892,9 +1893,10 @@ function makeAnimation() {
 
         if (sys.base.type == "earth") {
             const rEarth = 6378.1370e3;
-            const i_earth = new THREE.TextureLoader().load("./images/earth.jpeg");
+            const i_earth = new THREE.TextureLoader().load("./images/earth_16k.jpg");
+            const b_earth = new THREE.TextureLoader().load("./images/earth_bump_16k.jpg");
             const g_earth = new THREE.SphereGeometry(rEarth, 64, 64)
-            const m_earth = new THREE.MeshPhongMaterial({ map: i_earth });
+            const m_earth = new THREE.MeshPhongMaterial({ map: i_earth , bumpMap: b_earth, bumpScale: 1});
             const earth = new THREE.Mesh(g_earth, m_earth);
             scene.add(earth);
         }
@@ -2034,27 +2036,26 @@ function makeAnimation() {
 
         const time_index = animData.colindex.names.indexOf("t");
         const time_data = animData.columns[time_index];
-        let t;
-        const findTimeIndex = (data) => (data > t);
-        let start_time;
-        let sim_elapsed_time;
+        
+        let sim_elapsed_time = 0;
         let t0 = time_data[0];
+        let t = t0;
+        const findTimeIndex = (data) => (data > t);        
 
         function animate() {
 
             ANIMATION_ID = requestAnimationFrame(animate);
 
-            if (clock.running) {
-                sim_elapsed_time = clock.getElapsedTime() - start_time;
+            if (clock.running) {                
+                const sim_delta_time =  PLAYBACK_SPEED * clock.getDelta();
+                sim_elapsed_time += sim_delta_time;
                 t = t0 + sim_elapsed_time;
                 if (t > time_data[time_data.length - 1]) {
                     t = t0;
-                    start_time = clock.getElapsedTime()
+                    sim_elapsed_time = 0;
                 }
-            } else {
-                t = t0;
-                clock.start()
-                start_time = 0
+            } else {                
+                clock.start()                
             }
 
             const i = time_data.findIndex(findTimeIndex);

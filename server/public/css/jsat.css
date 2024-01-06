@@ -4,7 +4,7 @@
 }
 
 ::-webkit-scrollbar-track {
-    background:  rgba(40, 40, 40, 1);
+    background: rgba(40, 40, 40, 1);
 }
 
 ::-webkit-scrollbar-thumb {
@@ -16,28 +16,31 @@
 }
 
 input:focus,
-select:focus, .form-control:focus,
+select:focus,
+.form-control:focus,
 textarea:focus,
 button:focus {
-  outline: none !important;
-  box-shadow: none !important;
+    outline: none !important;
+    box-shadow: none !important;
 }
+
 *:focus {
     box-shadow: none !important;
 }
+
 .bootstrap-select .form-control:focus {
     outline: 0px none #fff !important;
 }
 
-.bootstrap-select .form-control > div.filter-option:focus {
+.bootstrap-select .form-control>div.filter-option:focus {
     outline: 0px none #fff !important;
 }
 
-.bootstrap-select .form-control > div.filter-option > div.filter-option-inner:focus {
+.bootstrap-select .form-control>div.filter-option>div.filter-option-inner:focus {
     outline: 0px none #fff !important;
 }
 
-.bootstrap-select .form-control > div.filter-option > div.filter-option-inner > div.filter-option-inner-inner:focus {
+.bootstrap-select .form-control>div.filter-option>div.filter-option-inner>div.filter-option-inner-inner:focus {
     outline: 0px none #fff !important;
 }
 
@@ -163,7 +166,7 @@ button:focus {
     border-left-style: none;
     border-right-style: none;
     border-top-style: none;
-    border-bottom-style: solid thin black;    
+    border-bottom-style: solid thin black;
     color: #94c5dc;
     font-family: 'Courier New', monospace;
     text-align: center;
@@ -197,14 +200,15 @@ button:focus {
 }
 
 .hidden-loader-div {
-    display:none;
+    display: none;
 }
+
 .model-button {
     background: rgba(30, 30, 30, 1);
-    font-family: 'Courier New', monospace;    
+    font-family: 'Courier New', monospace;
     box-sizing: border-box;
     border: solid thin black;
-    position: relative;    
+    position: relative;
     width: 100%;
     height: 5%;
     color: aquamarine;
@@ -225,11 +229,11 @@ button:focus {
     box-sizing: border-box;
     border: solid thin black;
     position: absolute;
-    top:10%;
-    width:100%;
-    height:20%;
-    left:0%;
-    display:none;
+    top: 10%;
+    width: 100%;
+    height: 20%;
+    left: 0%;
+    display: none;
     z-index: 1;
 }
 
@@ -254,7 +258,7 @@ button:focus {
     left: 0%;
     width: 100%;
     height: 10%;
-    top: 10%;    
+    top: 10%;
     font-family: 'Courier New', monospace;
     box-sizing: border-box;
     border: solid thin black;
@@ -267,13 +271,13 @@ button:focus {
     left: 0%;
     width: 100%;
     height: 10%;
-    top: 10%;    
+    top: 10%;
     font-family: 'Courier New', monospace;
     box-sizing: border-box;
     border: solid thin black;
 }
 
-.active-border  {    
+.active-border {
     border: solid thin aquamarine;
 }
 
@@ -288,11 +292,11 @@ button:focus {
     left: 0%;
     width: 100%;
     height: 10%;
-    top: 10%;    
-    box-sizing: border-box;        
+    top: 10%;
+    box-sizing: border-box;
     border-left-style: none;
     border-right-style: none;
-    border-bottom-style: solid thin black;    
+    border-bottom-style: solid thin black;
     border-top-style: none;
     font-family: 'Courier New', monospace;
 }
@@ -304,34 +308,34 @@ button:focus {
     left: 0%;
     width: 100%;
     height: 10%;
-    bottom: 0%;       
+    bottom: 0%;
     box-sizing: border-box;
-    border: solid thin black; 
+    border: solid thin black;
     font-family: 'Courier New', monospace;
 }
 
 .joint-div {
     position: absolute;
-    top:5%;
-    height:95%;
-    width:100%;
-    left:0%;
+    top: 5%;
+    height: 95%;
+    width: 100%;
+    left: 0%;
     background: rgba(40, 40, 40, 1);
     box-sizing: border-box;
     border: solid thin black;
-    display:none;    
+    display: none;
 }
 
 .joint-menu {
     position: absolute;
-    top:10%;
-    height:90%;
-    width:100%;
-    left:0%;
+    top: 10%;
+    height: 90%;
+    width: 100%;
+    left: 0%;
     background: rgba(40, 40, 40, 1);
     box-sizing: border-box;
     border: solid thin black;
-    display:none;
+    display: none;
     z-index: 1;
 }
 
@@ -406,7 +410,7 @@ button:focus {
     background-color: rgba(35, 36, 36, 1);
     color: white;
     box-sizing: border-box;
-    border: solid thin black;    
+    border: solid thin black;
     overflow: auto;
 }
 
@@ -441,7 +445,7 @@ button:focus {
     top: 0%;
     left: 25%;
     width: 15%;
-    height: 100%;        
+    height: 100%;
 }
 
 .x-states {
@@ -463,16 +467,16 @@ button:focus {
     height: 90%;
     background-color: rgba(35, 36, 35, 1);
     box-sizing: border-box;
-    border: solid black thin;    
-    overflow-x:auto;
+    border: solid black thin;
+    overflow-x: auto;
 }
 
 .x-state-select {
     position: absolute;
     top: 50%;
-    left:0%;
-    height:50%;
-    width:100%;
+    left: 0%;
+    height: 50%;
+    width: 100%;
     background-color: rgba(35, 36, 35, 1);
     box-sizing: border-box;
     border: solid black thin;
@@ -491,6 +495,7 @@ button:focus {
     align-items: middle;
     color: white;
 }
+
 .state-select {
     position: relative;
     top: 5%;
@@ -523,7 +528,7 @@ button:focus {
     background-color: rgba(35, 36, 35, 1);
     border: none;
     box-sizing: border-box;
-    color: aliceblue;    
+    color: aliceblue;
 }
 
 
@@ -571,7 +576,7 @@ button:focus {
 }
 
 .chosen-file-text {
-    background-color: rgba(50, 50, 50, 1);    
+    background-color: rgba(50, 50, 50, 1);
     color: whitesmoke;
     text-align: left;
     position: absolute;
@@ -581,7 +586,7 @@ button:focus {
     height: 5%;
     font-family: 'Courier New', monospace;
     font-size: small;
-    overflow-x:auto;
+    overflow-x: auto;
 }
 
 .plot-canvas {
@@ -593,7 +598,7 @@ button:focus {
 }
 
 .animation-div {
-    position:absolute;
+    position: absolute;
     bottom: 0%;
     left: 25%;
     width: 75%;
@@ -606,19 +611,19 @@ button:focus {
     border: black thin solid;
     color: aquamarine;
     text-align: center;
-    position:absolute;
+    position: absolute;
     top: 0%;
     left: 25%;
     width: 75%;
     height: 3.6%;
 }
 
-.animation-target{ 
-position: absolute;
+.animation-target {
+    position: absolute;
     top: 0%;
-    left:10%;
-    height:100%;
-    width:10%;
+    left: 10%;
+    height: 100%;
+    width: 10%;
     background-color: rgba(35, 36, 35, 1);
     box-sizing: border-box;
     border: solid black thin;
@@ -633,186 +638,226 @@ position: absolute;
     top: 0%;
     width: 10%;
     height: 100%;
-    left:0%;
+    left: 0%;
     text-align: center;
     font-family: 'Courier New', monospace;
     align-items: middle;
     color: white;
 }
 
+.playback-speed-div {
+    background-color: rgba(20, 20, 20, 1);
+    color: whitesmoke;
+    font-family: 'Courier New', Courier, monospace;
+    text-align: center;
+    position: absolute;
+    left: 20%;
+    height: 100%;
+    width: 25%;
+    top: 0%;
+}
+
+.pb-speed-label {
+    text-align: center;
+    background-color: rgba(20, 20, 20, 1);
+    color: whitesmoke;
+}
+
+.slider {
+    -webkit-appearance: none;
+    width: 50%;
+    left: 50%;
+    height: 25px;
+    background:  rgba(40,40,40,1);
+    outline: none;
+    opacity: 0.7;
+    -webkit-transition: .2s;
+    transition: opacity .2s;
+}
+
+.slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width:  25px;
+    height: 25px;
+    background: aquamarine;
+    cursor: pointer;
+}
+
 .cy-toolbar {
-    position:absolute;
-    left:35%;
-    width:75%;
-    top:0%;
-    height:5%;    
+    position: absolute;
+    left: 35%;
+    width: 75%;
+    top: 0%;
+    height: 5%;
     background-color: rgba(25, 25, 25, 1);
 }
 
 .cy-canvas-div {
-    position:absolute;
-    left:35%;
-    width:65%;
-    top:5%;
-    height:95%;    
+    position: absolute;
+    left: 35%;
+    width: 65%;
+    top: 5%;
+    height: 95%;
     background-color: rgba(35, 36, 35, 1);
 }
 
 .element-details-div {
-    position:absolute;
-    left:33%;
-    width:33%;
-    top:15%;
-    height:70%;    
+    position: absolute;
+    left: 33%;
+    width: 33%;
+    top: 15%;
+    height: 70%;
     background-color: rgba(35, 36, 35, 1);
     display: none;
     border: solid thin black;
     box-sizing: border-box;
-    z-index: 10;    
+    z-index: 10;
 }
 
 .element-title-div {
     background-color: rgba(25, 25, 25, 1);
     box-sizing: border-box;
     border: solid thin black;
-    position:absolute;
-    left:0%;
-    width:100%;
-    top:0%;
-    height:10%;   
+    position: absolute;
+    left: 0%;
+    width: 100%;
+    top: 0%;
+    height: 10%;
     color: aquamarine;
     text-align: left;
-    font-family: 'Courier New', monospace;    
+    font-family: 'Courier New', monospace;
 }
 
 .element-table-div {
     background-color: rgba(35, 36, 35, 1);
     box-sizing: border-box;
     border: solid thin black;
-    position:absolute;
-    left:0%;
-    width:100%;
-    top:10%;
-    height:80%;   
-    overflow:auto;    
+    position: absolute;
+    left: 0%;
+    width: 100%;
+    top: 10%;
+    height: 80%;
+    overflow: auto;
 }
 
 .model-element-table-div {
     background-color: rgba(35, 36, 35, 1);
     box-sizing: border-box;
     border: solid thin black;
-    position:absolute;
-    left:0%;
-    width:100%;
-    top:15%;
-    height:75%;   
-    overflow:auto;    
+    position: absolute;
+    left: 0%;
+    width: 100%;
+    top: 15%;
+    height: 75%;
+    overflow: auto;
 }
 
 .add-model-param-button {
     background-color: rgba(35, 36, 35, 1);
     box-sizing: border-box;
     border: solid thin black;
-    position:absolute;
-    left:0%;
-    width:100%;
-    top:10%;
-    height:5%;   
+    position: absolute;
+    left: 0%;
+    width: 100%;
+    top: 10%;
+    height: 5%;
     color: aquamarine;
     text-align: center;
-    font-family: 'Courier New', monospace;  
+    font-family: 'Courier New', monospace;
 }
-.add-body-buttons-div {    
+
+.add-body-buttons-div {
     box-sizing: border-box;
-    position:absolute;
+    position: absolute;
     border: solid thin black;
-    left:0%;
-    width:100%;
-    top:90%;
-    height:10%;   
+    left: 0%;
+    width: 100%;
+    top: 90%;
+    height: 10%;
 }
 
 .add-body-save-button {
     background-color: rgba(35, 36, 35, 1);
     box-sizing: border-box;
     border: solid thin black;
-    position:absolute;
-    left:0%;
-    width:50%;
-    top:0%;
-    height:100%;   
+    position: absolute;
+    left: 0%;
+    width: 50%;
+    top: 0%;
+    height: 100%;
     color: aquamarine;
     text-align: center;
-    font-family: 'Courier New', monospace;       
+    font-family: 'Courier New', monospace;
 }
 
 .add-body-cancel-button {
     background-color: rgba(35, 36, 35, 1);
     box-sizing: border-box;
     border: solid thin black;
-    position:absolute;
-    left:50%;
-    width:50%;
-    top:0%;
-    height:100%;   
+    position: absolute;
+    left: 50%;
+    width: 50%;
+    top: 0%;
+    height: 100%;
     color: crimson;
     text-align: center;
-    font-family: 'Courier New', monospace;       
+    font-family: 'Courier New', monospace;
 }
 
 .draw-mode-btn {
     background-color: rgba(25, 25, 25, 1);
-    box-sizing: border-box;    
-    position:absolute;
-    left:0%;
-    width:10%;
-    top:0%;
-    height:100%;   
+    box-sizing: border-box;
+    position: absolute;
+    left: 0%;
+    width: 10%;
+    top: 0%;
+    height: 100%;
     color: aquamarine;
     text-align: center;
-    font-family: 'Courier New', monospace; 
-    z-index: 10;      
+    font-family: 'Courier New', monospace;
+    z-index: 10;
 }
 
 .delete-btn {
     background-color: rgba(25, 25, 25, 1);
-    box-sizing: border-box;    
-    position:absolute;
-    left:10%;
-    width:10%;
-    top:0%;
-    height:100%;   
+    box-sizing: border-box;
+    position: absolute;
+    left: 10%;
+    width: 10%;
+    top: 0%;
+    height: 100%;
     color: aquamarine;
     text-align: center;
-    font-family: 'Courier New', monospace; 
-    z-index: 10;      
+    font-family: 'Courier New', monospace;
+    z-index: 10;
 }
 
 .save-scenario-btn {
     background-color: rgba(25, 25, 25, 1);
-    box-sizing: border-box;    
-    position:absolute;
-    left:20%;
-    width:20%;
-    top:0%;
-    height:100%;   
+    box-sizing: border-box;
+    position: absolute;
+    left: 20%;
+    width: 20%;
+    top: 0%;
+    height: 100%;
     color: aquamarine;
     text-align: center;
-    font-family: 'Courier New', monospace; 
-    z-index: 10;    
+    font-family: 'Courier New', monospace;
+    z-index: 10;
 }
 
 
 .clear-canvas-btn {
     background-color: rgba(25, 25, 25, 1);
-    box-sizing: border-box;    
-    position:absolute;
-    left:40%;
-    width:15%;
-    top:0%;
-    height:100%;   
+    box-sizing: border-box;
+    position: absolute;
+    left: 40%;
+    width: 15%;
+    top: 0%;
+    height: 100%;
     color: aquamarine;
     text-align: center;
-    font-family: 'Courier New', monospace; 
-    z-index: 10;    
+    font-family: 'Courier New', monospace;
+    z-index: 10;
 }

@@ -8,12 +8,16 @@ function jsat_server()
     routerJs(req::HTTP.Request) = HTTP.Response(200, ["Content-Type" => "application/javascript"], read("server\\public\\js\\jsat.js"))
     routerMeatball(req::HTTP.Request) = HTTP.Response(200, ["Content-Type" => "image/png"], read("server\\public\\images\\nasa_aquamarine.png"))
     routerEarth(req::HTTP.Request) = HTTP.Response(200, ["Content-Type" => "image/jpeg"], read("server\\public\\images\\earth.jpeg"))
+    routerEarth16k(req::HTTP.Request) = HTTP.Response(200, ["Content-Type" => "image/jpeg"], read("server\\public\\images\\earth_16k.jpg"))
+    routerEarthBump16k(req::HTTP.Request) = HTTP.Response(200, ["Content-Type" => "image/jpeg"], read("server\\public\\images\\earth_bump_16k.jpg"))
 
     HTTP.register!(ROUTER, "GET", "/", routerIndex)
     HTTP.register!(ROUTER, "GET", "/css/jsat.css", routerCss)
     HTTP.register!(ROUTER, "GET", "/js/jsat.js", routerJs)
     HTTP.register!(ROUTER, "GET", "/images/nasa_aquamarine.png", routerMeatball)
     HTTP.register!(ROUTER, "GET", "/images/earth.jpeg", routerEarth)
+    HTTP.register!(ROUTER, "GET", "/images/earth_16k.jpg", routerEarth16k)
+    HTTP.register!(ROUTER, "GET", "/images/earth_bump_16k.jpg", routerEarthBump16k)
 
     HTTP.register!(ROUTER, "POST", "/simulate", routerSimulate)
     HTTP.register!(ROUTER, "GET", "/simfiles", routerSimFiles)
@@ -109,7 +113,7 @@ function routerSimulate(req::HTTP.Request)
             if !(typeof(tsteps) <: Vector)
                 tsteps = [tsteps]
             end            
-            SW = TimedCommand(Symbol(software[:name]), tsteps, values)
+            SW = TimedCommand(Symbol(software[:name]), tsteps, values, tsteps)
         elseif type == "custom"
             modulename = software[:module]
             custom_software_dict = get_custom_software()
