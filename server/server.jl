@@ -10,7 +10,9 @@ function jsat_server()
     routerEarth(req::HTTP.Request) = HTTP.Response(200, ["Content-Type" => "image/jpeg"], read("server\\public\\images\\earth.jpeg"))
     routerEarth16k(req::HTTP.Request) = HTTP.Response(200, ["Content-Type" => "image/jpeg"], read("server\\public\\images\\earth_16k.jpg"))
     routerEarthBump16k(req::HTTP.Request) = HTTP.Response(200, ["Content-Type" => "image/jpeg"], read("server\\public\\images\\earth_bump_16k.jpg"))
-
+    routerEarthSpec4k(req::HTTP.Request) = HTTP.Response(200, ["Content-Type" => "image/jpeg"], read("server\\public\\images\\8081_earthspec4k.jpg"))
+    routerStarfield(req::HTTP.Request) = HTTP.Response(200, ["Content-Type" => "image/jpeg"], read("server\\public\\images\\starfield.jpg"))
+    
     HTTP.register!(ROUTER, "GET", "/", routerIndex)
     HTTP.register!(ROUTER, "GET", "/css/jsat.css", routerCss)
     HTTP.register!(ROUTER, "GET", "/js/jsat.js", routerJs)
@@ -18,6 +20,8 @@ function jsat_server()
     HTTP.register!(ROUTER, "GET", "/images/earth.jpeg", routerEarth)
     HTTP.register!(ROUTER, "GET", "/images/earth_16k.jpg", routerEarth16k)
     HTTP.register!(ROUTER, "GET", "/images/earth_bump_16k.jpg", routerEarthBump16k)
+    HTTP.register!(ROUTER, "GET", "/images/8081_earthspec4k.jpg", routerEarthSpec4k)
+    HTTP.register!(ROUTER, "GET", "/images/starfield.jpg", routerStarfield)
 
     HTTP.register!(ROUTER, "POST", "/simulate", routerSimulate)
     HTTP.register!(ROUTER, "GET", "/simfiles", routerSimFiles)
@@ -291,6 +295,10 @@ function routerSimulate(req::HTTP.Request)
         sim_name = "sim$(t)"
     else
         sim_name = sim[:name]
+    end
+
+    if !isdir("sim")
+        mkdir("sim")
     end
 
     if !isdir("sim\\$(sim_name)")

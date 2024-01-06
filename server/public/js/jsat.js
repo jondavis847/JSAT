@@ -32,7 +32,7 @@ let JSAT = {
 };
 
 let ANIMATION_ID = null; //used to cancel animations
-let PLAYBACK_SPEED = 1.0; 
+let PLAYBACK_SPEED = 1.0;
 
 function jsatConsole(msg) {
     $("#consoleLog").val($("#consoleLog").val() + `\n${msg}`);
@@ -119,7 +119,7 @@ $('#simpleRateSensor3Button').on('click', clickAddSimpleRateSensor3);
 $('#addElementCancelButton').on('click', () => { $('#nameOnlyDiv').hide() })
 $("#twoBodyEarthButton").on("click", clickAddGravityTwoBodyEarth);
 
-$("#pbSpeedSlider").on("change", () => { PLAYBACK_SPEED = $("#pbSpeedSlider").val();})
+$("#pbSpeedSlider").on("change", () => { PLAYBACK_SPEED = $("#pbSpeedSlider").val(); })
 
 
 function objectMap(obj, fn) {
@@ -1869,6 +1869,9 @@ function makeAnimation() {
 
         const animationDiv = document.getElementById("animationDiv")
         var renderer = new THREE.WebGLRenderer({ antialias: true, logarithmicDepthBuffer: true });
+        //renderer.shadowMap.enabled = true; //doesnt seem to be working, earth not casting shadow on obs
+        renderer.shadowMap.type = THREE.BasicShadowMap;
+
         let w = animationDiv.offsetWidth;
         let h = animationDiv.offsetHeight;
         renderer.setSize(w, h);
@@ -1878,7 +1881,7 @@ function makeAnimation() {
         scene.background = new THREE.Color("rgb(30,30,30)")
         const axesHelper = new THREE.AxesHelper(1);
         scene.add(axesHelper);
-        const camera = new THREE.PerspectiveCamera(300, w / h, .1, 1e9);
+        const camera = new THREE.PerspectiveCamera(300, w / h, .1, 1e15);
         camera.position.set(0, 0, 1e7);
         //camera.rotation.set(0,0,Math.PI);
 
@@ -1888,17 +1891,45 @@ function makeAnimation() {
         camera.up = new THREE.Vector3(0, -1, 0)
         //camera.rotation.set(0, 0, Math.PI)
 
-        const light = new THREE.AmbientLight('white', 1); // soft white light
+        const light = new THREE.AmbientLight('white', 0.05); // soft white light
         scene.add(light);
 
         if (sys.base.type == "earth") {
             const rEarth = 6378.1370e3;
+            //const i_earth = new THREE.TextureLoader().load("./images/earth.jpeg");
             const i_earth = new THREE.TextureLoader().load("./images/earth_16k.jpg");
             const b_earth = new THREE.TextureLoader().load("./images/earth_bump_16k.jpg");
+            const s_earth = new THREE.TextureLoader().load("./images/8081_earthspec4k.jpg");
             const g_earth = new THREE.SphereGeometry(rEarth, 64, 64)
-            const m_earth = new THREE.MeshPhongMaterial({ map: i_earth , bumpMap: b_earth, bumpScale: 1});
+            //const m_earth = new THREE.MeshPhongMaterial({ map: i_earth});
+            const m_earth = new THREE.MeshPhongMaterial({ map: i_earth, bumpMap: b_earth, bumpScale: 5, specularMap: s_earth, shininess: 100 });
             const earth = new THREE.Mesh(g_earth, m_earth);
+            earth.castShadow = true;
             scene.add(earth);
+
+            const rSun = 1 * 696340000;
+            const dSun = 151.39099 * 1e6 * 1e3; // 151 million km
+            const g_sun = new THREE.SphereGeometry(rSun, 16, 16)
+            const m_sun = new THREE.MeshBasicMaterial({ color: 'white' })
+            const sun = new THREE.Mesh(g_sun, m_sun);
+            sun.position.set(dSun, 0, 0);
+            scene.add(sun)
+
+            const sunlight = new THREE.PointLight('white', 1, 0, 0);
+            sunlight.position.set(dSun, 0, 0);
+            sunlight.castShadow = true;
+            //sunlight.shadow.mapSize.width = 512; // default
+            //sunlight.shadow.mapSize.height = 512; // default
+            sunlight.shadow.camera.near = 1e6; // default
+            sunlight.shadow.camera.far = 1e14; // default
+            scene.add(sunlight);
+
+            const rStars = 1e14;
+            const i_stars = new THREE.TextureLoader().load("./images/starfield.jpg");
+            const g_stars = new THREE.SphereGeometry(rStars, 16, 16)
+            const m_stars = new THREE.MeshBasicMaterial({ map: i_stars, side: THREE.BackSide, color: new THREE.Color(0.1, 0.1, 0.1) });
+            const stars = new THREE.Mesh(g_stars, m_stars);
+            scene.add(stars);
         }
 
         //create time
@@ -1932,10 +1963,12 @@ function makeAnimation() {
             }
 
 
-            const material = new THREE.MeshBasicMaterial({
+            const material = new THREE.MeshPhongMaterial({
                 color: body.color,
             });
             const mesh = new THREE.Mesh(geometry, material);
+
+            mesh.receiveShadow = true;
 
             mesh.name = body.name;
 
@@ -2036,26 +2069,26 @@ function makeAnimation() {
 
         const time_index = animData.colindex.names.indexOf("t");
         const time_data = animData.columns[time_index];
-        
+
         let sim_elapsed_time = 0;
         let t0 = time_data[0];
         let t = t0;
-        const findTimeIndex = (data) => (data > t);        
+        const findTimeIndex = (data) => (data > t);
 
         function animate() {
 
             ANIMATION_ID = requestAnimationFrame(animate);
 
-            if (clock.running) {                
-                const sim_delta_time =  PLAYBACK_SPEED * clock.getDelta();
+            if (clock.running) {
+                const sim_delta_time = PLAYBACK_SPEED * clock.getDelta();
                 sim_elapsed_time += sim_delta_time;
                 t = t0 + sim_elapsed_time;
                 if (t > time_data[time_data.length - 1]) {
                     t = t0;
                     sim_elapsed_time = 0;
                 }
-            } else {                
-                clock.start()                
+            } else {
+                clock.start()
             }
 
             const i = time_data.findIndex(findTimeIndex);
