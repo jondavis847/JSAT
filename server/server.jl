@@ -84,6 +84,11 @@ function routerSimulate(req::HTTP.Request)
         if type == "thruster"
             force = eval(Meta.parse(actuator[:thrust]))
             A = SimpleThruster(Symbol(actuator[:name]), force)
+        elseif type == "reactionWheel"
+            inertia = eval(Meta.parse(actuator[:inertia]))
+            kt = eval(Meta.parse(actuator[:kt]))
+            H = eval(Meta.parse(actuator[:H]))
+            A = SimpleReactionWheel(Symbol(actuator[:name]),inertia,kt,H)
         else
             error("bad actuator type provided")
             return
@@ -96,16 +101,15 @@ function routerSimulate(req::HTTP.Request)
         software = softwares[k]
         type = software[:type]
         if type == "timedCommand"
-            init = eval(Meta.parse(software[:init]))
-            tstarts = eval(Meta.parse(software[:tstarts]))
-            if !(typeof(tstarts) <: Vector)
-                tstarts = [tstarts]
+            values = eval(Meta.parse(software[:values]))
+            if !(typeof(values) <: Vector)
+                values = [values]
             end
-            tstops = eval(Meta.parse(software[:tstops]))
-            if !(typeof(tstops) <: Vector)
-                tstops = [tstops]
-            end
-            SW = TimedCommand(Symbol(software[:name]), init, tstarts, tstops,)
+            tsteps = eval(Meta.parse(software[:tsteps]))
+            if !(typeof(tsteps) <: Vector)
+                tsteps = [tsteps]
+            end            
+            SW = TimedCommand(Symbol(software[:name]), tsteps, values)
         elseif type == "custom"
             modulename = software[:module]
             custom_software_dict = get_custom_software()

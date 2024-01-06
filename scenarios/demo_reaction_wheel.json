@@ -1,0 +1,146 @@
+{
+    "name": "demo_reaction_wheel",
+    "scenario": {
+        "base": {
+            "type": "default",
+            "gravity": [
+            ],
+            "renderedPosition": {
+                "x": 261.46988283688984,
+                "y": 163.4539060491424
+            }
+        },
+        "bodies": {
+            "b": {
+                "name": "b",
+                "mass": {
+                    "nominal": "1",
+                    "dispersed": ""
+                },
+                "cmx": {
+                    "nominal": "0",
+                    "dispersed": ""
+                },
+                "cmy": {
+                    "nominal": "0",
+                    "dispersed": ""
+                },
+                "cmz": {
+                    "nominal": "0",
+                    "dispersed": ""
+                },
+                "ixx": {
+                    "nominal": "1",
+                    "dispersed": ""
+                },
+                "iyy": {
+                    "nominal": "1",
+                    "dispersed": ""
+                },
+                "izz": {
+                    "nominal": "1",
+                    "dispersed": ""
+                },
+                "ixy": {
+                    "nominal": "0",
+                    "dispersed": ""
+                },
+                "ixz": {
+                    "nominal": "0",
+                    "dispersed": ""
+                },
+                "iyz": {
+                    "nominal": "0",
+                    "dispersed": ""
+                },
+                "geometry": "box",
+                "material": "basic",
+                "color": "aquamarine",
+                "actuators": [
+                    "r"
+                ],
+                "sensors": [
+                ],
+                "gravity": [
+                ],
+                "environments": [
+                ],
+                "renderedPosition": {
+                    "x": 373.49045065559926,
+                    "y": 368.49155250303005
+                },
+                "xlength": 1,
+                "ylength": 1,
+                "zlength": 1
+            }
+        },
+        "joints": {
+            "j": {
+                "name": "j",
+                "type": "revolute",
+                "FpRho": "zeros(3)",
+                "FpPhi": "I(3)",
+                "FsRho": "zeros(3)",
+                "FsPhi": "I(3)",
+                "renderedPosition": {
+                    "x": 313.47943218129063,
+                    "y": 268.47318837918243
+                },
+                "predecessor": "base",
+                "successor": "b",
+                "theta": "0",
+                "omega": "0"
+            }
+        },
+        "actuators": {
+            "r": {
+                "name": "r",
+                "type": "reactionWheel",
+                "rotation": "I(3)",
+                "translation": "zeros(3)",
+                "command": "c",
+                "renderedPosition": {
+                    "x": 492.5123039629779,
+                    "y": 296.4783303338598
+                },
+                "inertia": "0.25",
+                "kt": "0.075",
+                "H": "0"
+            }
+        },
+        "software": {
+            "c": {
+                "name": "c",
+                "type": "timedCommand",
+                "sensors": [
+                ],
+                "actuators": [
+                    "r"
+                ],
+                "software": [
+                ],
+                "renderedPosition": {
+                    "x": 597,
+                    "y": 232.5
+                },
+                "values": "[3,-3, 0]",
+                "tsteps": "[1, 3, 5]"
+            }
+        },
+        "sensors": {
+        },
+        "gravity": {
+        },
+        "inports": {
+        },
+        "outports": {
+        },
+        "sim": {
+            "name": "",
+            "nruns": "0",
+            "tspan": "(0,10)",
+            "saveLocation": "",
+            "dt": "0.1"
+        }
+    }
+}

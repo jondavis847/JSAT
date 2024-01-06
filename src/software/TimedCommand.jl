@@ -1,38 +1,53 @@
 
-mutable struct TimedCommand{T<:AbstractFloat} <: AbstractSoftware
+mutable struct TimedCommand{T} <: AbstractSoftware
     name::Symbol
-    initial_value::Bool
-    t_starts::Vector{T}
-    t_stops::Vector{T}        
+    tsteps::Vector{Float64}
+    values::Vector{T}
     connections::SoftwareConnection
-    current_value::Bool 
-    
-    TimedCommand(name,val,t_starts,t_stops) = new{Float64}(name,val,t_starts,t_stops,SoftwareConnection())
+    current_value::T
+
+    function TimedCommand(name, tsteps, values)
+        if !(typeof(tsteps) <: AbstractVector)
+            values = [tsteps]
+        end
+        if !(typeof(values) <: AbstractVector)
+            values = [values]
+        end
+        x = new{eltype(values)}()
+        x.name = name
+        x.tsteps = tsteps
+        x.values = values
+        x.connections = SoftwareConnection()
+        x.current_value = zero(eltype(values))
+        return x
+    end
 end
 
 function get_callback(tc::TimedCommand, i)
-    # make a callback for t_starts
-    start_affect! = (integrator) -> setfield!.(integrator.p.sys.software[i].connections.actuators, :command, true)
-    start_cb = PresetTimeCallback(tc.t_starts,start_affect!)
-
-    # make a callback for t_stops
-    stop_affect! = (integrator) -> setfield!.(integrator.p.sys.software[i].connections.actuators, :command, false)
-    stop_cb = PresetTimeCallback(tc.t_stops,stop_affect!)
-
-    return [start_cb,stop_cb]    
+    # make a callback for each tstep
+    cbs = []
+    for j in eachindex(tc.tsteps)
+        affect! = (integrator) -> begin
+            integrator.p.sys.software[i].current_value = tc.values[j]
+            setfield!.(integrator.p.sys.software[i].connections.actuators, :command, Float64(integrator.p.sys.software[i].current_value))
+        end
+        push!(cbs,PresetTimeCallback(tc.tsteps[j], affect!))
+    end    
+    return cbs
 end
 
-function get_savedict(S::TimedCommand,i)
+function get_savedict(S::TimedCommand, i)
     save_config = Dict[]
     save_dict!(
         save_config,
         "$(S.name)_u",
-        typeof(S.initial_value),
+        eltype(S.values),
         integrator -> integrator.p.sys.software[i].current_value
     )
     return save_config
 end
 
 get_initial_value(SW::TimedCommand) = []
-set_xindex!(SW::TimedCommand,i) = nothing
-set_state!(SW::TimedCommand,x) = nothing
+
+set_xindex!(SW::TimedCommand, i) = nothing
+set_state!(SW::TimedCommand, x) = nothing

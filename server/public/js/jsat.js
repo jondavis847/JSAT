@@ -102,6 +102,7 @@ $('#revoluteButton').on('click', clickAddRevoluteJoint);
 $('#floatingButton').on('click', clickAddFloatingJoint);
 $('#fixedButton').on('click', clickAddFixedJoint);
 $('#thrusterButton').on('click', clickAddActuatorThruster);
+$('#reactionWheelButton').on('click', clickAddActuatorRW);
 $('#timedCommandButton').on('click', clickAddSoftwareTimedCommand);
 $('#customSoftwareButton').on('click', clickAddSoftwareCustom);
 $('#constantGravityButton').on('click', clickAddGravityConstant);
@@ -1139,6 +1140,36 @@ function clickAddActuatorThruster() {
     $('#addActuatorDiv').show();
 }
 
+function addActuatorRWInputs() {
+    $('#actuatorTable tbody').append("<tr class = 'actuator-input'> \
+            <td><label class='form-font'>inertia:</label><br></td> \
+            <td><input id='newActuatorInertia' class='form-input' type='text' placeholder='0.25'><br></td>\
+        </tr>");
+
+    $('#actuatorTable tbody').append("<tr class = 'actuator-input'> \
+            <td><label class='form-font'>motor constant:</label><br></td> \
+            <td><input id='newActuatorKt' class='form-input' type='text' placeholder='0.075'><br></td>\
+        </tr>");
+
+    $('#actuatorTable tbody').append("<tr class = 'actuator-input'> \
+        <td><label class='form-font'>initial momentum:</label><br></td> \
+        <td><input id='newActuatorH' class='form-input' type='text' placeholder='0'><br></td>\
+    </tr>");
+}
+
+function clickAddActuatorRW() {
+    //remove all old inputs
+    $('.actuator-input').remove();
+    //add actuator specific inputs
+    addActuatorRWInputs();
+    // bind actuator to save event, mark as new 
+    $("#addActuatorSaveButton").off()
+    $("#addActuatorSaveButton").on("click", { new: true, type: 'reactionWheel', name: '' }, saveActuator)
+    //show the details div
+    $('#addActuatorDiv').show();
+}
+
+
 function saveActuator(event) {
     const name = $("#newActuatorName").val();
 
@@ -1160,6 +1191,17 @@ function saveActuator(event) {
 
         //defaults
         if (actuator.thrust === "") { actuator.thrust = "1" }
+    }
+
+    if (event.data.type === 'reactionWheel') {
+        actuator['inertia'] = $("#newActuatorInertia").val();
+        actuator['kt'] = $("#newActuatorKt").val();
+        actuator['H'] = $("#newActuatorH").val();
+
+        //defaults
+        if (actuator.inertia === "") { actuator.inertia = "0.25" }
+        if (actuator.kt === "") { actuator.kt = "0.075" }
+        if (actuator.H === "") { actuator.H = "0" }
     }
 
     if (event.data.new) {
@@ -1207,6 +1249,13 @@ function editActuator() {
         $("#newActuatorThrust").val(actuator.thrust);
     }
 
+    if (actuator.type === 'reactionWheel') {
+        addActuatorRWInputs();
+        $("#newActuatorInertia").val(actuator.inertia);
+        $("#newActuatorKt").val(actuator.kt);
+        $("#newActuatorH").val(actuator.H);
+    }
+
     $("#addActuatorSaveButton").off();
     $("#addActuatorSaveButton").on("click", { new: false, type: actuator.type, name: name }, saveActuator)
     $("#addActuatorDiv").show();
@@ -1215,20 +1264,16 @@ function editActuator() {
 
 function addSoftwareTimedCommandInputs() {
     $('#softwareTable tbody').append("<tr class = 'software-input'> \
-            <td><label class='form-font'>initial value:</label><br></td> \
-            <td><input id='newSoftwareInit' class='form-input' type='text' placeholder='false'><br></td>\
+            <td><label class='form-font'>step times:</label><br></td> \
+            <td><input id='newSoftwareTSteps' class='form-input' type='text' placeholder='[]'><br></td>\
         </tr>");
 
     $('#softwareTable tbody').append("<tr class = 'software-input'> \
-            <td><label class='form-font'>start times:</label><br></td> \
-            <td><input id='newSoftwareStartTimes' class='form-input' type='text' placeholder='[]'><br></td>\
-        </tr>");
-
-    $('#softwareTable tbody').append("<tr class = 'software-input'> \
-            <td><label class='form-font'>stop times:</label><br></td> \
-            <td><input id='newSoftwareStopTimes' class='form-input' type='text' placeholder='[]'><br></td>\
+            <td><label class='form-font'>step values:</label><br></td> \
+            <td><input id='newSoftwareValues' class='form-input' type='text' placeholder='[]'><br></td>\
         </tr>");
 }
+
 
 function clickAddSoftwareTimedCommand() {
     //remove all old inputs
@@ -1277,14 +1322,12 @@ function saveSoftware(event) {
     };
 
     if (event.data.type === 'timedCommand') {
-        software['init'] = $("#newSoftwareInit").val();
-        software['tstarts'] = $("#newSoftwareStartTimes").val();
-        software['tstops'] = $("#newSoftwareStopTimes").val();
+        software['values'] = $("#newSoftwareValues").val();
+        software['tsteps'] = $("#newSoftwareTSteps").val();
 
         //defaults
-        if (software.init === "") { software.init = "false" }
-        if (software.tstarts === "") { software.tstarts = "[]" }
-        if (software.tstops === "") { software.tstops = "[]" }
+        if (software.values === "") { software.values = "[]" }
+        if (software.tsteps === "") { software.tsteps = "[]" }
     }
 
     if (event.data.type === 'custom') {
@@ -1335,9 +1378,8 @@ function editSoftware() {
 
     if (software.type === 'timedCommand') {
         addSoftwareTimedCommandInputs();
-        $("#newSoftwareInit").val(software.init);
-        $("#newSoftwareStartTimes").val(software.tstarts);
-        $("#newSoftwareStopTimes").val(software.tstops);
+        $("#newSoftwareValues").val(software.values);
+        $("#newSoftwareTSteps").val(software.tsteps);
     }
 
     if (software.type === 'custom') {
@@ -1591,7 +1633,7 @@ $('#loadFileInput').on('change', function (e) {
                 $("#yStateSelect").empty();
                 //then reload all options
                 const reg = /(\d{4})-(\d{3})-(\d{2}):(\d{2}):(\S+)/ //YYYY-DDD-HH:MM:SS.
-                for (let i = 0; i < states.length; i++) {                    
+                for (let i = 0; i < states.length; i++) {
                     let values = data.map((x) => x[i]);
                     const tester = values[0];
                     if (typeof tester == "string") {
@@ -1622,9 +1664,9 @@ $('#loadFileInput').on('change', function (e) {
 
                     $(`#xstate${i}`).data("values", values);
                     $(`#ystate${i}`).data("values", values);
-                    
+
                 }
-                
+
             }
         });
         $("#plotState").data("simOrFile", 1); //1 for file
@@ -2042,13 +2084,15 @@ function makeAnimation() {
 
             for (let a = 0; a < actuator_keys.length; a++) {
                 let this_actuator = sys.actuators[actuator_keys[a]];
-                let actuator = scene.getObjectByName(this_actuator.name);
-                if (actuator.userData.f[i] > 0) {
-                    actuator.position.set(actuator.userData.r1[i], actuator.userData.r2[i], actuator.userData.r3[i]);
-                    actuator.quaternion.set(actuator.userData.q1[i], actuator.userData.q2[i], actuator.userData.q3[i], actuator.userData.q4[i]);
-                    actuator.visible = true;
-                } else {
-                    actuator.visible = false;
+                if (this_actuator.type == "thruster") {
+                    let actuator = scene.getObjectByName(this_actuator.name);
+                    if (actuator.userData.f[i] > 0) {
+                        actuator.position.set(actuator.userData.r1[i], actuator.userData.r2[i], actuator.userData.r3[i]);
+                        actuator.quaternion.set(actuator.userData.q1[i], actuator.userData.q2[i], actuator.userData.q3[i], actuator.userData.q4[i]);
+                        actuator.visible = true;
+                    } else {
+                        actuator.visible = false;
+                    }
                 }
             }
 
