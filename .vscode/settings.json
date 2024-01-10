@@ -1,0 +1,6 @@
+{
+    "julia.environmentPath": "c:\\Users\\jonda\\Documents\\Rust\\rds",
+    "rust-analyzer.linkedProjects": [
+        ".\\Cargo.toml"
+    ]
+}
