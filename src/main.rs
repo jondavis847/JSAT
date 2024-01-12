@@ -2,9 +2,10 @@ use nalgebra::{Matrix3, Matrix6, UnitQuaternion, Vector3, Vector6};
 
 mod transforms;
 pub mod spatial;
+mod rk4;
 
 fn main() {
-    
+    /*
     let v: Vector3<f64> = Vector3::new_random();
     let w: Vector3<f64> = Vector3::new_random();
     let mv = spatial::velocity(w, v);
@@ -18,4 +19,8 @@ fn main() {
 
     let sm = si * mv;
     print!("{}",sm)
+    */
+
+    let dp = rk4::dopri();
+    println!("{:?}",dp);
 }

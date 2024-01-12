@@ -1,4 +1,4 @@
-use nalgebra::{Matrix3, Matrix6, UnitQuaternion, Vector3, Vector6};
+use nalgebra::{Matrix3, Vector3};
 use std::ops::*;
 
 pub struct RotationMatrix {
@@ -23,7 +23,7 @@ impl Mul<Vector3<f64>> for Cartesian {
     type Output = Vector3<f64>;
 
     fn mul(self, other: Vector3<f64>) -> Vector3<f64> {
-        let v = self.rotation * (other - self.translation);
+        let v = self.rotation.value * (other - self.translation);
         Vector3::new(v[0], v[1], v[2])
     }
 }

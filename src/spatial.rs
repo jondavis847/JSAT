@@ -1,32 +1,53 @@
-use nalgebra::{Matrix3, Matrix6, UnitQuaternion, Vector3, Vector6};
-use std::ops::*;
+use nalgebra::{Matrix3, Matrix6, UnitQuaternion, Vector3};
+use num::Float;
 use std::fmt;
+use std::ops::*;
 
-struct SpatialValue {
-    rotation: Vector3<f64>,
-    translation: Vector3<f64>,
+pub struct SpatialValue<T> {
+    rotation: Vector3<T>,
+    translation: Vector3<T>,
 }
 
-struct CoordinateValue {
-    rotation: UnitQuaternion<f64>,
-    translation: Vector3<f64>,
+impl<T:Float> SpatialValue<T> {
+    fn new(rotation: Vector3<T>, translation: Vector3<T>) -> Self {
+        Self {
+            rotation,
+            translation,
+        }
+    }
 }
 
-pub struct Position(CoordinateValue);
-pub struct Velocity(SpatialValue);
-pub struct Acceleration(SpatialValue);
-pub struct Momentum(SpatialValue);
-pub struct Force(SpatialValue);
-
-#[inline]
-pub fn velocity(w: Vector3<f64>, v: Vector3<f64>) -> Velocity {
-    Velocity(SpatialValue {
-        rotation: w,
-        translation: v,
-    })
+pub struct Velocity<T> {
+    value: SpatialValue<T>,
 }
 
-impl fmt::Display for SpatialValue {
+impl<T: Float> Velocity<T> {
+    fn new(rotation: Vector3<T>, translation: Vector3<T>) -> Self {
+        Velocity {
+            value: SpatialValue {
+                rotation,
+                translation,
+            },
+        }
+    }
+}
+
+pub struct Acceleration<T> {
+    value: SpatialValue<T>,
+}
+
+impl<T: Float> Acceleration<T> {
+    fn new(rotation: Vector3<T>, translation: Vector3<T>) -> Self {
+        Acceleration {
+            value: SpatialValue {
+                rotation,
+                translation,
+            },
+        }
+    }
+}
+
+impl<T: Float> fmt::Display for SpatialValue<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
@@ -36,42 +57,23 @@ impl fmt::Display for SpatialValue {
     }
 }
 
-impl fmt::Display for Velocity {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "Velocity\n{}",
-            self.0
-        )
-    }
-}
-impl fmt::Display for Momentum {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "Momentum\n{}",
-            self.0
-        )
-    }
+pub struct Inertia<T> {
+    mass: T,
+    center_of_mass: Vector3<T>,
+    inertia: Matrix3<T>,
+    value: Matrix6<T>,
 }
 
-pub struct Inertia {
-    mass: f64,
-    center_of_mass: Vector3<f64>,
-    inertia: Matrix3<f64>,
-    value: Matrix6<f64>,
-}
-
-fn skew(x: Vector3<f64>) -> Matrix3<f64> {
+fn skew<T>(x: Vector3<T>) -> Matrix3<T> {
     Matrix3::new(0.0, x[2], -x[1], -x[2], 0.0, x[0], x[1], -x[0], 0.0)
 }
 
-fn concat_block_2x2(
-    b1: Matrix3<f64>,
-    b2: Matrix3<f64>,
-    b3: Matrix3<f64>,
-    b4: Matrix3<f64>,
-) -> Matrix6<f64> {
+fn concat_block_2x2<T>(
+    b1: Matrix3<T>,
+    b2: Matrix3<T>,
+    b3: Matrix3<T>,
+    b4: Matrix3<T>,
+) -> Matrix6<T> {
     Matrix6::new(
         b1[(0, 0)],
         b1[(0, 1)],
@@ -112,32 +114,32 @@ fn concat_block_2x2(
     )
 }
 
-pub fn inertia(
-    mass: f64,
-    center_of_mass: Vector3<f64>,
-    inertia: Matrix3<f64>,
-) -> Inertia {
-    let c = skew(center_of_mass);
-    let ct = c.transpose();
-    let b1 = inertia + mass * c * ct;
-    let b2 = mass * ct;
-    let b3 = mass * c;
-    let b4 = Matrix3::from_diagonal_element(mass);
-    let value = concat_block_2x2(b1, b2, b3, b4);
-    Inertia { mass, center_of_mass, inertia, value: value }
+impl<T: Float> Inertia<T> {
+    fn new(mass: T, center_of_mass: Vector3<T>, inertia: Matrix3<T>) -> Inertia<T> {
+        let c = skew(center_of_mass);
+        let ct = c.transpose();
+        let b1 = inertia + mass * c * ct;
+        let b2 = mass * ct;
+        let b3 = mass * c;
+        let b4 = Matrix3::from_diagonal_element(mass);
+        let value = concat_block_2x2(b1, b2, b3, b4);
+        Inertia {
+            mass,
+            center_of_mass,
+            inertia,
+            value: value,
+        }
+    }
 }
 
-impl Mul<Velocity> for Inertia {
-    type Output = Momentum;
+impl<T: Float> Mul<Velocity<T>> for Inertia<T> {
+    type Output = Momentum<T>;
 
-    fn mul(self, velocity: Velocity) -> Momentum {
+    fn mul(self, velocity: Velocity<T>) -> Momentum<T> {
         let inertia = self.value.fixed_view::<3, 3>(0, 0);
-        let mass = self.value[self.value.len()-1];
+        let mass = self.value[self.value.len() - 1];
         let angular_momentum = inertia * velocity.0.rotation;
         let linear_momentum = mass * velocity.0.translation;
-        Momentum(SpatialValue {
-            rotation: angular_momentum,
-            translation: linear_momentum,
-        })
+        Momentum::new(angular_momentum, linear_momentum)
     }
 }
