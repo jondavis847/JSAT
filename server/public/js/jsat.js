@@ -1962,10 +1962,16 @@ function makeAnimation() {
                 geometry.rotateX(Math.PI / 2) //force cylinders to be z in the height direction
             }
 
-
-            const material = new THREE.MeshPhongMaterial({
-                color: body.color,
-            });
+            let material;
+            if (body.material === "phong") {
+                material = new THREE.MeshPhongMaterial({
+                    color: body.color,
+                });
+            } else {
+                material = new THREE.MeshBasicMaterial({
+                    color: body.color,
+                });
+            }
             const mesh = new THREE.Mesh(geometry, material);
 
             mesh.receiveShadow = true;
