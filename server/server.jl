@@ -117,7 +117,7 @@ function routerSimulate(req::HTTP.Request)
             if !(typeof(tsteps) <: Vector)
                 tsteps = [tsteps]
             end            
-            SW = TimedCommand(Symbol(software[:name]), tsteps, values, tsteps)
+            SW = TimedCommand(Symbol(software[:name]), tsteps, values)
         elseif type == "custom"
             modulename = software[:module]
             custom_software_dict = get_custom_software()

@@ -8,7 +8,7 @@ mutable struct TimedCommand{T} <: AbstractSoftware
 
     function TimedCommand(name, tsteps, values)
         if !(typeof(tsteps) <: AbstractVector)
-            values = [tsteps]
+            tsteps = [tsteps]
         end
         if !(typeof(values) <: AbstractVector)
             values = [values]

@@ -1,0 +1,124 @@
+{
+    "name": "simple_pend",
+    "scenario": {
+        "base": {
+            "type": "default",
+            "gravity": [
+                "g"
+            ],
+            "renderedPosition": {
+                "x": 328,
+                "y": 139.5
+            }
+        },
+        "bodies": {
+            "b": {
+                "name": "b",
+                "mass": {
+                    "nominal": "1",
+                    "dispersed": ""
+                },
+                "cmx": {
+                    "nominal": "0",
+                    "dispersed": ""
+                },
+                "cmy": {
+                    "nominal": "0",
+                    "dispersed": ""
+                },
+                "cmz": {
+                    "nominal": "0",
+                    "dispersed": ""
+                },
+                "ixx": {
+                    "nominal": "1",
+                    "dispersed": ""
+                },
+                "iyy": {
+                    "nominal": "1",
+                    "dispersed": ""
+                },
+                "izz": {
+                    "nominal": "1",
+                    "dispersed": ""
+                },
+                "ixy": {
+                    "nominal": "0",
+                    "dispersed": ""
+                },
+                "ixz": {
+                    "nominal": "0",
+                    "dispersed": ""
+                },
+                "iyz": {
+                    "nominal": "0",
+                    "dispersed": ""
+                },
+                "geometry": "box",
+                "material": "basic",
+                "color": "aquamarine",
+                "actuators": [
+                ],
+                "sensors": [
+                ],
+                "gravity": [
+                ],
+                "environments": [
+                ],
+                "renderedPosition": {
+                    "x": 442,
+                    "y": 397.5
+                },
+                "xlength": "0.1",
+                "ylength": "2",
+                "zlength": "0.1"
+            }
+        },
+        "joints": {
+            "j": {
+                "name": "j",
+                "type": "revolute",
+                "FpRho": "zeros(3)",
+                "FpPhi": "I(3)",
+                "FsRho": "[0,1,0]",
+                "FsPhi": "I(3)",
+                "renderedPosition": {
+                    "x": 386,
+                    "y": 267.5
+                },
+                "predecessor": "base",
+                "successor": "b",
+                "theta": "pi/4",
+                "omega": "0"
+            }
+        },
+        "actuators": {
+        },
+        "software": {
+        },
+        "sensors": {
+        },
+        "gravity": {
+            "g": {
+                "name": "g",
+                "type": "constant",
+                "renderedPosition": {
+                    "x": 532,
+                    "y": 165.5
+                },
+                "value": "-9.8"
+            }
+        },
+        "inports": {
+        },
+        "outports": {
+        },
+        "sim": {
+            "name": "simple_pend",
+            "nruns": "0",
+            "tspan": "(0,10)",
+            "saveLocation": "",
+            "dt": "0.05"
+        }
+    }
+}
