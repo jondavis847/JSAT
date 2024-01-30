@@ -30,7 +30,7 @@ function pack_dq_in_dx!(dx, sys)
 end
 
 #only need stuff in model! that need to be integrated, all algeriac states are handled by callbacks
-function model!(sys)
+function model!(sys)    
     #sensors!(sys) #currently handled by callbacks
     #software!(sys) #currently handled by callbacks
     actuators!(sys)
@@ -40,7 +40,8 @@ function model!(sys)
 end
 
 function simulate(sys::MultibodySystem, tspan; dt=nothing, nruns=0, output_type=nothing)
-    #get callbacks    
+    #get callbacks           
+
     sensor_cb = [get_callback(sys.sensors[i], i) for i in eachindex(sys.sensors)]
     software_cb = []
     for i in eachindex(sys.software)
