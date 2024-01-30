@@ -56,8 +56,7 @@ calculate_transforms_FixedJoints!(sys::MultibodySystem) = calculate_transforms_F
 function calculate_body_positions!(body::AbstractBody)
     if !isa(body, BaseFrame)
         joint = body.inner_joint
-
-        r_Fs_to_Bi_in_Fs_frame = (joint.connection.Fs.Φ.value)' * (-joint.connection.Fs.r)
+        
         r_Fs_to_Bi_in_Fs_frame = (joint.connection.Fs.Φ.value)' * (-joint.connection.Fs.r)
         r_Fp_to_Fs_in_Fp_frame = joint.frame.Φ.value' * r_Fs_to_Bi_in_Fs_frame + joint.frame.r
         r_Bλ_to_Fp_in_Bλ_frame = joint.connection.Fp.Φ.value' * r_Fp_to_Fs_in_Fp_frame + joint.connection.Fp.r

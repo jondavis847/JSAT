@@ -38,7 +38,7 @@ function second_pass!(body)
             parent.tmp.pᴬ = parent.tmp.pᴬ + body.transforms.body_to_parent_force * body.tmp.pᴬ
         end
     else
-        S = joint.S
+        S = get_S(joint)
         body.tmp.U = body.inertia_articulated * S
         body.tmp.D = S' * body.tmp.U
         body.tmp.u = joint.state.τ - S' * body.tmp.pᴬ

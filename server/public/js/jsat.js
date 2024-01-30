@@ -779,6 +779,16 @@ function addJointRevoluteInputs() {
             <td><input id='newJointOmega' class='form-input' type='text' placeholder='0'><br></td>\
         </tr>");
 
+    $('#jointTable tbody').append("<tr class = 'joint-input'> \
+        <td><label class='form-font'>&kappa;:</label><br></td> \
+        <td><input id='newJointKappa' class='form-input' type='text' placeholder='0'><br></td>\
+    </tr>");
+
+    $('#jointTable tbody').append("<tr class = 'joint-input'> \
+    <td><label class='form-font'>&zeta;:</label><br></td> \
+    <td><input id='newJointZeta' class='form-input' type='text' placeholder='0'><br></td>\
+</tr>");
+
 }
 
 function addJointFloatingInputs() {
@@ -909,10 +919,14 @@ function saveJoint(event) {
     if (event.data.type === 'revolute') {
         joint['theta'] = $("#newJointTheta").val();
         joint['omega'] = $("#newJointOmega").val();
+        joint['kappa'] = $("#newJointKappa").val();
+        joint['zeta'] = $("#newJointZeta").val();
 
         //defaults
         if (joint.theta === "") { joint.theta = "0" }
         if (joint.omega === "") { joint.omega = "0" }
+        if (joint.kappa === "") {joint.kappa = "0"}
+        if (joint.zeta === "") {joint.zeta ="0"}
     }
 
     if (event.data.type === 'prismatic') {
@@ -990,6 +1004,8 @@ function editJoint() {
         addJointRevoluteInputs();
         $("#newJointTheta").val(joint.theta);
         $("#newJointOmega").val(joint.omega);
+        $("#newJointKappa").val(joint.kappa);
+        $("#newJointZeta").val(joint.zeta);
     }
 
     if (joint.type === 'prismatic') {

@@ -238,7 +238,9 @@ function routerSimulate(req::HTTP.Request)
         if type == "revolute"
             θ = eval(Meta.parse(joint[:theta]))
             ω = eval(Meta.parse(joint[:omega]))
-            J = Revolute(Symbol(joint[:name]), θ, ω)
+            κ = eval(Meta.parse(joint[:kappa]))
+            ζ = eval(Meta.parse(joint[:zeta]))
+            J = Revolute(Symbol(joint[:name]), θ, ω, κ, ζ)
         elseif type == "prismatic"
             r = eval(Meta.parse(joint[:position]))
             v = eval(Meta.parse(joint[:velocity]))

@@ -3,7 +3,9 @@ using ComponentArrays
 using CSV
 using DataFrames
 using Dates
-using DifferentialEquations
+#using DifferentialEquations
+using OrdinaryDiffEq
+using DiffEqCallbacks
 using Distributions
 using LinearAlgebra
 using Plots
