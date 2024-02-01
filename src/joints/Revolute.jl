@@ -54,7 +54,7 @@ function Revolute(name, θ=0.0, ω=0.0; f=0.0, κ=0.0, ζ=0.0, pos_upper_limit=I
 end
 
 function calculate_τ!(G::Revolute)
-    G.state.τ = SVector{1,Float64}(-G.parameters.f - G.parameters.κ * G.state.θ - G.parameters.ζ * G.state.ω)
+    G.state.τ = SVector{1,Float64}(G.parameters.f - G.parameters.κ * G.state.θ - G.parameters.ζ * G.state.ω)
 end
 
 get_S(G::Revolute) = !G.locked * G.S

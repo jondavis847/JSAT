@@ -694,8 +694,7 @@ function saveBody(event) {
                 x: width / 2,
                 y: height / 2,
             },
-        });
-        body.renderedPosition = cy.$(`#body${name}`).renderedPosition();
+        });        
     } else {
         //update node data
         cy.$(`#body${event.data.name}`).data('id', `body${name}`)
@@ -705,9 +704,9 @@ function saveBody(event) {
         body.sensors = JSAT.bodies[body.name].sensors
         body.gravity = JSAT.bodies[body.name].gravity
         body.environments = JSAT.bodies[body.name].environments
-
         delete JSAT.bodies[event.data.name]
     }
+    body.renderedPosition = cy.$(`#body${name}`).renderedPosition();
 
     JSAT.bodies[body.name] = body;
     console.log(JSAT)
@@ -995,13 +994,14 @@ function saveJoint(event) {
                 x: width / 2,
                 y: height / 2,
             },
-        });
-        joint.renderedPosition = cy.$(`joint${name}`).renderedPosition();
+        });        
     } else {
         cy.$(`#joint${event.data.name}`).data('id', `joint${name}`)
         cy.$(`#joint${event.data.name}`).data('label', name)
+        
         delete JSAT.joints[event.data.name]
     }
+    joint.renderedPosition = cy.$(`joint${name}`).renderedPosition();
 
     JSAT.joints[name] = joint;
     console.log(JSAT);
@@ -1131,8 +1131,7 @@ function saveSensor(event) {
                 x: width / 2,
                 y: height / 2,
             },
-        });
-        sensor.renderedPosition = cy.$(`#sensor${name}`).renderedPosition();
+        });        
     } else {
         cy.$(`#sensor${event.data.name}`).data('id', `sensor${name}`)
         cy.$(`#sensor${event.data.name}`).data('label', name)
@@ -1140,6 +1139,7 @@ function saveSensor(event) {
         sensor.body = JSAT.sensors[event.data.name].body
         delete JSAT.sensors[event.data.name]
     }
+    sensor.renderedPosition = cy.$(`#sensor${name}`).renderedPosition();
 
     JSAT.sensors[name] = sensor;
     console.log(JSAT);
@@ -1259,8 +1259,7 @@ function saveActuator(event) {
                 x: width / 2,
                 y: height / 2,
             },
-        });
-        actuator.renderedPosition = cy.$(`#actuator${name}`).renderedPosition();
+        });        
     } else {
         cy.$(`#actuator${event.data.name}`).data('id', `actuator${name}`)
         cy.$(`#actuator${event.data.name}`).data('label', name)
@@ -1268,6 +1267,7 @@ function saveActuator(event) {
         actuator.command = JSAT.actuators[event.data.name].command
         delete JSAT.actuators[event.data.name]
     }
+    actuator.renderedPosition = cy.$(`#actuator${name}`).renderedPosition();
 
     JSAT.actuators[name] = actuator;
     console.log(JSAT);
@@ -1390,8 +1390,7 @@ function saveSoftware(event) {
                 x: width / 2,
                 y: height / 2,
             },
-        });
-        software.renderedPosition = cy.$(`#software${name}`).renderedPosition();
+        });        
     } else {
         cy.$(`#software${event.data.name}`).data('id', `software${name}`)
         cy.$(`#software${event.data.name}`).data('label', name)
@@ -1402,7 +1401,7 @@ function saveSoftware(event) {
 
         delete JSAT.software[event.data.name]
     }
-
+    software.renderedPosition = cy.$(`#software${name}`).renderedPosition();
     JSAT.software[name] = software;
     console.log(JSAT);
     $('#addSoftwareDiv').hide();
@@ -1492,14 +1491,13 @@ function saveGravity(event) {
                 x: width / 2,
                 y: height / 2,
             },
-        });
-        gravity.renderedPosition = cy.$(`gravity${name}`).renderedPosition();
+        });        
     } else {
         cy.$(`#gravity${event.data.name}`).data('id', `gravity${name}`)
         cy.$(`#gravity${event.data.name}`).data('label', name)
         delete JSAT.gravity[event.data.name]
     }
-
+    gravity.renderedPosition = cy.$(`gravity${name}`).renderedPosition();
     JSAT.gravity[name] = gravity;
     console.log(JSAT);
     $('#addGravityDiv').hide();
