@@ -41,14 +41,18 @@ end
 
 function simulate(sys::MultibodySystem, tspan; dt=nothing, nruns=0, output_type=nothing)
     #get callbacks           
-
+    joint_cb = []
+    for i in eachindex(sys.joints)
+        cbs = get_callback(sys.joints[i], i)
+        append!(joint_cb, cbs)
+    end
     sensor_cb = [get_callback(sys.sensors[i], i) for i in eachindex(sys.sensors)]
     software_cb = []
     for i in eachindex(sys.software)
         cbs = get_callback(sys.software[i], i)
         append!(software_cb, cbs)
     end
-    cb = [sensor_cb; software_cb] #must follow order
+    cb = [joint_cb; sensor_cb; software_cb] #must follow order
 
     prob = make_prob(0, sys, cb, tspan, dt, output_type)
     #dump(prob.p.sys)

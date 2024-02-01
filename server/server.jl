@@ -238,9 +238,12 @@ function routerSimulate(req::HTTP.Request)
         if type == "revolute"
             θ = eval(Meta.parse(joint[:theta]))
             ω = eval(Meta.parse(joint[:omega]))
+            f = eval(Meta.parse(joint[:force]))
             κ = eval(Meta.parse(joint[:kappa]))
             ζ = eval(Meta.parse(joint[:zeta]))
-            J = Revolute(Symbol(joint[:name]), θ, ω, κ, ζ)
+            pos_low_lim = eval(Meta.parse(joint[:poslowlim]))
+            pos_up_lim = eval(Meta.parse(joint[:posuplim]))
+            J = Revolute(Symbol(joint[:name]), θ, ω; f=f, κ=κ,ζ=ζ, pos_upper_limit = pos_up_lim, pos_lower_limit = pos_low_lim)
         elseif type == "prismatic"
             r = eval(Meta.parse(joint[:position]))
             v = eval(Meta.parse(joint[:velocity]))
@@ -324,7 +327,9 @@ function routerSimulate(req::HTTP.Request)
         JSON3.pretty(io, message)
     end
 
-    HTTP.Response(200, "$(simtime)")
+    println("Simulation completed in $(simtime) seconds.")
+
+    HTTP.Response(200, "$(simtime)")    
 end
 
 

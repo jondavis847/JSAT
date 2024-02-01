@@ -28,6 +28,7 @@ mutable struct FloatingJoint <: AbstractJoint
     state::FloatingJointState
     connection::JointConnection
     frame::Cartesian
+    locked::Bool
     S::SMatrix{6,6,Float64}
 end
 
@@ -40,7 +41,7 @@ function FloatingJoint(name,
     jm = JointMeta(name, 7, 6)
     js = FloatingJointState(q, ω, r, v, SVector{6,Float64}(zeros(6)), SVector{6,Float64}(zeros(6)))
     S = SMatrix{6,6,Float64,36}(I(6))
-    joint = FloatingJoint(jm, js, JointConnection(), eye(Cartesian), S)
+    joint = FloatingJoint(jm, js, JointConnection(), eye(Cartesian), false, S)
     update_joint_frame!(joint, q, r)
     return joint
 end
@@ -53,6 +54,8 @@ function get_vj(G::FloatingJoint)
     vj[i6] = v# + ω×r
     SVector{6,Float64}(vj)
 end
+
+get_S(G::FloatingJoint) = G.S
 
 function get_q(G::FloatingJoint)
     #E = qtoa(G.state.q) # need to transform translation quantities to outer joint frame
@@ -99,3 +102,5 @@ end
 
 #need to make this spring/dampener/loss forces at some point
 calculate_τ!(G::FloatingJoint) = nothing
+
+get_callback(J::FloatingJoint,i) = []

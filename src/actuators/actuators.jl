@@ -34,12 +34,11 @@ end
 
 #just used for animation, TODO: make this optional based on if animations required
 function calculate_actuator_positions!(A::AbstractActuator)
-    dcm_body_to_base = A.body.transforms.body_to_base_motion[i3,i3]
-    dcm_base_to_body = A.body.transforms.base_to_body_motion[i3,i3]
-    dcm_body_to_actuator = transpose(A.joint_transform[i3,i3]) #really from body-innerjoint-outerframe to actuator
+    dcm_body_to_base = A.body.transforms.body_to_base_motion[i3,i3]    
+    dcm_actuator_to_body = A.frame.Φ.value 
     
     r_actuator = A.body.state.r_base + dcm_body_to_base * (-A.frame.r) #minus for body to actuator
-    q_actuator =  atoq(dcm_body_to_actuator * dcm_base_to_body )
+    q_actuator =  atoq(transpose(dcm_body_to_base * dcm_actuator_to_body))
     
     A.state.r_base = r_actuator    
     A.state.q_base = q_actuator 

@@ -17,14 +17,16 @@ mutable struct BodyState
 end
 
 mutable struct BodyTransforms
-    base_to_body_force::SMatrix{6,6,Float64,36}
+    #base_to_body_force::SMatrix{6,6,Float64,36}    
     base_to_body_motion::SMatrix{6,6,Float64,36}
-    body_to_base_force::SMatrix{6,6,Float64,36}
+    #body_to_base_force::SMatrix{6,6,Float64,36}    
     body_to_base_motion::SMatrix{6,6,Float64,36}
-    parent_to_body_force::SMatrix{6,6,Float64,36}
+    before_body_to_base_motion::SMatrix{6,6,Float64,36}
+    #parent_to_body_force::SMatrix{6,6,Float64,36}
     parent_to_body_motion::SMatrix{6,6,Float64,36}
     body_to_parent_force::SMatrix{6,6,Float64,36}
     body_to_parent_motion::SMatrix{6,6,Float64,36}
+    before_body_to_parent_motion::SMatrix{6,6,Float64,36}
     BodyTransforms() = new()
 end
 

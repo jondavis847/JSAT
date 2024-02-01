@@ -780,14 +780,29 @@ function addJointRevoluteInputs() {
         </tr>");
 
     $('#jointTable tbody').append("<tr class = 'joint-input'> \
+        <td><label class='form-font'>f:</label><br></td> \
+        <td><input id='newJointForce' class='form-input' type='text' placeholder='0'><br></td>\
+    </tr>");
+
+    $('#jointTable tbody').append("<tr class = 'joint-input'> \
         <td><label class='form-font'>&kappa;:</label><br></td> \
         <td><input id='newJointKappa' class='form-input' type='text' placeholder='0'><br></td>\
     </tr>");
 
     $('#jointTable tbody').append("<tr class = 'joint-input'> \
-    <td><label class='form-font'>&zeta;:</label><br></td> \
-    <td><input id='newJointZeta' class='form-input' type='text' placeholder='0'><br></td>\
-</tr>");
+        <td><label class='form-font'>&zeta;:</label><br></td> \
+        <td><input id='newJointZeta' class='form-input' type='text' placeholder='0'><br></td>\
+    </tr>");
+
+    $('#jointTable tbody').append("<tr class = 'joint-input'> \
+        <td><label class='form-font'>pos lower limit:</label><br></td> \
+        <td><input id='newJointPosLowLim' class='form-input' type='text' placeholder='-Inf'><br></td>\
+    </tr>");
+
+    $('#jointTable tbody').append("<tr class = 'joint-input'> \
+        <td><label class='form-font'>pos upper limit:</label><br></td> \
+        <td><input id='newJointPosUpLim' class='form-input' type='text' placeholder='Inf'><br></td>\
+    </tr>");
 
 }
 
@@ -919,14 +934,20 @@ function saveJoint(event) {
     if (event.data.type === 'revolute') {
         joint['theta'] = $("#newJointTheta").val();
         joint['omega'] = $("#newJointOmega").val();
+        joint['force'] = $("#newJointForce").val();
         joint['kappa'] = $("#newJointKappa").val();
         joint['zeta'] = $("#newJointZeta").val();
+        joint['poslowlim'] = $("#newJointPosLowLim").val();
+        joint['posuplim'] = $("#newJointPosUpLim").val();
 
         //defaults
         if (joint.theta === "") { joint.theta = "0" }
         if (joint.omega === "") { joint.omega = "0" }
-        if (joint.kappa === "") {joint.kappa = "0"}
-        if (joint.zeta === "") {joint.zeta ="0"}
+        if (joint.force === "") { joint.force = "0" }
+        if (joint.kappa === "") { joint.kappa = "0" }
+        if (joint.zeta === "") { joint.zeta = "0" }
+        if (joint.poslowlim === "") {joint.poslowlim = "-Inf"}
+        if (joint.posuplim === "") {joint.posuplim = "Inf"}
     }
 
     if (event.data.type === 'prismatic') {
@@ -1004,8 +1025,11 @@ function editJoint() {
         addJointRevoluteInputs();
         $("#newJointTheta").val(joint.theta);
         $("#newJointOmega").val(joint.omega);
+        $("#newJointForce").val(joint.force);
         $("#newJointKappa").val(joint.kappa);
         $("#newJointZeta").val(joint.zeta);
+        $("#newJointPosLowLim").val(joint.poslowlim);
+        $("#newJointPosUpLim").val(joint.posuplim);
     }
 
     if (joint.type === 'prismatic') {
@@ -2113,7 +2137,7 @@ function makeAnimation() {
                 clock.start()
             }
 
-            const i = time_data.findIndex(findTimeIndex);
+            const i = time_data.findIndex(findTimeIndex) - 1;
 
             // interp scale factor
 
@@ -2129,6 +2153,7 @@ function makeAnimation() {
                 const current_position = new THREE.Vector3(body.userData.r1[i], body.userData.r2[i], body.userData.r3[i]);
                 const next_position = new THREE.Vector3(body.userData.r1[j], body.userData.r2[j], body.userData.r3[j]);
                 const interp_position = current_position.lerp(next_position, alpha)
+
                 //const interp_position = body.userData.r_interpolant.evaluate(t);                
                 body.position.set(interp_position.x, interp_position.y, interp_position.z);
                 //body.position.set(interp_position[0],interp_position[1],interp_position[2]);                
