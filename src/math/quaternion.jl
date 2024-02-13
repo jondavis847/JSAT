@@ -6,54 +6,18 @@ function randOrtho()
     O = Q*Diagonal(sign.(diag(R)))
 end
 
-#inverse quaternion,  if q is SVector, btime 31.584 ns (1 allocations: 48 bytes)
+function qangle(q1,q2)
+    qa = qmult(qinv(q1),q2)
+    return 2*acosd(qa[4])
+end
+
 qinv(q) = normalize(q .* SVector{4,Float64}(-1, -1, -1, 1))# / norm(q)^2
 
 #quaternion to rotation vector,  #btime 109.594 ns (2 allocations: 160 bytes)
 qtov(q) = 2 * atan(norm(view(q, Base.OneTo(3))), q[4]) * normalize(view(q, Base.OneTo(3)))
 
-#qtov(q) = 2 * acos(q[4]) * normalize(view(q,Base.OneTo(3)))
-
 #rotation matrix to quaternion
 
-#= q[4] singularity bit me, using PACE implementation
-function atoq(A) # if A is a SMatrix btime 43.016 ns (1 allocations: 48 bytes)   
-    # From Markley, singular when q[4] gets close to 0
-    imax = findmax(abs.(SVector{4,Float64}(
-        A[1, 1], A[2, 2], A[3, 3], tr(A)
-    )))[2]
-    if imax == 1
-        q = SVector{4,Float64}(
-            1 + 2 * A[1, 1] - tr(A),
-            A[1, 2] + A[2, 1],
-            A[1, 3] + A[3, 1],
-            A[2, 3] - A[3, 2]
-        )
-    elseif imax == 2
-        q = SVector{4,Float64}(
-            A[2, 1] + A[1, 2],
-            1 + 2 * A[2, 2] - tr(A),
-            A[2, 3] + A[3, 2],
-            A[3, 1] - A[1, 3]
-        )
-    elseif imax == 3
-        q = SVector{4,Float64}(
-            A[3, 1] + A[1, 3],
-            A[3, 2] + A[2, 3],
-            1 + 2 * A[3, 3] - tr(A),
-            A[1, 2] - A[2, 1]
-        )
-    else # imax == 4
-        q = SVector{4,Float64}(
-            A[2, 3] - A[3, 2],
-            A[3, 1] - A[1, 3],
-            A[1, 2] - A[2, 1],
-            1 + tr(A)
-        )
-    end
-    return normalize(q)
-end
-=#
 function atoq(A)
     # This function computes the attitude quaternion corresponding
     # to a given attitude matrix...

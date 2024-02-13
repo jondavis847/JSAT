@@ -6,13 +6,13 @@
             "gravity": [
             ],
             "renderedPosition": {
-                "x": 214.46125169868145,
-                "y": 143.45023322437285
+                "x": 117,
+                "y": 108.5
             }
         },
         "bodies": {
-            "b1": {
-                "name": "b1",
+            "bus": {
+                "name": "bus",
                 "mass": {
                     "nominal": "500",
                     "dispersed": ""
@@ -34,11 +34,11 @@
                     "dispersed": ""
                 },
                 "iyy": {
-                    "nominal": "750",
+                    "nominal": "500",
                     "dispersed": ""
                 },
                 "izz": {
-                    "nominal": "750",
+                    "nominal": "500",
                     "dispersed": ""
                 },
                 "ixy": {
@@ -65,15 +65,15 @@
                 "environments": [
                 ],
                 "renderedPosition": {
-                    "x": 216.46161898115838,
-                    "y": 347.4876960370221
+                    "x": 117,
+                    "y": 313.5
                 },
                 "xlength": "3",
                 "ylength": "2",
                 "zlength": "2"
             },
-            "b2": {
-                "name": "b2",
+            "panel3": {
+                "name": "panel3",
                 "mass": {
                     "nominal": "30",
                     "dispersed": ""
@@ -91,137 +91,15 @@
                     "dispersed": ""
                 },
                 "ixx": {
-                    "nominal": "100",
+                    "nominal": "50",
                     "dispersed": ""
                 },
                 "iyy": {
-                    "nominal": "100",
+                    "nominal": "50",
                     "dispersed": ""
                 },
                 "izz": {
-                    "nominal": "100",
-                    "dispersed": ""
-                },
-                "ixy": {
-                    "nominal": "0",
-                    "dispersed": ""
-                },
-                "ixz": {
-                    "nominal": "0",
-                    "dispersed": ""
-                },
-                "iyz": {
-                    "nominal": "0",
-                    "dispersed": ""
-                },
-                "geometry": "box",
-                "material": "basic",
-                "color": "blue",
-                "actuators": [
-                ],
-                "sensors": [
-                ],
-                "gravity": [
-                ],
-                "environments": [
-                ],
-                "renderedPosition": {
-                    "x": 367.48934880816836,
-                    "y": 336.48567598339883
-                },
-                "xlength": "3",
-                "ylength": "2",
-                "zlength": "0.1"
-            },
-            "b3": {
-                "name": "b3",
-                "mass": {
-                    "nominal": "30",
-                    "dispersed": ""
-                },
-                "cmx": {
-                    "nominal": "0",
-                    "dispersed": ""
-                },
-                "cmy": {
-                    "nominal": "0",
-                    "dispersed": ""
-                },
-                "cmz": {
-                    "nominal": "0",
-                    "dispersed": ""
-                },
-                "ixx": {
-                    "nominal": "100",
-                    "dispersed": ""
-                },
-                "iyy": {
-                    "nominal": "100",
-                    "dispersed": ""
-                },
-                "izz": {
-                    "nominal": "100",
-                    "dispersed": ""
-                },
-                "ixy": {
-                    "nominal": "0",
-                    "dispersed": ""
-                },
-                "ixz": {
-                    "nominal": "0",
-                    "dispersed": ""
-                },
-                "iyz": {
-                    "nominal": "0",
-                    "dispersed": ""
-                },
-                "geometry": "box",
-                "material": "basic",
-                "color": "red",
-                "actuators": [
-                ],
-                "sensors": [
-                ],
-                "gravity": [
-                ],
-                "environments": [
-                ],
-                "renderedPosition": {
-                    "x": 470.50826385573146,
-                    "y": 190.45886436258127
-                },
-                "xlength": "3",
-                "ylength": "2",
-                "zlength": "0.1"
-            },
-            "b4": {
-                "name": "b4",
-                "mass": {
-                    "nominal": "30",
-                    "dispersed": ""
-                },
-                "cmx": {
-                    "nominal": "0",
-                    "dispersed": ""
-                },
-                "cmy": {
-                    "nominal": "0",
-                    "dispersed": ""
-                },
-                "cmz": {
-                    "nominal": "0",
-                    "dispersed": ""
-                },
-                "ixx": {
-                    "nominal": "100",
-                    "dispersed": ""
-                },
-                "iyy": {
-                    "nominal": "100",
-                    "dispersed": ""
-                },
-                "izz": {
-                    "nominal": "100",
+                    "nominal": "50",
                     "dispersed": ""
                 },
                 "ixy": {
@@ -248,8 +126,130 @@
                 "environments": [
                 ],
                 "renderedPosition": {
-                    "x": 552.5233224372865,
-                    "y": 366.4911852205531
+                    "x": 549,
+                    "y": 193.5
+                },
+                "xlength": "3",
+                "ylength": "2",
+                "zlength": "0.1"
+            },
+            "panel2": {
+                "name": "panel2",
+                "mass": {
+                    "nominal": "30",
+                    "dispersed": ""
+                },
+                "cmx": {
+                    "nominal": "0",
+                    "dispersed": ""
+                },
+                "cmy": {
+                    "nominal": "0",
+                    "dispersed": ""
+                },
+                "cmz": {
+                    "nominal": "0",
+                    "dispersed": ""
+                },
+                "ixx": {
+                    "nominal": "50",
+                    "dispersed": ""
+                },
+                "iyy": {
+                    "nominal": "50",
+                    "dispersed": ""
+                },
+                "izz": {
+                    "nominal": "50",
+                    "dispersed": ""
+                },
+                "ixy": {
+                    "nominal": "0",
+                    "dispersed": ""
+                },
+                "ixz": {
+                    "nominal": "0",
+                    "dispersed": ""
+                },
+                "iyz": {
+                    "nominal": "0",
+                    "dispersed": ""
+                },
+                "geometry": "box",
+                "material": "basic",
+                "color": "red",
+                "actuators": [
+                ],
+                "sensors": [
+                ],
+                "gravity": [
+                ],
+                "environments": [
+                ],
+                "renderedPosition": {
+                    "x": 383,
+                    "y": 340.5
+                },
+                "xlength": "3",
+                "ylength": "2",
+                "zlength": "0.1"
+            },
+            "panel1": {
+                "name": "panel1",
+                "mass": {
+                    "nominal": "30",
+                    "dispersed": ""
+                },
+                "cmx": {
+                    "nominal": "0",
+                    "dispersed": ""
+                },
+                "cmy": {
+                    "nominal": "0",
+                    "dispersed": ""
+                },
+                "cmz": {
+                    "nominal": "0",
+                    "dispersed": ""
+                },
+                "ixx": {
+                    "nominal": "50",
+                    "dispersed": ""
+                },
+                "iyy": {
+                    "nominal": "50",
+                    "dispersed": ""
+                },
+                "izz": {
+                    "nominal": "50",
+                    "dispersed": ""
+                },
+                "ixy": {
+                    "nominal": "0",
+                    "dispersed": ""
+                },
+                "ixz": {
+                    "nominal": "0",
+                    "dispersed": ""
+                },
+                "iyz": {
+                    "nominal": "0",
+                    "dispersed": ""
+                },
+                "geometry": "box",
+                "material": "basic",
+                "color": "blue",
+                "actuators": [
+                ],
+                "sensors": [
+                ],
+                "gravity": [
+                ],
+                "environments": [
+                ],
+                "renderedPosition": {
+                    "x": 282,
+                    "y": 165.5
                 },
                 "xlength": "3",
                 "ylength": "2",
@@ -265,76 +265,78 @@
                 "FsRho": "zeros(3)",
                 "FsPhi": "I(3)",
                 "renderedPosition": {
-                    "x": 215.46143533992003,
-                    "y": 246.46914827193592
+                    "x": 115,
+                    "y": 209.5
                 },
                 "predecessor": "base",
-                "successor": "b1",
+                "successor": "bus",
                 "q": "[0,0,0,1]",
                 "omega": "zeros(3)",
                 "position": "zeros(3)",
                 "velocity": "zeros(3)"
             },
-            "j3": {
-                "name": "j3",
+            "j2": {
+                "name": "j2",
                 "type": "revolute",
-                "FpRho": "[0,-1,-0.05]",
-                "FpPhi": "[0 -1 0; 0 0 -1; -1 0 0]",
-                "FsRho": "[0,1,-0.05]",
-                "FsPhi": "[0 -1 0; 0 0 -1; -1 0 0]",
+                "FpRho": "[0,-1,-1]",
+                "FpPhi": "[0 -1 0 ; 0 0 -1 ; 1 0 0]",
+                "FsRho": "[0,1,0.05]",
+                "FsPhi": "[0 -1 0 ; 0 0 -1 ; 1 0 0]",
                 "renderedPosition": {
-                    "x": 412.49761266389976,
-                    "y": 266.4728210967055
+                    "x": 116,
+                    "y": 117.5
                 },
-                "predecessor": "b2",
-                "successor": "b3",
-                "theta": "pi",
+                "predecessor": "bus",
+                "successor": "panel1",
+                "theta": "-pi/2",
                 "omega": "0",
                 "force": "17",
                 "kappa": "0",
                 "zeta": "300",
-                "poslowlim": "0",
-                "posuplim": "Inf"
+                "poslowlim": "-Inf",
+                "posuplim": "0"
+            },
+            "j3": {
+                "name": "j3",
+                "type": "revolute",
+                "FpRho": "[0,-1,-0.05]",
+                "FpPhi": "[0 -1 0; 0 0 1; -1 0 0]",
+                "FsRho": "[0,1,-0.05]",
+                "FsPhi": "[0 -1 0; 0 0 1; -1 0 0]",
+                "renderedPosition": {
+                    "x": 116,
+                    "y": 117.5
+                },
+                "predecessor": "panel1",
+                "successor": "panel2",
+                "theta": "-pi",
+                "omega": "0",
+                "force": "17",
+                "kappa": "0",
+                "zeta": "300",
+                "poslowlim": "-Inf",
+                "posuplim": "0"
             },
             "j4": {
                 "name": "j4",
                 "type": "revolute",
                 "FpRho": "[0,-1,0.05]",
-                "FpPhi": "[0 -1 0; 0 0 1; 1 0 0]",
+                "FpPhi": "[0 -1 0; 0 0 -1; 1 0 0]",
                 "FsRho": "[0,1,0.05]",
-                "FsPhi": "[0 -1 0; 0 0 1; 1 0 0]",
+                "FsPhi": "[0 -1 0; 0 0 -1; 1 0 0]",
                 "renderedPosition": {
-                    "x": 516.5167113527013,
-                    "y": 275.47447386785177
+                    "x": 116,
+                    "y": 117.5
                 },
-                "predecessor": "b3",
-                "successor": "b4",
-                "theta": "pi",
+                "predecessor": "panel2",
+                "successor": "panel3",
+                "theta": "-pi",
                 "omega": "0",
                 "force": "17",
                 "kappa": "0",
                 "zeta": "300",
-                "poslowlim": "0",
-                "posuplim": "Inf"
-            },
-            "j2": {
-                "name": "j2",
-                "type": "revolute",
-                "FpRho": "[0,-1.05,-1]",
-                "FpPhi": "[0 -1 0; 0 0 1; 1 0 0]",
-                "FsRho": "[0,1,0]",
-                "FsPhi": "[0 -1 0; 0 0 1; 1 0 0]",
-                "renderedPosition": {
-                },
-                "predecessor": "b1",
-                "successor": "b2",
-                "theta": "pi/2",
-                "omega": "0",
-                "force": "17",
-                "kappa": "0",
-                "zeta": "300",
-                "poslowlim": "0",
-                "posuplim": "Inf"
+                "poslowlim": "-Inf",
+                "posuplim": "0"
             }
         },
         "actuators": {
@@ -352,7 +354,7 @@
         "sim": {
             "name": "",
             "nruns": "0",
-            "tspan": "(0,60)",
+            "tspan": "(0,75)",
             "saveLocation": "",
             "dt": "nothing"
         }
