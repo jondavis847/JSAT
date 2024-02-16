@@ -694,7 +694,7 @@ function saveBody(event) {
                 x: width / 2,
                 y: height / 2,
             },
-        });        
+        });
     } else {
         //update node data
         cy.$(`#body${event.data.name}`).data('id', `body${name}`)
@@ -945,8 +945,8 @@ function saveJoint(event) {
         if (joint.force === "") { joint.force = "0" }
         if (joint.kappa === "") { joint.kappa = "0" }
         if (joint.zeta === "") { joint.zeta = "0" }
-        if (joint.poslowlim === "") {joint.poslowlim = "-Inf"}
-        if (joint.posuplim === "") {joint.posuplim = "Inf"}
+        if (joint.poslowlim === "") { joint.poslowlim = "-Inf" }
+        if (joint.posuplim === "") { joint.posuplim = "Inf" }
     }
 
     if (event.data.type === 'prismatic') {
@@ -994,11 +994,11 @@ function saveJoint(event) {
                 x: width / 2,
                 y: height / 2,
             },
-        });        
+        });
     } else {
         cy.$(`#joint${event.data.name}`).data('id', `joint${name}`)
         cy.$(`#joint${event.data.name}`).data('label', name)
-        
+
         delete JSAT.joints[event.data.name]
     }
     joint.renderedPosition = cy.$(`joint${name}`).renderedPosition();
@@ -1131,7 +1131,7 @@ function saveSensor(event) {
                 x: width / 2,
                 y: height / 2,
             },
-        });        
+        });
     } else {
         cy.$(`#sensor${event.data.name}`).data('id', `sensor${name}`)
         cy.$(`#sensor${event.data.name}`).data('label', name)
@@ -1259,7 +1259,7 @@ function saveActuator(event) {
                 x: width / 2,
                 y: height / 2,
             },
-        });        
+        });
     } else {
         cy.$(`#actuator${event.data.name}`).data('id', `actuator${name}`)
         cy.$(`#actuator${event.data.name}`).data('label', name)
@@ -1390,7 +1390,7 @@ function saveSoftware(event) {
                 x: width / 2,
                 y: height / 2,
             },
-        });        
+        });
     } else {
         cy.$(`#software${event.data.name}`).data('id', `software${name}`)
         cy.$(`#software${event.data.name}`).data('label', name)
@@ -1491,7 +1491,7 @@ function saveGravity(event) {
                 x: width / 2,
                 y: height / 2,
             },
-        });        
+        });
     } else {
         cy.$(`#gravity${event.data.name}`).data('id', `gravity${name}`)
         cy.$(`#gravity${event.data.name}`).data('label', name)
@@ -1665,7 +1665,24 @@ $('#loadFileInput').on('change', function (e) {
         Papa.parse(e.target.files[0], {
             dynamicTyping: true,
             complete: function (results) {
-                const states = results.data[0];
+                console.log(results)
+                let states = results.data[0];
+
+                if ('ASCII Report') {
+                    //ITPS Report
+                    //remove first 8 rows
+                    results.data.splice(0, 8);
+                    //add year in column 1 to sc time in column 2
+                    if (results.data[0][0] === 'Year' && results.data[0][1] === 'S/C Time') {
+                        for (let i = 1; i < results.data.length; i++) {
+                            results.data[i][1] = results.data[i][0] + '-' + results.data[i][1];
+                            results.data[i].splice(0, 1); //remove first column since its in column 2 now
+                        }
+                    }
+                    results.data[0].splice(0,1); // remove year
+                    states = results.data[0];
+                }
+                //console.log(states);
                 const data = results.data.slice(1);
                 // remove all options first...
                 $("#xStateSelect").empty();
@@ -1680,7 +1697,7 @@ $('#loadFileInput').on('change', function (e) {
                         if (match) {
                             let new_values = [];
                             values.forEach(function (str) {
-                                if (str == null) {
+                                if (str == null || str == 'null-undefined') {
                                     new_values.push("")
                                 } else {
                                     const each_match = str.match(reg)
