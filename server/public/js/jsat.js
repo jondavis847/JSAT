@@ -1794,9 +1794,23 @@ function plotFileData() {
     let traces = [];
     let colorCtr = 0;
     selectedYStates.each(function () {
+
+        //check if ydata is valid
+        const xdata = selectedXState.data("values");
+        const ydata = $(this).data("values");
+        let final_x = [];
+        let final_y = [];
+        for (let i = 0; i<xdata.length; i++) {
+            if (ydata[i] != null) {
+                final_x.push(xdata[i]);
+                final_y.push(ydata[i]);
+            }
+        }
+
+
         traces.push({
-            x: selectedXState.data("values"),
-            y: $(this).data("values"),
+            x: final_x,
+            y: final_y,
             type: 'scatter',
             mode: 'lines',
             name: $(this).text(),
@@ -1836,16 +1850,19 @@ function getLayout(xstate, ystate) {
             gridcolor: "rgb(0,0,0)"
         },
         yaxis: {
-            title: ystate.join(),
+            title: {
+                text: ystate.join('<br>'),
+                automargin:true
+            },
             gridcolor: "rgb(0,0,0)"
         },
-        margin: {
+        /*margin: {
             l: 50,
             r: 50,
             b: 50,
             t: 50,
             pad: 4
-        },
+        },*/
     }
     return layout
 }
