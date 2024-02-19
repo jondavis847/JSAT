@@ -275,27 +275,6 @@
                 "position": "zeros(3)",
                 "velocity": "zeros(3)"
             },
-            "j2": {
-                "name": "j2",
-                "type": "revolute",
-                "FpRho": "[0,-1,-1]",
-                "FpPhi": "[0 -1 0 ; 0 0 -1 ; 1 0 0]",
-                "FsRho": "[0,1,0.05]",
-                "FsPhi": "[0 -1 0 ; 0 0 -1 ; 1 0 0]",
-                "renderedPosition": {
-                    "x": 116,
-                    "y": 117.5
-                },
-                "predecessor": "bus",
-                "successor": "panel1",
-                "theta": "-pi/2",
-                "omega": "0",
-                "force": "17",
-                "kappa": "0",
-                "zeta": "300",
-                "poslowlim": "-Inf",
-                "posuplim": "0"
-            },
             "j3": {
                 "name": "j3",
                 "type": "revolute",
@@ -304,8 +283,8 @@
                 "FsRho": "[0,1,-0.05]",
                 "FsPhi": "[0 -1 0; 0 0 1; -1 0 0]",
                 "renderedPosition": {
-                    "x": 116,
-                    "y": 117.5
+                    "x": 616,
+                    "y": 417.5
                 },
                 "predecessor": "panel1",
                 "successor": "panel2",
@@ -325,8 +304,8 @@
                 "FsRho": "[0,1,0.05]",
                 "FsPhi": "[0 -1 0; 0 0 -1; 1 0 0]",
                 "renderedPosition": {
-                    "x": 116,
-                    "y": 117.5
+                    "x": 783,
+                    "y": 436.5
                 },
                 "predecessor": "panel2",
                 "successor": "panel3",
@@ -337,6 +316,27 @@
                 "zeta": "300",
                 "poslowlim": "-Inf",
                 "posuplim": "0"
+            },
+            "j2": {
+                "name": "j2",
+                "type": "revolute",
+                "FpRho": "[0,-1,-1]",
+                "FpPhi": "[0 -1 0 ; 0 0 -1 ; 1 0 0]",
+                "FsRho": "[0,1,0.05]",
+                "FsPhi": "[0 -1 0 ; 0 0 -1 ; 1 0 0]",
+                "renderedPosition": {
+                    "x": 409,
+                    "y": 298.5
+                },
+                "predecessor": "bus",
+                "successor": "panel1",
+                "theta": "-pi/2",
+                "omega": "0",
+                "force": "17",
+                "kappa": "0",
+                "zeta": "300",
+                "poslowlim": "-Inf",
+                "posuplim": "-13.6*pi/180"
             }
         },
         "actuators": {
@@ -354,7 +354,7 @@
         "sim": {
             "name": "",
             "nruns": "0",
-            "tspan": "(0,75)",
+            "tspan": "(0,70)",
             "saveLocation": "",
             "dt": "nothing"
         }

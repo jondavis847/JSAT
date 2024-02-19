@@ -1668,7 +1668,7 @@ $('#loadFileInput').on('change', function (e) {
                 console.log(results)
                 let states = results.data[0];
 
-                if ('ASCII Report') {
+                if (states[0] === 'ASCII Report') {
                     //ITPS Report
                     //remove first 8 rows
                     results.data.splice(0, 8);
