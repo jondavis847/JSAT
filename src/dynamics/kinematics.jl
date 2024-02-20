@@ -53,7 +53,7 @@ function calculate_transforms_FixedJoints!(body)
             body.transforms.before_body_to_parent_motion = ℳ(before_body_to_parent)
             body.transforms.body_to_parent_force = ℱ(before_body_to_parent)
             body.transforms.parent_to_body_motion = ℳ(parent_to_body)
-            body.transforms.parent_to_body_force = ℱ(parent_to_body)            
+            #body.transforms.parent_to_body_force = ℱ(parent_to_body)            
         end    
     nothing
 end

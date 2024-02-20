@@ -23,6 +23,7 @@ mutable struct FixedJoint <: AbstractJoint
     state::FixedJointState
     connection::JointConnection
     frame::Cartesian
+    locked::Bool
     S::SMatrix{6,6,Float64}
 end
 
@@ -33,7 +34,7 @@ function FixedJoint(name,
     jm = JointMeta(name,0,0)
     js = FixedJointState(q, r,SVector{6, Float64}(zeros(6)),SVector{6, Float64}(zeros(6)))
     S = SMatrix{6,6,Float64,36}(I(6))
-    joint = FixedJoint(jm, js, JointConnection(),eye(Cartesian), S)        
+    joint = FixedJoint(jm, js, JointConnection(),eye(Cartesian),true, S)        
     R = qtoa(SVector{4,Float64}(q))    
     joint.frame = Cartesian(R,r)
     return joint
@@ -51,3 +52,5 @@ set_state!(G::FixedJoint, x) = nothing
 calculate_τ!(G::FixedJoint) = nothing
 
 get_savedict(G::FixedJoint) = []
+
+get_callback(J::FixedJoint,i) = []

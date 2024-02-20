@@ -1706,8 +1706,10 @@ $('#loadFileInput').on('change', function (e) {
                                     const H = parseInt(each_match[3]);
                                     const M = parseInt(each_match[4]);
                                     const S = parseFloat(each_match[5]);
+                                    const SI = Math.floor(S);
+                                    const MS = (S-SI) * 1000;
 
-                                    const date = new Date(Y, 0, D, H, M, S);
+                                    const date = new Date(Date.UTC(Y, 0, D, H, M, S, MS));
                                     new_values.push(date.toISOString());
                                 }
                             });
@@ -1856,13 +1858,13 @@ function getLayout(xstate, ystate) {
             },
             gridcolor: "rgb(0,0,0)"
         },
-        /*margin: {
-            l: 50,
+        margin: {
+            //l: 50,
             r: 50,
             b: 50,
             t: 50,
             pad: 4
-        },*/
+        },
     }
     return layout
 }
