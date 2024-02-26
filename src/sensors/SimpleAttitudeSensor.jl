@@ -18,7 +18,7 @@ function get_callback(S::SimpleAttitudeSensor4, i)
         body_to_sensor_transform = sensor.connection.transform_source[i3,i3]
         q_body_to_sensor = atoq(body_to_sensor_transform)
         
-        q_base_to_body = sensor.connection.sensed_source.state.q_base
+        q_base_to_body = sensor.connection.body.state.q_base_to_body
         if isdefined(sensor.connection, :reference)
             q_reference_to_body = qmult(q_base_to_body,qinv(sensor.connection.reference.state.q_base)) #TODO: Check this
         else

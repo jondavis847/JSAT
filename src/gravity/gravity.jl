@@ -6,9 +6,11 @@ end
 function calculate_gravity!(body::AbstractBody) 
     #reset each step
     body.gravity *= 0
+    body.gravity_ijof *= 0
 
     for gravity in body.models.gravity        
-        body.gravity += body.inertia_joint * body.transforms.base_to_body_motion * calculate_gravity(gravity, body.state.r_base)
+        body.gravity_ijof += body.inertia.ijof * body.transforms.base_to_ijof_motion * calculate_gravity(gravity, body.state.r_base)
+        body.gravity += ℱ(inv(body.innerjoint.connection.Fs))*body.gravity_ijof
     end
     return nothing
 end

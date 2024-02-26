@@ -7,9 +7,9 @@ mutable struct SimpleThruster <: AbstractActuator
     state::ActuatorState
     frame::Cartesian # cartesian frame from actuator to body frame
     body_transform::SMatrix{6,6,Float64,36} # transform from actuator frame to body frame
-    joint_transform::SMatrix{6,6,Float64,36} # transform from actuator frame to inner joint frame
+    ijof_transform::SMatrix{6,6,Float64,36} # transform from actuator frame to inner joint frame
     xindex::SVector{1,Int16}
-    current_joint_force::SVector{6,Float64}
+    current_ijof_force::SVector{6,Float64}
     body::AbstractBody #TODO need to make this parametric
     callback::DiscreteCallback # really a FunctionCallingCallback
     SimpleThruster(name, force) = new(name, force, 0, false, ActuatorState())
@@ -17,7 +17,7 @@ end
 
 function get_actuator_force!(A::SimpleThruster)
     A.current_force = A.command * A.force
-    A.current_joint_force = A.joint_transform * SVector{6,Float64}(0, 0, 0, 0, 0, A.current_force)
+    A.current_ijof_force = A.ijof_transform * SVector{6,Float64}(0, 0, 0, 0, 0, A.current_force)
     return nothing
 end
 

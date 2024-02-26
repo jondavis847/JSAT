@@ -1,6 +1,6 @@
 struct BaseState
-    v_body::SVector{6,Float64}
-    a_body::SVector{6,Float64}
+    v_ijof::SVector{6,Float64}
+    a_ijof::SVector{6,Float64}
     BaseState() = new(SVector{6,Float64}(zeros(6)),SVector{6,Float64}(zeros(6)))
 end
 
@@ -8,7 +8,7 @@ mutable struct BaseFrame{G<:Vector{AbstractGravity}} <: AbstractBody
     name::Symbol    
     gravity::G
     id::Int64 
-    outer_joints::Vector{AbstractJoint} #need to make parametric - dont use abstracts as fields   
+    outerjoints::Vector{AbstractJoint} #need to make parametric - dont use abstracts as fields   
     state::BaseState
     function BaseFrame(name)         
         return new{Vector{AbstractGravity}}(name,AbstractGravity[],0,AbstractJoint[],BaseState())

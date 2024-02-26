@@ -7,10 +7,10 @@ mutable struct SimpleReactionWheel <: AbstractActuator
     command::Float64     
     current_speed::Float64
     current_torque::Float64
-    current_joint_force::SVector{6,Float64} #spatial force, so includes torque
+    current_ijof_force::SVector{6,Float64} #spatial force, so includes torque
     frame::Cartesian # cartesian frame from actuator to body frame
     body_transform::SMatrix{6,6,Float64,36} # transform from actuator frame to body frame
-    joint_transform::SMatrix{6,6,Float64,36} # transform from actuator frame to inner joint frame, could be rotated from body so still need to do for wheel
+    ijof_transform::SMatrix{6,6,Float64,36} # transform from actuator frame to inner joint frame, could be rotated from body so still need to do for wheel
     xindex::SVector{1,Int16}
     body::AbstractBody #TODO need to make this    
     SimpleReactionWheel(name, inertia, kt) = new(name, inertia, kt, 0, ActuatorState(),0)
@@ -27,11 +27,11 @@ function get_actuator_force!(A::SimpleReactionWheel)
     A.current_torque = A.motor_constant * A.command
     # wheel motion is always about wheel frame Z
     # negative since this is a reaction torque
-    A.current_joint_force = -A.joint_transform * SVector{6,Float64}(0, 0, A.current_torque, 0, 0, 0)
+    A.current_ijof_force = -A.ijof_transform * SVector{6,Float64}(0, 0, A.current_torque, 0, 0, 0)
     return nothing
 end
 
-get_actuator_momentum(A::SimpleReactionWheel) = A.joint_transform * SVector{6,Float64}(0, 0, A.current_momentum, 0, 0, 0)
+get_actuator_momentum(A::SimpleReactionWheel) = A.ijof_transform * SVector{6,Float64}(0, 0, A.current_momentum, 0, 0, 0)
 
 get_q(A::SimpleReactionWheel) = A.current_momentum
 get_dq(A::SimpleReactionWheel) = A.current_torque

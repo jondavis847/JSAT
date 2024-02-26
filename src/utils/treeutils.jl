@@ -1,7 +1,7 @@
 #updates the bodys and joints with their identifying integers
 function map_tree!(base)
     body_id = 0
-    root_joints = base.outer_joints
+    root_joints = base.outerjoints
     
     for joint in root_joints
         # one outer body per joint, id them and their joint
@@ -16,7 +16,7 @@ function map_tree!(base)
     end
 end
 function get_next_body!(id, body)
-    for joint in body.outer_joints
+    for joint in body.outerjoints
         id += 1
         joint.meta.id = id
         joint.connection.successor.id = id        
