@@ -12,10 +12,8 @@ end
 #F is transform from actuator frame to body frame
 function connect!(B::AbstractBody,A::AbstractActuator,F::Cartesian = Cartesian(I(3),[0,0,0]))
     A.body = B
-    A.frame = F
-    body_to_actuator_frame = F
-    actuator_to_body_frame = inv(body_to_actuator_frame)    
-    A.body_transform = ℱ(actuator_to_body_frame) #spatial force transform from actuator frame to body frame    
+    A.frame = F        
+    A.body_transform = ℱ(F) #spatial force transform from actuator frame to body frame    
     push!(B.models.actuators,A)
     return nothing
 end

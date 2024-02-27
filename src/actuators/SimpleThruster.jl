@@ -1,9 +1,9 @@
-#actuator frame is that force is always in direction of x
+#actuator frame is that force is always in direction of z
 mutable struct SimpleThruster <: AbstractActuator
     name::Symbol
     force::Float64 # spatial force, first 3 elements are force, last 3 are torque
     current_force::Float64
-    command::Bool
+    command::Float64
     state::ActuatorState
     frame::Cartesian # cartesian frame from actuator to body frame
     body_transform::SMatrix{6,6,Float64,36} # transform from actuator frame to body frame
@@ -45,6 +45,13 @@ function get_savedict(A::SimpleThruster, i)
         "$(A.name)_force",
         typeof(A.current_force),
         integrator -> integrator.p.sys.actuators[i].current_force
+    )
+
+    save_dict!(
+        save_config,
+        "$(A.name)_current_ijof_force",
+        typeof(A.current_ijof_force),
+        integrator -> integrator.p.sys.actuators[i].current_ijof_force
     )
 
     save_dict!(

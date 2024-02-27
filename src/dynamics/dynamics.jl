@@ -10,13 +10,19 @@ end
 calculate_joint_forces!(sys::MultibodySystem) = calculate_τ!.(sys.joints)
 
 function calculate_external_forces!(body::Body)
-    body.state.external_force = body.gravity
+    #TODO: move grav to accel, transform to transforms
+    body.state.external_force_ijof = ℱ(body.innerjoint.connection.Fs) * body.gravity
 
     for actuator in body.models.actuators
-        body.state.external_force += actuator.current_joint_force
+        body.state.external_force_ijof += actuator.current_ijof_force        
     end
 
     #add environments
+
+    # convert ijof to body external force for output
+    #TODO: move transform to transforms
+    body.state.external_force = ℱ(inv(body.innerjoint.connection.Fs)) * body.state.external_force_ijof 
+
     return nothing
 end
 calculate_external_forces!(sys::MultibodySystem) = calculate_external_forces!.(sys.bodies)
