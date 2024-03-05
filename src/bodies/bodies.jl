@@ -51,18 +51,6 @@ mutable struct BodyTransforms
     body_to_parent_motion::SMatrix{6,6,Float64,36}    
     BodyTransforms() = new()
 end
-
-#temporary arrays for calculation, all in ijof frame
-mutable struct BodyTmp
-    c::SVector{6,Float64}
-    pᴬ::SVector{6,Float64}    
-    U::SMatrix{SU1,SU2,Float64} where {SU1,SU2}
-    D::SMatrix{SD1,SD2,Float64} where {SD1,SD2}
-    u::SVector{Su,Float64} where {Su}
-    a′::SVector{6,Float64}
-    BodyTmp() = new()
-end
-
 mutable struct Body{M<:BodyModels} <: AbstractBody
     name::Symbol
     #parameters
@@ -77,8 +65,7 @@ mutable struct Body{M<:BodyModels} <: AbstractBody
     innerjoint::AbstractJoint #need to make these parametric - dont use abstracts as fields
     outerjoints::Vector{AbstractJoint} #need to make these parametric  - dont use abstracts as fields
     transforms::BodyTransforms
-    state::BodyState
-    tmp::BodyTmp
+    state::BodyState    
 
     function Body(name, m, cm, ixx, iyy, izz, ixy, ixz, iyz)
         ixx = (ixx isa SimValue) ? ixx : SimValue(ixx)
@@ -118,8 +105,7 @@ mutable struct Body{M<:BodyModels} <: AbstractBody
         x.models = models
         x.transforms = BodyTransforms()
         x.outerjoints = AbstractJoint[]
-        x.state = BodyState()
-        x.tmp = BodyTmp()
+        x.state = BodyState()        
         return x
     end
 end

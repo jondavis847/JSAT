@@ -66,12 +66,12 @@
                 "environments": [
                 ],
                 "renderedPosition": {
-                    "x": 373.49045065559926,
-                    "y": 368.49155250303005
+                    "x": 568.2555092371543,
+                    "y": 517.0188232269438
                 },
-                "xlength": 1,
-                "ylength": 1,
-                "zlength": 1
+                "xlength": "1",
+                "ylength": "1",
+                "zlength": "1"
             }
         },
         "joints": {
@@ -83,13 +83,18 @@
                 "FsRho": "zeros(3)",
                 "FsPhi": "I(3)",
                 "renderedPosition": {
-                    "x": 313.47943218129063,
-                    "y": 268.47318837918243
+                    "x": 456.2349414184449,
+                    "y": 311.9811767730562
                 },
                 "predecessor": "base",
                 "successor": "b",
                 "theta": "0",
-                "omega": "0"
+                "omega": "0",
+                "force": "0",
+                "kappa": "0",
+                "zeta": "0",
+                "poslowlim": "-Inf",
+                "posuplim": "Inf"
             }
         },
         "actuators": {
@@ -100,8 +105,8 @@
                 "translation": "zeros(3)",
                 "command": "c",
                 "renderedPosition": {
-                    "x": 492.5123039629779,
-                    "y": 296.4783303338598
+                    "x": 687.2773625445329,
+                    "y": 445.00560105777356
                 },
                 "inertia": "0.25",
                 "kt": "0.075",
@@ -120,8 +125,8 @@
                 "software": [
                 ],
                 "renderedPosition": {
-                    "x": 597,
-                    "y": 232.5
+                    "x": 791.7650585815551,
+                    "y": 381.0272707239138
                 },
                 "values": "[3,-3, 0]",
                 "tsteps": "[1, 3, 5]"

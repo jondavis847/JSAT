@@ -45,7 +45,7 @@ get_q̇(G::Spherical) = SVector{3,Float64}(G.state.ω)
 get_dq(G::Spherical) = quaternion_derivative(G.state.q, G.state.ω)
 
 #need to make this spring/dampener/loss forces at some point
-calculate_τ!(G::Spherical) = nothing
+calculate_τ!(G::Spherical,pA) = nothing
 
 function set_state!(G::Spherical, x)
     q = @view x[G.meta.xindex]

@@ -1,5 +1,6 @@
+includet("Revolute.jl")
 """
-Revolute Joint
+StepperMotor Joint
 
     1DOF rotation in the x-y plane about z
 
@@ -11,40 +12,7 @@ Joint frame:
     - x to the right, y up, z out of the page
     - θ referenced from +x        
 """
-mutable struct RevoluteState <: AbstractJointState
-    θ::Float64
-    ω::Float64
-    τ::SVector{1,Float64}
-    q̈::SVector{1,Float64}    
-    # temp variables for the ABA
-    c::SVector{6,Float64}
-    biasforce::SVector{6,Float64}        
-    a′::SVector{6,Float64}
-    U::SMatrix{6,1,Float64} # (6,nDOF)
-    D::SMatrix{1,1,Float64} # (nDOF,nDOF)
-    u::SVector{1,Float64} # nDOF
-    function RevoluteState(θ,ω) 
-        x = new()
-        x.θ = θ
-        x.ω = ω
-        #need zeros placeholders so saving_dicts can initialize
-        x.c = @SVector zeros(6)
-        x.biasforce = @SVector zeros(6)
-        x.a′ = @SVector zeros(6)
-        x.U = @SMatrix zeros(6,1)
-        x.D = @SMatrix zeros(1,1)
-        x.u = @SVector zeros(1)
-        return x
-    end
-end
-
-mutable struct RevoluteLocks
-    lower::Bool
-    upper::Bool
-    RevoluteLocks() = new(false,false)
-end
-
-struct RevoluteParameters
+struct StepperMotorParameters
     f::Float64 # constant force
     κ::Float64 # spring constant
     ζ::Float64 # dampening parameter
@@ -52,10 +20,10 @@ struct RevoluteParameters
     pos_lower_limit::Float64
 end
 
-mutable struct Revolute <: AbstractJoint
+mutable struct StepperMotor <: AbstractJoint
     meta::JointMeta
     state::RevoluteState
-    parameters::RevoluteParameters
+    parameters::StepperMotorParameters
     connection::JointConnection
     frame::Cartesian
     locks::RevoluteLocks
@@ -63,26 +31,26 @@ mutable struct Revolute <: AbstractJoint
     S::SMatrix{6,1,Float64}
 end
 
-function Revolute(name, θ=0.0, ω=0.0; f=0.0, κ=0.0, ζ=0.0, pos_upper_limit=Inf, pos_lower_limit=-Inf, locked = false)
+function StepperMotor(name, θ=0.0, ω=0.0; f=0.0, κ=0.0, ζ=0.0, pos_upper_limit=Inf, pos_lower_limit=-Inf, locked = false)
     jm = JointMeta(name, 1, 1)
-    js = RevoluteState(θ, ω)
-    jp = RevoluteParameters(f, κ, ζ, pos_upper_limit, pos_lower_limit)
+    js = RevoluteState(θ, ω, SVector{1,Float64}(0), SVector{1,Float64}(0))
+    jp = StepperMotorParameters(f, κ, ζ, pos_upper_limit, pos_lower_limit)
     S = SMatrix{6,1,Float64}(0, 0, 1, 0, 0, 0)
     joint = Revolute(jm, js, jp, JointConnection(), eye(Cartesian), RevoluteLocks(), locked, S)
     update_joint_frame!(joint, θ)
     return joint
 end
 
-function calculate_τ!(joint::Revolute)
-    if joint.locked
-        joint.state.τ = joint.S' * joint.state.biasforce
+function calculate_τ!(G::Revolute,pA,f_act)
+    if G.locked
+        G.state.τ = G.S' * pA
     else
-        joint.state.τ = SVector{1,Float64}(joint.parameters.f - joint.parameters.κ * joint.state.θ - joint.parameters.ζ * joint.state.ω)
+        G.state.τ = G.S' * pA 
     end
     return nothing
 end
 
-#get_S(G::Revolute) = !G.locked * G.S
+get_S(G::Revolute) = !G.locked * G.S
 
 get_q(G::Revolute) = SVector{1,Float64}(G.state.θ)
 get_q̇(G::Revolute) = SVector{1,Float64}(G.state.ω)

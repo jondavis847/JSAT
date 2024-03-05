@@ -8,7 +8,7 @@ end
 # attach a sensor to a body with some frame
 function connect!(S::AbstractSensor,B::Body,F::Cartesian = Cartesian(I(3),[0,0,0]))
     S.connection.body = B
-    S.connection.body_to_sensor = F #spatial motion transform from body frame to sensor frame    
+    S.connection.body_to_sensor = ℳ(F) #spatial motion transform from body frame to sensor frame    
     push!(B.models.sensors,S)
     return nothing
 end
@@ -16,7 +16,7 @@ end
 # set the reference frame for a sensor to some other body
 function connect!(B::Body,S::AbstractSensor,F::Cartesian = Cartesian(I(3),[0,0,0]))
     S.connection.body = B
-    S.connection.body_to_sensor = F #spatial motion transform from body frame to sensor frame    
+    S.connection.body_to_sensor = ℳ(F) #spatial motion transform from body frame to sensor frame    
     push!(B.models.sensors,S)
     return nothing
 end

@@ -22,6 +22,28 @@ mutable struct FloatingJointState <: AbstractJointState
     v::SVector{3,Float64}
     τ::SVector{6,Float64}
     q̈::SVector{6,Float64}
+    # temp variables for the ABA
+    c::SVector{6,Float64}
+    biasforce::SVector{6,Float64}        
+    a′::SVector{6,Float64}
+    U::SMatrix{6,6,Float64} # (6,nDOF)
+    D::SMatrix{6,6,Float64} # (nDOF,nDOF)
+    u::SVector{6,Float64} # nDOF
+    function FloatingJointState(q,ω,r,v) 
+        x  = new(q,ω,r,v)
+        x.q = q
+        x.ω = ω
+        x.r = r
+        x.v = v
+        #need zeros placeholders so saving_dicts can initialize
+        x.c = @SVector zeros(6)
+        x.biasforce = @SVector zeros(6)
+        x.a′ = @SVector zeros(6)
+        x.U = @SMatrix zeros(6,6)
+        x.D = @SMatrix zeros(6,6)
+        x.u = @SVector zeros(6)
+        return x
+    end
 end
 mutable struct FloatingJoint <: AbstractJoint
     meta::JointMeta
@@ -39,7 +61,7 @@ function FloatingJoint(name,
     v::AbstractVector=SVector{3,Float64}(0, 0, 0),
 )
     jm = JointMeta(name, 7, 6)
-    js = FloatingJointState(q, ω, r, v, SVector{6,Float64}(zeros(6)), SVector{6,Float64}(zeros(6)))
+    js = FloatingJointState(q, ω, r, v)
     S = SMatrix{6,6,Float64,36}(I(6))
     joint = FloatingJoint(jm, js, JointConnection(), eye(Cartesian), false, S)
     update_joint_frame!(joint, q, r)

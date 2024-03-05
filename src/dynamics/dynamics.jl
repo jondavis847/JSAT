@@ -1,5 +1,5 @@
 function dynamics!(sys)
-    calculate_joint_forces!(sys)  # generalized actuator forces    
+    #calculate_joint_forces!(sys)  # generalized actuator forces    do this in the ABA now to account for pA
     calculate_external_forces!(sys) # body external forces
     calculate_internal_momentums!(sys)
     articulated_body_algorithm!(sys)
@@ -7,7 +7,7 @@ function dynamics!(sys)
     return nothing
 end
 
-calculate_joint_forces!(sys::MultibodySystem) = calculate_τ!.(sys.joints)
+#calculate_joint_forces!(sys::MultibodySystem) = calculate_τ!.(sys.joints) do this in the ABA now to account for pA
 
 function calculate_external_forces!(body::Body)
     #TODO: move grav to accel, transform to transforms

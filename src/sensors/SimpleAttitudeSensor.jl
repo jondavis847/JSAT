@@ -15,10 +15,10 @@ function get_callback(S::SimpleAttitudeSensor4, i)
     i3 = SVector{3,Int16}(1, 2, 3)
     affect! = function (u,t,integrator)
         sensor = integrator.p.sys.sensors[i]
-        body_to_sensor_transform = sensor.connection.transform_source[i3,i3]
+        body_to_sensor_transform = sensor.connection.body_to_sensor[i3,i3]
         q_body_to_sensor = atoq(body_to_sensor_transform)
         
-        q_base_to_body = sensor.connection.body.state.q_base_to_body
+        q_base_to_body = sensor.connection.body.state.q_base
         if isdefined(sensor.connection, :reference)
             q_reference_to_body = qmult(q_base_to_body,qinv(sensor.connection.reference.state.q_base)) #TODO: Check this
         else

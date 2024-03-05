@@ -58,9 +58,9 @@ function df_save_values(save_values, save_config)
                 this_values = map(x -> x[i][j], save_values.saveval)
                 D[!, this_name] = this_values
             end
-        elseif type <: AbstractMatrix
+        elseif type <: AbstractMatrix            
             for k in axes(save_values.saveval[1][i])[2]
-                for j in axes(save_values[1][i])[1]
+                for j in axes(save_values.saveval[1][i])[1]
                     this_name = "$(name)[$(j),$(k)]"
                     this_values = map(x -> x[i][j, k], save_values.saveval)
                     D[!, this_name] = this_values

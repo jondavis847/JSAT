@@ -27,7 +27,7 @@ end
 function get_callback(S::SimpleRateSensor3, i)
     affect! = function (u,t,integrator)
         body_to_sensor_transform = integrator.p.sys.sensors[i].connection.body_to_sensor
-        body_rate = integrator.p.sys.sensors[i].connection.sensed_source.state.v_body
+        body_rate = integrator.p.sys.sensors[i].connection.body.state.v_body
         sensed_rate = (body_to_sensor_transform*body_rate)[SVector{3,Int16}(1, 2, 3)]
         integrator.p.sys.sensors[i].rate = sensed_rate
         return nothing

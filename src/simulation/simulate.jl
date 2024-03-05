@@ -30,12 +30,12 @@ function pack_dq_in_dx!(dx, sys)
 end
 
 #only need stuff in model! that need to be integrated, all algeriac states are handled by callbacks
-function model!(sys)    
-    #sensors!(sys) #currently handled by callbacks
+function model!(sys)        
     #software!(sys) #currently handled by callbacks
     actuators!(sys)
     environments!(sys) # currently handled by callbacks
     dynamics!(sys)
+    #sensors!(sys) #currently handled by callbacks
     return nothing
 end
 

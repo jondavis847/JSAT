@@ -1,82 +1,19 @@
 {
-    "name": "demo_pole_cart",
+    "name": "damped_triple_pend",
     "scenario": {
         "base": {
             "type": "default",
             "gravity": [
-                "gravity"
+                "g"
             ],
             "renderedPosition": {
-                "x": 540.75,
-                "y": 619.4997245381423
+                "x": 348.2223619936093,
+                "y": 153.4697910162706
             }
         },
         "bodies": {
-            "cart": {
-                "name": "cart",
-                "mass": {
-                    "nominal": "1",
-                    "dispersed": ""
-                },
-                "cmx": {
-                    "nominal": "0",
-                    "dispersed": ""
-                },
-                "cmy": {
-                    "nominal": "0",
-                    "dispersed": ""
-                },
-                "cmz": {
-                    "nominal": "0",
-                    "dispersed": ""
-                },
-                "ixx": {
-                    "nominal": "1",
-                    "dispersed": ""
-                },
-                "iyy": {
-                    "nominal": "1",
-                    "dispersed": ""
-                },
-                "izz": {
-                    "nominal": "1",
-                    "dispersed": ""
-                },
-                "ixy": {
-                    "nominal": "0",
-                    "dispersed": ""
-                },
-                "ixz": {
-                    "nominal": "0",
-                    "dispersed": ""
-                },
-                "iyz": {
-                    "nominal": "0",
-                    "dispersed": ""
-                },
-                "geometry": "box",
-                "material": "basic",
-                "color": "aquamarine",
-                "actuators": [
-                    "left_thruster",
-                    "right_thruster"
-                ],
-                "sensors": [
-                ],
-                "gravity": [
-                ],
-                "environments": [
-                ],
-                "renderedPosition": {
-                    "x": 542.75,
-                    "y": 409.49972453814235
-                },
-                "xlength": "1",
-                "ylength": "1",
-                "zlength": "1"
-            },
-            "pole": {
-                "name": "pole",
+            "b1": {
+                "name": "b1",
                 "mass": {
                     "nominal": "1",
                     "dispersed": ""
@@ -123,139 +60,220 @@
                 "actuators": [
                 ],
                 "sensors": [
-                    "attitude",
-                    "rate"
                 ],
                 "gravity": [
                 ],
                 "environments": [
                 ],
                 "renderedPosition": {
-                    "x": 537.75,
-                    "y": 170.4997245381423
+                    "x": 517.2396242700261,
+                    "y": 327.505784699012
                 },
                 "xlength": "0.1",
-                "ylength": "3",
+                "ylength": 1,
+                "zlength": "0.1"
+            },
+            "b2": {
+                "name": "b2",
+                "mass": {
+                    "nominal": "1",
+                    "dispersed": ""
+                },
+                "cmx": {
+                    "nominal": "0",
+                    "dispersed": ""
+                },
+                "cmy": {
+                    "nominal": "0",
+                    "dispersed": ""
+                },
+                "cmz": {
+                    "nominal": "0",
+                    "dispersed": ""
+                },
+                "ixx": {
+                    "nominal": "1",
+                    "dispersed": ""
+                },
+                "iyy": {
+                    "nominal": "1",
+                    "dispersed": ""
+                },
+                "izz": {
+                    "nominal": "1",
+                    "dispersed": ""
+                },
+                "ixy": {
+                    "nominal": "0",
+                    "dispersed": ""
+                },
+                "ixz": {
+                    "nominal": "0",
+                    "dispersed": ""
+                },
+                "iyz": {
+                    "nominal": "0",
+                    "dispersed": ""
+                },
+                "geometry": "box",
+                "material": "basic",
+                "color": "aquamarine",
+                "actuators": [
+                ],
+                "sensors": [
+                ],
+                "gravity": [
+                ],
+                "environments": [
+                ],
+                "renderedPosition": {
+                    "x": 356.22621845961737,
+                    "y": 493.5395746868916
+                },
+                "xlength": "0.1",
+                "ylength": 1,
+                "zlength": "0.1"
+            },
+            "b3": {
+                "name": "b3",
+                "mass": {
+                    "nominal": "1",
+                    "dispersed": ""
+                },
+                "cmx": {
+                    "nominal": "0",
+                    "dispersed": ""
+                },
+                "cmy": {
+                    "nominal": "0",
+                    "dispersed": ""
+                },
+                "cmz": {
+                    "nominal": "0",
+                    "dispersed": ""
+                },
+                "ixx": {
+                    "nominal": "1",
+                    "dispersed": ""
+                },
+                "iyy": {
+                    "nominal": "1",
+                    "dispersed": ""
+                },
+                "izz": {
+                    "nominal": "1",
+                    "dispersed": ""
+                },
+                "ixy": {
+                    "nominal": "0",
+                    "dispersed": ""
+                },
+                "ixz": {
+                    "nominal": "0",
+                    "dispersed": ""
+                },
+                "iyz": {
+                    "nominal": "0",
+                    "dispersed": ""
+                },
+                "geometry": "box",
+                "material": "basic",
+                "color": "aquamarine",
+                "actuators": [
+                ],
+                "sensors": [
+                ],
+                "gravity": [
+                ],
+                "environments": [
+                ],
+                "renderedPosition": {
+                    "x": 580.7776380063907,
+                    "y": 636.5302089837294
+                },
+                "xlength": "0.1",
+                "ylength": 1,
                 "zlength": "0.1"
             }
         },
         "joints": {
-            "revolute": {
-                "name": "revolute",
+            "j2": {
+                "name": "j2",
                 "type": "revolute",
-                "FpRho": "[0,0.5,0]",
+                "FpRho": "[0,-0.5,0]",
                 "FpPhi": "I(3)",
-                "FsRho": "[0,-0.5,0]",
+                "FsRho": "[0,0.5,0]",
                 "FsPhi": "I(3)",
                 "renderedPosition": {
-                    "x": 540.75,
-                    "y": 283.49972453814235
+                    "x": 435.2223619936093,
+                    "y": 408.4697910162706
                 },
-                "predecessor": "cart",
-                "successor": "pole",
-                "theta": "30 * pi / 180",
+                "predecessor": "b1",
+                "successor": "b2",
+                "theta": "pi/6",
                 "omega": "0",
                 "force": "0",
                 "kappa": "0",
-                "zeta": "0",
+                "zeta": "0.1",
                 "poslowlim": "-Inf",
                 "posuplim": "Inf"
             },
-            "prismatic": {
-                "name": "prismatic",
-                "type": "prismatic",
-                "FpRho": "zeros(3)",
+            "j3": {
+                "name": "j3",
+                "type": "revolute",
+                "FpRho": "[0,-0.5,0]",
                 "FpPhi": "I(3)",
-                "FsRho": "zeros(3)",
+                "FsRho": "[0,0.5,0]",
                 "FsPhi": "I(3)",
                 "renderedPosition": {
-                    "x": 540.75,
-                    "y": 517.4997245381423
+                    "x": 467.2223619936093,
+                    "y": 564.4697910162706
+                },
+                "predecessor": "b2",
+                "successor": "b3",
+                "theta": "0",
+                "omega": "0",
+                "force": "0",
+                "kappa": "0",
+                "zeta": "0.1",
+                "poslowlim": "-Inf",
+                "posuplim": "Inf"
+            },
+            "j1": {
+                "name": "j1",
+                "type": "revolute",
+                "FpRho": "zeros(3)",
+                "FpPhi": "I(3)",
+                "FsRho": "[0,0.5,0]",
+                "FsPhi": "I(3)",
+                "renderedPosition": {
+                    "x": 430.2223619936093,
+                    "y": 231.4697910162706
                 },
                 "predecessor": "base",
-                "successor": "cart",
-                "position": "0",
-                "velocity": "0"
+                "successor": "b1",
+                "theta": "pi/4",
+                "omega": "0",
+                "force": "0",
+                "kappa": "0",
+                "zeta": "0.1",
+                "poslowlim": "-Inf",
+                "posuplim": "Inf"
             }
         },
         "actuators": {
-            "right_thruster": {
-                "name": "right_thruster",
-                "type": "thruster",
-                "rotation": "[0 0 1; 0 1 0; -1 0 0]",
-                "translation": "[0.5,0,0]",
-                "command": "fsw",
-                "renderedPosition": {
-                    "x": 715.7490817938076,
-                    "y": 412.4999081793807
-                },
-                "thrust": "10"
-            },
-            "left_thruster": {
-                "name": "left_thruster",
-                "type": "thruster",
-                "rotation": "[0 0 -1; 0 1 0; 1 0 0]",
-                "translation": "[-0.5,0,0]",
-                "command": "fsw",
-                "renderedPosition": {
-                    "x": 384.75,
-                    "y": 408.4997245381423
-                },
-                "thrust": "10"
-            }
         },
         "software": {
-            "fsw": {
-                "name": "fsw",
-                "type": "custom",
-                "sensors": [
-                    "attitude",
-                    "rate"
-                ],
-                "actuators": [
-                    "left_thruster",
-                    "right_thruster"
-                ],
-                "software": [
-                ],
-                "renderedPosition": {
-                    "x": 389.75,
-                    "y": 281.4997245381423
-                },
-                "module": "pole_cart_software"
-            }
         },
         "sensors": {
-            "attitude": {
-                "name": "attitude",
-                "type": "simpleAttitudeSensor4",
-                "rotation": "I(3)",
-                "translation": "zeros(3)",
-                "body": "undef",
-                "renderedPosition": {
-                    "x": 386.75,
-                    "y": 171.4997245381423
-                }
-            },
-            "rate": {
-                "name": "rate",
-                "type": "simpleRateSensor3",
-                "rotation": "I(3)",
-                "translation": "zeros(3)",
-                "body": "undef",
-                "renderedPosition": {
-                    "x": 711.7558765196312,
-                    "y": 170.49917361442687
-                }
-            }
         },
         "gravity": {
-            "gravity": {
-                "name": "gravity",
+            "g": {
+                "name": "g",
                 "type": "constant",
                 "renderedPosition": {
-                    "x": 654.7465108164689,
-                    "y": 618.5008263855732
+                    "x": 478.7776380063907,
+                    "y": 78.53020898372938
                 },
                 "value": "-9.8"
             }
@@ -267,7 +285,7 @@
         "sim": {
             "name": "",
             "nruns": "0",
-            "tspan": "(0,10)",
+            "tspan": "(0,30)",
             "saveLocation": "",
             "dt": "0.01"
         }
