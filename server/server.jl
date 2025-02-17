@@ -1,21 +1,34 @@
 using HTTP, Sockets, JSON3, JLD2
-includet("..\\src\\jsat.jl")
+
+includet(joinpath("..", "src", "jsat.jl"))
+
+function read_file_safe(path::String, binary=false)
+    if isfile(path)
+        return binary ? read(path) : read(path, String)
+    else
+        return HTTP.Response(404, "File not found: $(path)")
+    end
+end
+
 function jsat_server()
     ROUTER = HTTP.Router()
 
-    routerIndex(req::HTTP.Request) = HTTP.Response(200, read("server\\public\\index.html"))
-    routerCss(req::HTTP.Request) = HTTP.Response(200, read("server\\public\\css\\jsat.css"))
-    routerJs(req::HTTP.Request) = HTTP.Response(200, ["Content-Type" => "application/javascript"], read("server\\public\\js\\jsat.js"))
-    routerAnimJs(req::HTTP.Request) = HTTP.Response(200, ["Content-Type" => "application/javascript"], read("server\\public\\js\\animation.js"))
-    routerPlotJs(req::HTTP.Request) = HTTP.Response(200, ["Content-Type" => "application/javascript"], read("server\\public\\js\\plotting.js"))
-    routerCytoJs(req::HTTP.Request) = HTTP.Response(200, ["Content-Type" => "application/javascript"], read("server\\public\\js\\cyto.js"))
-    routerMeatball(req::HTTP.Request) = HTTP.Response(200, ["Content-Type" => "image/png"], read("server\\public\\images\\nasa_aquamarine.png"))
-    routerEarth(req::HTTP.Request) = HTTP.Response(200, ["Content-Type" => "image/jpeg"], read("server\\public\\images\\earth.jpeg"))
-    routerEarth16k(req::HTTP.Request) = HTTP.Response(200, ["Content-Type" => "image/jpeg"], read("server\\public\\images\\earth_16k.jpg"))
-    routerEarthBump16k(req::HTTP.Request) = HTTP.Response(200, ["Content-Type" => "image/jpeg"], read("server\\public\\images\\earth_bump_16k.jpg"))
-    routerEarthSpec4k(req::HTTP.Request) = HTTP.Response(200, ["Content-Type" => "image/jpeg"], read("server\\public\\images\\8081_earthspec4k.jpg"))
-    routerStarfield(req::HTTP.Request) = HTTP.Response(200, ["Content-Type" => "image/jpeg"], read("server\\public\\images\\starfield.jpg"))
+    static_path = joinpath(pwd(), "server", "public")
+
+    routerIndex(req::HTTP.Request) = HTTP.Response(200, read_file_safe(joinpath(static_path, "index.html")))
+    routerCss(req::HTTP.Request) = HTTP.Response(200, read_file_safe(joinpath(static_path, "css", "jsat.css")))
+    routerJs(req::HTTP.Request) = HTTP.Response(200, ["Content-Type" => "application/javascript"], read_file_safe(joinpath(static_path, "js", "jsat.js")))
+    routerAnimJs(req::HTTP.Request) = HTTP.Response(200, ["Content-Type" => "application/javascript"], read_file_safe(joinpath(static_path, "js", "animation.js")))
+    routerPlotJs(req::HTTP.Request) = HTTP.Response(200, ["Content-Type" => "application/javascript"], read_file_safe(joinpath(static_path, "js", "plotting.js")))
+    routerCytoJs(req::HTTP.Request) = HTTP.Response(200, ["Content-Type" => "application/javascript"], read_file_safe(joinpath(static_path, "js", "cyto.js")))
     
+    routerMeatball(req::HTTP.Request) = HTTP.Response(200, ["Content-Type" => "image/png"], read_file_safe(joinpath(static_path, "images", "nasa_aquamarine.png"), true))
+    routerEarth(req::HTTP.Request) = HTTP.Response(200, ["Content-Type" => "image/jpeg"], read_file_safe(joinpath(static_path, "images", "earth.jpeg"), true))
+    routerEarth16k(req::HTTP.Request) = HTTP.Response(200, ["Content-Type" => "image/jpeg"], read_file_safe(joinpath(static_path, "images", "earth_16k.jpg"), true))
+    routerEarthBump16k(req::HTTP.Request) = HTTP.Response(200, ["Content-Type" => "image/jpeg"], read_file_safe(joinpath(static_path, "images", "earth_bump_16k.jpg"), true))
+    routerEarthSpec4k(req::HTTP.Request) = HTTP.Response(200, ["Content-Type" => "image/jpeg"], read_file_safe(joinpath(static_path, "images", "8081_earthspec4k.jpg"), true))
+    routerStarfield(req::HTTP.Request) = HTTP.Response(200, ["Content-Type" => "image/jpeg"], read_file_safe(joinpath(static_path, "images", "starfield.jpg"), true))
+
     HTTP.register!(ROUTER, "GET", "/", routerIndex)
     HTTP.register!(ROUTER, "GET", "/css/jsat.css", routerCss)
     HTTP.register!(ROUTER, "GET", "/js/jsat.js", routerJs)
@@ -40,10 +53,11 @@ function jsat_server()
     HTTP.register!(ROUTER, "GET", "/getscenarios", routerGetScenarios)
     HTTP.register!(ROUTER, "POST", "/loadscenario", routerLoadScenario)
 
-    server = HTTP.serve!(ROUTER, ip"127.0.0.1", 80)
-    printstyled("servers up! ctrl+click url to go : http://127.0.0.1:80 \n", color=:light_yellow)
+    port = 8080
+    server = HTTP.serve!(ROUTER, ip"127.0.0.1", port)
+    
+    printstyled("Server is running! Open in browser: http://127.0.0.1:$port\n", color=:light_yellow)
     return server
-
 end
 
 function routerSimFiles(req::HTTP.Request)
@@ -315,24 +329,26 @@ function routerSimulate(req::HTTP.Request)
         mkdir("sim")
     end
 
-    if !isdir("sim\\$(sim_name)")
-        mkdir("sim\\$(sim_name)")
+    sim_path = joinpath("sim", sim_name)
+
+    if !isdir(sim_path)
+        mkdir(sim_path)
     end
 
     #save simulation data file
     if sol isa DataFrame
-        CSV.write("sim\\$(sim_name)\\run0.csv", sol)
-    elseif sol isa Tuple # (nominal,dispersed)
-        CSV.write("sim\\$(sim_name)\\run0.csv", sol[1])
+        CSV.write(joinpath("sim", sim_name, "run0.csv"), sol)
+    elseif sol isa Tuple # (nominal, dispersed)
+        CSV.write(joinpath("sim", sim_name, "run0.csv"), sol[1])
         for i in eachindex(sol[2])
-            CSV.write("sim\\$(sim_name)\\run$(i).csv", sol[2][i])
+            CSV.write(joinpath("sim", sim_name, "run$(i).csv"), sol[2][i])
         end
-    else 
-        error("why is sol not a dataframe or tuple?")
+    else
+        error("why is sol not a DataFrame or Tuple?")
     end
 
     #save system file
-    open("sim\\$(sim_name)\\system.json", "w") do io
+    open(joinpath("sim", sim_name, "system.json"), "w") do io
         JSON3.pretty(io, message)
     end
 
@@ -354,7 +370,7 @@ function routerLoadStates(req::HTTP.Request)
     message = JSON3.read(req.body)
     states = String[]
     for file in message
-        df = CSV.read("sim\\$(file)\\run0.csv", DataFrame; limit=0) # limit just reads headers for now
+        df = CSV.read(joinpath("sim", file, "run0.csv"), DataFrame; limit=0) # limit just reads headers for now
         union!(states, string.(names(df)))
     end
     D = Dict("states" => states)
@@ -367,12 +383,12 @@ function routerPlot(req::HTTP.Request)
     xs = data[:states]
     simdata = []
     for i in eachindex(sims)
-        loc = "sim\\$(sims[i])"
+        loc = joinpath("sim", sims[i])
         f = readdir(loc)
         runs = f[occursin.(".csv", f)]
         rundata = []
         for r in eachindex(runs)
-            rd = CSV.read("$(loc)\\$(runs[r])", DataFrame, select=["t", xs...])
+            rd = CSV.read(joinpath(loc, runs[r]), DataFrame, select=["t", xs...])
             push!(rundata, rd)
         end
         push!(simdata, Dict("sim" => sims[i], "runData" => rundata))
@@ -384,9 +400,9 @@ function routerAnimate(req::HTTP.Request)
     data = JSON3.read(req.body)
     sim = data[:sim]
     run = data[:run]
-    loc = "sim\\$(sim)"
+    loc = joinpath("sim", sim)
     f = readdir(loc)
-    sys = JSON3.read("$(loc)\\system.json")
+    sys = JSON3.read(joinpath(loc, "system.json"))
     #t = CSV.read("$(loc)\\$(run).csv", DataFrame, select=["t"])
     #rd = DataFrame(t)
     full_states = []
@@ -419,14 +435,14 @@ function routerAnimate(req::HTTP.Request)
         ]
         append!(full_states, states)
     end
-    rd = CSV.read("$(loc)\\$(run).csv", DataFrame, select=["t", full_states...])
+    rd = CSV.read(joinpath(loc, "$(run).csv"), DataFrame, select=["t", full_states...])
 
     D = Dict("sys" => sys, "data" => rd)
     HTTP.Response(200, JSON3.write(D))
 end
 
 function routerCreateModel(req::HTTP.Request)
-    file = "server//models.jld2"
+    file = joinpath("server", "models.jld2")
 
     data = JSON3.read(req.body, Dict)
     name = data["name"]
@@ -446,12 +462,12 @@ function routerCreateModel(req::HTTP.Request)
 end
 
 function routerLoadModels(req::HTTP.Request)
-    file = "server//models.jld2"
+    file = joinpath("server", "models.jld2")
 
     if !isfile(file)
         models = Dict()
     else
-        models = load("server//models.jld2")
+        models = load(joinpath("server", "models.jld2"))
     end
     HTTP.Response(200, JSON3.write(models))
 end
@@ -464,7 +480,7 @@ end
 function routerSaveScenario(req::HTTP.Request)
     message = JSON3.read(req.body)
     scenario_name = message[:name]
-    open("scenarios\\$(scenario_name).json", "w") do io
+    open(joinpath("scenarios", "$(scenario_name).json"), "w") do io
         JSON3.pretty(io, message)
     end
     HTTP.Response(200, "saved")
@@ -483,6 +499,6 @@ end
 function routerLoadScenario(req::HTTP.Request)
     message = JSON3.read(req.body)
     println(message)
-    scenario = JSON3.read("scenarios\\$(message[:name]).json")
+    scenario = JSON3.read(joinpath("scenarios", "$(message[:name]).json"))
     HTTP.Response(200, JSON3.write(scenario))
 end

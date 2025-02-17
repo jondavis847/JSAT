@@ -89,7 +89,12 @@
                 "predecessor": "base",
                 "successor": "b",
                 "theta": "pi/4",
-                "omega": "0"
+                "omega": "0",
+                "force": "0",
+                "kappa": "0",
+                "zeta": "0",
+                "poslowlim": "-Inf",
+                "posuplim": "Inf"
             }
         },
         "actuators": {
