@@ -1,8 +1,8 @@
 # Intro
-The Julia Spacecraft Analysis Tool (JSAT) was created in 2022  as a proof of concept for a web-based multibody spacecraft simulation tool. It takes advantage of the speed and syntax of Julia while utilizing the popularity of web development as a user interface.
+The Julia Spacecraft Analysis Tool (JSAT) was created in 2023  as a proof of concept for a web-based multibody spacecraft simulation tool. It takes advantage of the speed and syntax of Julia while utilizing the popularity of web development as a user interface.
 
 # Disclaimer
-This tool is currently just a proof of concept that may be revisited in the future. It is missing many features and is likely to contain numerous bugs.
+This tool is currently just an abandoned proof of concept that may be revisited in the future. It is missing many features and contains numerous bugs.
 
 # Getting Started
 1. Clone the repo 
